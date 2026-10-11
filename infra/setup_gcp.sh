@@ -26,7 +26,8 @@ if ! gcloud sql instances describe atrium-db >/dev/null 2>&1; then
     --tier=db-f1-micro --region="$REGION" --storage-size=10GB --availability-type=ZONAL
 fi
 gcloud sql databases describe atrium --instance=atrium-db >/dev/null 2>&1 || gcloud sql databases create atrium --instance=atrium-db
-DB_PASS="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)"
+# openssl, not `tr </dev/urandom | head`: under pipefail that pipeline exits 141 (SIGPIPE) and kills the script.
+DB_PASS="$(openssl rand -hex 16)"
 if gcloud sql users list --instance=atrium-db --format='value(name)' | grep -qx atrium; then
   gcloud sql users set-password atrium --instance=atrium-db --password="$DB_PASS" >/dev/null
 else

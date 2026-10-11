@@ -16,6 +16,11 @@ jobs:
           python-version: "3.12"
       - run: uv sync
       - run: uv run pytest
+  infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash infra/tests/test_scripts.sh
   web:
     runs-on: ubuntu-latest
     defaults:
