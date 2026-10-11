@@ -18,4 +18,4 @@ Cut-lines when behind schedule are in blueprint §10.3. The never-cut set is: le
 - Gemini model IDs on Vertex AI: `gemini-3.8-flash` (GA, 2 Sep 2026, 1M context, text/image/audio/video/PDF in) and `gemini-3.1-pro-preview` (preview, 19 Feb 2026). Both live in `Settings`.
 - ADK: `pip install google-adk` version 2.11.0 (2 Oct 2026), Python ≥ 3.10, `from google.adk import Agent`; agents are `Agent(name=..., model=..., instruction=..., tools=[...])`. Plan 2 pins the `Runner` and session API from the ADK runtime docs before writing agent code.
 - Local toolchain: Python 3.12.9, uv 0.11.16, Node 24.16, pnpm 10.33, gcloud SDK 527, gh 2.93 (authenticated as XoAuraHiru), Docker 27.5 (daemon not running by default), Chrome for PDF builds.
-- GCP: billing account `01DC00-40EA86-C3F761`; target project id `atrium-cup-2026` (created by Plan 1 Task 12).
+- GCP: billing account from `gcloud billing accounts list`; target project id `atrium-cup-2026` (created by Plan 1 Task 12).

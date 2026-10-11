@@ -3773,7 +3773,7 @@ echo "setup complete for $PROJECT_ID"
 echo "manual step (2 min): https://console.firebase.google.com/project/$PROJECT_ID/authentication/providers -> enable Email/Password"
 ```
 
-Run: `BILLING_ACCOUNT=01DC00-40EA86-C3F761 bash infra/setup_gcp.sh`
+Run: `BILLING_ACCOUNT=<your billing account id> bash infra/setup_gcp.sh`
 Expected: ends with `setup complete for atrium-cup-2026`. If `projects create` says the id is taken, run again with `PROJECT_ID=atrium-cup-2026-<yourinitials>` and use that id everywhere below.
 
 - [ ] **Step 5: Write the deploy script**
