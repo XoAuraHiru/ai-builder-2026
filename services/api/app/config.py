@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     gcp_location: str = "us-central1"
     gemini_flash_model: str = "gemini-3.8-flash"
     gemini_pro_model: str = "gemini-3.1-pro-preview"
+    gemini_location: str = "global"         # Gemini 3.x serve from the global endpoint (3.1 Pro preview is global-only)
+    llm_provider: str = "fake"              # fake (offline, deterministic) | gemini
+    gemini_flash_input_usd_per_m: float = 0.75   # Vertex AI list price, global endpoint, Oct 2026
+    gemini_flash_output_usd_per_m: float = 3.75
+    gemini_pro_input_usd_per_m: float = 2.0
+    gemini_pro_output_usd_per_m: float = 12.0
+    docai_location: str = "us"
+    docai_proofing_processor: str = ""      # Document AI ID Proofing processor id; empty disables fraud signals
+    lead_capture_limit_per_hour: int = 20   # per device and per IP hash, checked before any AI call
 
     market_data_provider: str = "fake"      # fake | yfinance | alpaca
     market_cache_dir: str = "data/cache"
