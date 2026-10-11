@@ -72,3 +72,7 @@ class IdentityCheckOut(BaseModel):
 
 class AskIn(BaseModel):
     question: str = Field(min_length=3, max_length=500)
+
+
+class ConvertIn(BaseModel):
+    override_reason: str | None = Field(default=None, max_length=500)

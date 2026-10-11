@@ -12,8 +12,9 @@ from app.config import get_settings
 from app.db import get_db
 from app.events import emit
 from app.models import AIDecision, Lead
-from app.schemas.leads import AskIn, IdentityCheckOut, LeadAck, LeadIn, LeadOut, StageIn
+from app.schemas.leads import AskIn, ConvertIn, IdentityCheckOut, LeadAck, LeadIn, LeadOut, StageIn
 from app.services.capture_guard import check_capture_rate, ip_hash
+from app.services.conversion import ConversionError, convert_lead
 from app.services.lead_pipeline import process_lead, score_pending
 from app.services.identity import (MAX_BYTES, DocumentTooLarge, ProofingClient, UnsupportedDocument,
                                    analyze_identity, get_proofing)
@@ -134,3 +135,13 @@ def ask(lead_id: str, body: AskIn, db: Session = Depends(get_db), llm: LLM = Dep
     answer = ask_about_lead(db, lead_or_404(db, lead_id), body.question, llm, model)
     db.commit()
     return {"answer": answer}
+
+
+@router.post("/{lead_id}/convert", status_code=201)
+def convert(lead_id: str, body: ConvertIn, db: Session = Depends(get_db), user: CurrentUser = Depends(staff)):
+    try:
+        person, account = convert_lead(db, lead_or_404(db, lead_id), user.email, body.override_reason)
+    except ConversionError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+    db.commit()
+    return {"person_id": person.id, "account_id": account.id, "account_number": account.number}
