@@ -63,8 +63,10 @@ def _rule_findings(text: str) -> list[ComplianceFinding]:
     return out
 
 
-def check_compliance(text: str, llm: LLM, *, db: Session | None = None,
-                     subject_id: str | None = None) -> ComplianceReport:
+def check_compliance(text: str, llm: LLM, *, db: Session | None = None, subject_id: str | None = None,
+                     collect: list | None = None) -> ComplianceReport:
+    """`db` records the Gemini review now; `collect` hands (result, prompt) back so a caller that cannot touch the
+    database at this moment (an agent tool) can record it afterwards."""
     findings = _rule_findings(text)
     reviewed_by = ["rules"]
     try:
@@ -72,6 +74,8 @@ def check_compliance(text: str, llm: LLM, *, db: Session | None = None,
         result = llm.generate_json(purpose="compliance_review", prompt=prompt, schema=ComplianceReview)
         findings += result.parsed.findings
         reviewed_by.append("gemini")
+        if collect is not None:
+            collect.append((result, prompt))
         if db is not None and subject_id:
             record_decision(db, agent="lead_intelligence", purpose="compliance_review", result=result,
                             subject_type="lead", subject_id=subject_id, input_text=prompt)
