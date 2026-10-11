@@ -4,7 +4,7 @@ The blueprint (`docs/Atrium-Product-Blueprint.md`, v0.1, approved 11 Oct 2026) i
 
 | # | Plan | Blueprint scope | Calendar | Status |
 |---|---|---|---|---|
-| 1 | [Foundations](2026-10-11-atrium-foundations.md) | §9 data model, §5.3 house funds, B2 dashboard, P1 role shell, P2 auth, P7 synthetic data, §8.4 layout, Cloud Run deploy | Day 0–1 (Sat 11 – Sun 12 Oct) | Written, awaiting execution |
+| 1 | [Foundations](2026-10-11-atrium-foundations.md) | §9 data model, §5.3 house funds, B2 dashboard, P1 role shell, P2 auth, P7 synthetic data, §8.4 layout, Cloud Run deploy | Day 0–1 (Sat 11 – Sun 12 Oct) | Code complete on `feat/foundations` (11 Oct); Cloud Run deploy blocked on GCP billing quota |
 | 2 | Acquire | A1 lead capture, A2 enrichment, A3 Lead Score (BigQuery ML), A4 Trust Score stage 1, A5 Document AI identity, A7 pipeline board, A8 AI drafts with compliance check, A12 convert; first ADK agents (Lead Intelligence, Trust & Fraud) and the AI decision log (D11) | Day 2 (Mon 13 Oct) | Not started |
 | 3 | Invest | B1 conversational risk profile, B3 Portfolio X-ray, B4 risk analytics, B6 What-if Studio (Monte Carlo + narrative), B7 fund explainers via Vertex AI Search over `data/funds/*.md`, B8 Investor Copilot agent, A10 personalised proposal, B11 instructions | Day 3 (Tue 14 Oct) | Not started |
 | 4 | Trade | C1 watchlists and quotes, C2 order ticket to Alpaca paper, C3 Pre-trade Guardian agent, C4 order explainer; Trust Score stage 2 (B14) | Day 4 (Wed 15 Oct) | Not started |
