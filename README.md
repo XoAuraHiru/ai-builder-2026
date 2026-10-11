@@ -58,6 +58,16 @@ The default deployment uses `AUTH_MODE=dev`: anyone with the URL can pick a demo
 
 If Yahoo Finance is unreachable from Cloud Run, seeding falls back to the committed real-price snapshot in `services/api/app/seed/prices_snapshot.csv`. Refresh it locally with `uv run python -m app.seed.snapshot`.
 
+## Running cost
+
+Both Cloud Run services scale to zero, so compute is billed only while requests are served and normally stays inside Cloud Run's free tier. The one always-on piece is Cloud SQL (db-f1-micro, 10 GB SSD, daily backups): about $9.40 a month. A budget alert emails the billing admins at 50, 90 and 100 percent of $15 a month.
+
+Cold start after idle time: about 6 seconds for the API and 2 to 4 seconds for the web app. For the judging window, keep both warm (about $23 a month extra):
+
+```bash
+API_MIN_INSTANCES=1 WEB_MIN_INSTANCES=1 bash infra/deploy.sh
+```
+
 ## Layout
 
 | Path | What |
