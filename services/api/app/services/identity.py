@@ -1,7 +1,9 @@
 """Identity document checks: Gemini reads the fields, Document AI ID Proofing screens for fraud.
 Neither decides on its own; findings feed the Trust Score and a person reviews. The image is never stored."""
 import hashlib
+import logging
 import re
+import unicodedata
 from datetime import date
 from difflib import SequenceMatcher
 from typing import Literal, Protocol
@@ -14,6 +16,8 @@ from app.ai.llm import LLM, Attachment
 from app.config import Settings, get_settings
 from app.events import emit
 from app.models import IdentityCheck, Lead
+
+log = logging.getLogger(__name__)
 
 ALLOWED_MIME = {"image/jpeg", "image/png", "application/pdf"}
 MAX_BYTES = 5 * 1024 * 1024
@@ -85,7 +89,9 @@ def get_proofing() -> ProofingClient | None:
 
 
 def _tokens(name: str) -> list[str]:
-    return sorted(t for t in re.split(r"[\s,.\-']+", name.lower()) if t)
+    # IDs often print names without accents; "José García" and "JOSE GARCIA" are the same person.
+    plain = "".join(c for c in unicodedata.normalize("NFKD", name) if not unicodedata.combining(c))
+    return sorted(t for t in re.split(r"[\s,.\-']+", plain.lower()) if t)
 
 
 def names_match(a: str, b: str) -> bool:
@@ -163,12 +169,18 @@ def analyze_identity(db: Session, lead: Lead, data: bytes, mime_type: str, llm: 
     digest = hashlib.sha256(data).hexdigest()
     record_decision(db, agent="trust_and_fraud", purpose="identity_extraction", result=result, subject_type="lead",
                     subject_id=lead.id, input_text=digest, confidence=extracted.confidence)
-    signals = proofing.proof(data, mime_type) if proofing else None
+    signals, source = None, "gemini"
+    if proofing:
+        try:
+            signals, source = proofing.proof(data, mime_type), "gemini+documentai"
+        except Exception as e:  # a fraud-screening outage must not throw away a paid, valid reading
+            log.warning("Document AI proofing failed for lead %s: %s", lead.id, e)
+            source = "gemini (fraud screening unavailable)"
     check = IdentityCheck(lead_id=lead.id, mime_type=mime_type, size_bytes=len(data), sha256=digest,
                           extracted=extracted.model_dump(mode="json"),
                           fraud_signals=signals.model_dump(mode="json") if signals else None,
                           findings=identity_findings(lead, extracted, signals, today),
-                          source="gemini+documentai" if signals else "gemini")
+                          source=source)
     db.add(check)
     db.flush()
     emit("IdentityChecked", {"lead_id": lead.id, "check_id": check.id, "findings": [f["code"] for f in check.findings]})

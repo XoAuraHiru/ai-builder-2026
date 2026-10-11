@@ -23,7 +23,8 @@ def extracted(**kw):
 
 @pytest.mark.parametrize("a,b,expected", [
     ("Priya Raman", "RAMAN, PRIYA", True), ("Priya Raman", "Priya K. Raman", True),
-    ("John Smith", "Jon Smith", True), ("Priya Raman", "Emily Walters", False), ("Ava Thompson", "", False)])
+    ("John Smith", "Jon Smith", True), ("Priya Raman", "Emily Walters", False), ("Ava Thompson", "", False),
+    ("José García", "JOSE GARCIA", True), ("Zoë Müller", "ZOE MULLER", True)])
 def test_name_match_ignores_order_case_and_punctuation(a, b, expected):
     assert names_match(a, b) is expected
 
@@ -115,3 +116,18 @@ def test_extraction_prompt_reads_fields_even_from_samples():
 
     text = ID_PROMPT.lower()
     assert "even if" in text and "sample" in text and "not_an_identity_document" in text
+
+
+def test_document_ai_outage_still_saves_the_gemini_reading(id_client, db, people, make_lead):
+    client, fake = id_client
+
+    class Down:
+        def proof(self, data, mime_type):
+            raise RuntimeError("503 Document AI unavailable")
+
+    client.app.dependency_overrides[get_proofing] = lambda: Down()
+    lead = make_lead()
+    r = client.post(f"/leads/{lead.id}/documents", files={"file": ("id.png", PNG, "image/png")}, headers=STAFF)
+    assert r.status_code == 201, r.text
+    assert r.json()["fraud_signals"] is None and "unavailable" in r.json()["source"]
+    assert [f["code"] for f in r.json()["findings"]] == ["I01"]
