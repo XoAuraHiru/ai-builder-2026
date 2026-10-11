@@ -24,6 +24,7 @@ log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/leads", tags=["leads"])
 staff = require_roles("staff")
+BUSY = "The AI assistant is busy right now; please try again in a minute."
 
 
 def lead_or_404(db: Session, lead_id: str) -> Lead:
@@ -120,9 +121,12 @@ def lead_decisions(lead_id: str, db: Session = Depends(get_db), user: CurrentUse
 @router.post("/{lead_id}/draft-reply")
 def draft(lead_id: str, db: Session = Depends(get_db), llm: LLM = Depends(get_llm),
           model=Depends(get_agent_model), user: CurrentUser = Depends(staff)):
-    from app.agents.advisor import draft_reply
+    from app.agents.advisor import AgentUnavailable, draft_reply
 
-    out = draft_reply(db, lead_or_404(db, lead_id), llm, model)
+    try:
+        out = draft_reply(db, lead_or_404(db, lead_id), llm, model)
+    except AgentUnavailable as e:
+        raise HTTPException(status_code=503, detail=BUSY) from e
     db.commit()
     return out
 
@@ -130,9 +134,12 @@ def draft(lead_id: str, db: Session = Depends(get_db), llm: LLM = Depends(get_ll
 @router.post("/{lead_id}/ask")
 def ask(lead_id: str, body: AskIn, db: Session = Depends(get_db), llm: LLM = Depends(get_llm),
         model=Depends(get_agent_model), user: CurrentUser = Depends(staff)):
-    from app.agents.advisor import ask_about_lead
+    from app.agents.advisor import AgentUnavailable, ask_about_lead
 
-    answer = ask_about_lead(db, lead_or_404(db, lead_id), body.question, llm, model)
+    try:
+        answer = ask_about_lead(db, lead_or_404(db, lead_id), body.question, llm, model)
+    except AgentUnavailable as e:
+        raise HTTPException(status_code=503, detail=BUSY) from e
     db.commit()
     return {"answer": answer}
 

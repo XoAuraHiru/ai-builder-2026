@@ -5,6 +5,7 @@ The final draft is re-checked on the server, so a model that skips its complianc
 """
 import asyncio
 import json
+import logging
 import re
 import time
 
@@ -17,6 +18,8 @@ from app.ai.llm import LLM, LLMResult, price_usd
 from app.config import get_settings
 from app.models import Fund, Lead
 from app.services.compliance import check_compliance
+
+log = logging.getLogger(__name__)
 
 LEAD_INTEL = """You are Atrium's Lead Intelligence agent helping an advisor.
 Always call get_lead_profile first. Use list_house_funds when you mention funds.
@@ -58,8 +61,16 @@ def get_agent_model():
     """FastAPI dependency: the Gemini model id (ADK reads the Vertex AI settings from the environment) or offline."""
     settings = get_settings()
     if settings.llm_provider == "gemini":
-        return settings.gemini_flash_model
+        from google.adk.models import Gemini
+
+        from app.ai.llm import retry_options
+
+        return Gemini(model=settings.gemini_flash_model, retry_options=retry_options())
     return _offline_agent_llm()
+
+
+class AgentUnavailable(Exception):
+    """The agent could not finish (rate limit, timeout, model error). Callers answer 503, never 500."""
 
 
 def _snapshot(db: Session, lead: Lead) -> dict:
@@ -80,6 +91,10 @@ def _snapshot(db: Session, lead: Lead) -> dict:
 def build_agents(snapshot: dict, llm: LLM, model):
     from google.adk.agents import Agent
     from google.adk.tools.agent_tool import AgentTool
+    from google.genai import types
+
+    # Flash's quality and latency dial: LOW keeps the router-specialist round trip quick and cheap.
+    fast = types.GenerateContentConfig(thinking_config=types.ThinkingConfig(thinking_level="LOW"))
 
     def get_lead_profile() -> dict:
         """Return the lead's form answers, AI enrichment, Lead Score and Trust Score."""
@@ -99,11 +114,12 @@ def build_agents(snapshot: dict, llm: LLM, model):
 
     lead_intel = Agent(name="lead_intelligence", model=model,
                        description="Plans next steps and drafts replies for a lead.",
-                       instruction=LEAD_INTEL, tools=[get_lead_profile, list_house_funds, check_draft_compliance])
+                       instruction=LEAD_INTEL, tools=[get_lead_profile, list_house_funds, check_draft_compliance],
+                       generate_content_config=fast)
     trust = Agent(name="trust_and_fraud", model=model, description="Explains a lead's Trust Score and fraud signals.",
-                  instruction=TRUST, tools=[get_trust_report, get_lead_profile])
+                  instruction=TRUST, tools=[get_trust_report, get_lead_profile], generate_content_config=fast)
     router = Agent(name="advisor_concierge", model=model, instruction=ROUTER,
-                   tools=[AgentTool(agent=lead_intel), AgentTool(agent=trust)])
+                   tools=[AgentTool(agent=lead_intel), AgentTool(agent=trust)], generate_content_config=fast)
     return router, lead_intel
 
 
@@ -127,8 +143,16 @@ async def _run(agent, message: str) -> tuple[str, int, int]:
     return final, tokens_in, tokens_out
 
 
+def _run_agent(agent, message: str) -> tuple[str, int, int]:
+    try:
+        return asyncio.run(_run(agent, message))
+    except Exception as e:  # ADK wraps model errors in several types; the advisor only needs "try again"
+        log.warning("agent %s failed: %s", getattr(agent, "name", "?"), e)
+        raise AgentUnavailable(str(e)) from e
+
+
 def _model_name(model) -> str:
-    return model if isinstance(model, str) else getattr(model, "model", "agent")
+    return model if isinstance(model, str) else str(getattr(model, "model", "agent"))
 
 
 def _record(db: Session, lead: Lead, purpose: str, model, output: dict, tokens_in: int, tokens_out: int,
@@ -155,7 +179,7 @@ def draft_reply(db: Session, lead: Lead, llm: LLM, model) -> dict:
     _, lead_intel = build_agents(_snapshot(db, lead), llm, model)
     prompt = f"Draft the first reply email to {lead.full_name}."
     started = time.perf_counter()
-    text, tokens_in, tokens_out = asyncio.run(_run(lead_intel, prompt))
+    text, tokens_in, tokens_out = _run_agent(lead_intel, prompt)
     draft = _parse_draft(text)
     compliance = check_compliance(f"{draft.subject}\n\n{draft.body}", llm, db=db, subject_id=lead.id)
     output = {**draft.model_dump(), "compliance": compliance.model_dump()}
@@ -166,7 +190,7 @@ def draft_reply(db: Session, lead: Lead, llm: LLM, model) -> dict:
 def ask_about_lead(db: Session, lead: Lead, question: str, llm: LLM, model) -> str:
     router, _ = build_agents(_snapshot(db, lead), llm, model)
     started = time.perf_counter()
-    answer, tokens_in, tokens_out = asyncio.run(_run(router, question))
+    answer, tokens_in, tokens_out = _run_agent(router, question)
     _record(db, lead, "advisor_question", model, {"question": question, "answer": answer}, tokens_in, tokens_out,
             started, question)
     return answer

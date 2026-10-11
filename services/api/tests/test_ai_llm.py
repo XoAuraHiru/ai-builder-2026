@@ -82,3 +82,17 @@ def test_gemini_llm_wraps_errors():
 
 def test_get_llm_is_offline_fake_by_default():
     assert isinstance(get_llm(), FakeLLM)
+
+
+def test_gemini_client_is_built_with_rate_limit_retries(monkeypatch):
+    import google.genai as genai
+
+    captured = {}
+
+    class Client:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+    monkeypatch.setattr(genai, "Client", Client)
+    GeminiLLM(Settings(_env_file=None, gcp_project="p"))
+    assert captured["location"] == "global" and captured["http_options"].retry_options.attempts >= 3

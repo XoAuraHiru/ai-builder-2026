@@ -46,6 +46,14 @@ def price_usd(settings: Settings, model: str, tokens_in: int, tokens_out: int) -
     return round((tokens_in * rate_in + tokens_out * rate_out) / 1_000_000, 6)
 
 
+def retry_options():
+    """Back off and retry on rate limits and transient errors; new projects start with low Gemini quotas."""
+    from google.genai import types
+
+    return types.HttpRetryOptions(attempts=4, initial_delay=2.0, max_delay=20.0,
+                                  http_status_codes=[429, 500, 502, 503, 504])
+
+
 class FakeLLM:
     """Deterministic stand-in for tests and offline development. Responses are keyed by purpose."""
 
@@ -71,8 +79,10 @@ class GeminiLLM:
         self.settings = settings
         if client is None:
             from google import genai
+            from google.genai import types
 
-            client = genai.Client(enterprise=True, project=settings.gcp_project, location=settings.gemini_location)
+            client = genai.Client(enterprise=True, project=settings.gcp_project, location=settings.gemini_location,
+                                  http_options=types.HttpOptions(retry_options=retry_options()))
         self._client = client
 
     def generate_json(self, *, purpose, prompt, schema, attachments=None, pro=False) -> LLMResult:

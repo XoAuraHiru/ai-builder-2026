@@ -100,3 +100,29 @@ def test_cold_start_does_not_import_ai_sdks():
     out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120)
     assert out.returncode == 0, out.stderr
     assert out.stdout.strip() == "[]"
+
+
+class FailingLlm(BaseLlm):
+    model: str = "failing"
+
+    async def generate_content_async(self, llm_request: LlmRequest,
+                                     stream: bool = False) -> AsyncGenerator[LlmResponse, None]:
+        raise RuntimeError("429 RESOURCE_EXHAUSTED")
+        yield  # pragma: no cover
+
+
+def test_agent_failure_returns_503_not_500(agent_client, make_lead):
+    lead = make_lead()
+    agent_client.app.dependency_overrides[get_agent_model] = lambda: FailingLlm()
+    r = agent_client.post(f"/leads/{lead.id}/draft-reply", headers=STAFF)
+    assert r.status_code == 503 and "try again" in r.json()["detail"]
+    r = agent_client.post(f"/leads/{lead.id}/ask", json={"question": "Why?"}, headers=STAFF)
+    assert r.status_code == 503
+
+
+def test_gemini_agent_model_retries_rate_limits(monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "llm_provider", "gemini")
+    model = get_agent_model()
+    assert model.model == "gemini-3.8-flash" and model.retry_options.attempts >= 3
