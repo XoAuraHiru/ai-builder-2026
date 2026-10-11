@@ -1,0 +1,25 @@
+{
+  "intercept": -10.828834385412762,
+  "weights": {
+    "log_investable": 1.19240985272275,
+    "log_monthly": 0.47068351954475496,
+    "horizon": 0.9524515339523147,
+    "referral": 1.208459611110888,
+    "has_phone": 0.9168784717083786,
+    "completeness": 1.8186805487785844,
+    "goal_fit": 0.9911220437906622
+  },
+  "means": {
+    "log_investable": 4.773244425000001,
+    "log_monthly": 2.498444555,
+    "horizon": 0.49262500625,
+    "referral": 0.27,
+    "has_phone": 0.69625,
+    "completeness": 0.4815625,
+    "goal_fit": 0.745
+  },
+  "source": "local",
+  "model_name": "atrium-lead-conversion-local",
+  "auc": 0.7941,
+  "trained_at": "2026-10-11T19:03:11+00:00"
+}
