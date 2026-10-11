@@ -16,7 +16,11 @@ count_lines() { grep -cx -- "$1" || true; }
 
 step "project"
 gcloud projects describe "$PROJECT_ID" >/dev/null 2>&1 || gcloud projects create "$PROJECT_ID" --name="Atrium AI Builder Cup"
-gcloud billing projects link "$PROJECT_ID" --billing-account="$BILLING" >/dev/null
+# Link only when needed: re-linking an already-linked project fails once the account is at its project quota.
+LINKED="$(gcloud billing projects describe "$PROJECT_ID" --format='value(billingAccountName)' 2>/dev/null || true)"
+if [ "$LINKED" != "billingAccounts/${BILLING}" ]; then
+  gcloud billing projects link "$PROJECT_ID" --billing-account="$BILLING" >/dev/null
+fi
 
 step "APIs"
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com \

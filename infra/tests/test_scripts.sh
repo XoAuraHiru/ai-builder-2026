@@ -20,6 +20,7 @@ case "$*" in
   *"sql users list"*) [ -n "${FAKE_EXISTING:-}" ] && echo "atrium" || echo "postgres" ;;
   *"secrets versions list"*) [ -n "${FAKE_EXISTING:-}" ] && echo "projects/p/secrets/atrium-database-url/versions/1" ;;
   *"billing budgets list"*) [ -n "${FAKE_EXISTING:-}" ] && echo "Atrium monthly budget" ;;
+  *"billing projects describe"*) [ -n "${FAKE_EXISTING:-}" ] && echo "billingAccounts/TEST-BILLING" ;;
   *"run services describe atrium-web"*"run.googleapis.com/urls"*)
     { [ -n "${FAKE_WEB_EXISTS:-}" ] || [ -f "$FAKE_LOG.web" ]; } \
       && echo '["https://atrium-web-123.us-central1.run.app","https://atrium-web-test.a.run.app"]' || exit 1 ;;
@@ -55,6 +56,7 @@ echo "setup_gcp.sh rerun on a project that is already set up"
 FAKE_EXISTING=1 BILLING_ACCOUNT=TEST-BILLING bash infra/setup_gcp.sh > "$WORK/setup2.out" 2>&1
 STATUS=$?
 check "exits 0 (was $STATUS)" '[ "$STATUS" -eq 0 ]'
+check "does not re-link billing (fails at the billing project quota)" '! grep -q "billing projects link" "$FAKE_LOG"'
 check "leaves the live database password alone" '! grep -q "sql users set-password" "$FAKE_LOG"'
 check "does not add a new secret version" '! grep -q "secrets versions add" "$FAKE_LOG"'
 check "does not create a second budget" '! grep -q "billing budgets create" "$FAKE_LOG"'
