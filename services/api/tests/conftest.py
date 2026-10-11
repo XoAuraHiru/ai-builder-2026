@@ -10,6 +10,16 @@ os.environ.setdefault("PUBSUB_ENABLED", "false")
 os.environ["AUTO_SEED"] = "false"  # never seed test databases, even if a local .env says otherwise
 
 
+@pytest.fixture(autouse=True)
+def _fresh_event_bus():
+    """One test's subscribers never leak into the next."""
+    from app.events import InProcessEventBus, set_event_bus
+
+    set_event_bus(InProcessEventBus())
+    yield
+    set_event_bus(InProcessEventBus())
+
+
 @pytest.fixture()
 def db():
     from app.db import Base, SessionLocal, engine, init_db

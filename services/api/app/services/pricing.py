@@ -5,6 +5,7 @@ import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.events import emit
 from app.models import Fund, Price
 from app.models.base import utcnow
 
@@ -42,6 +43,7 @@ def publish_prices(db: Session, fund_code: str, nav: pd.Series, units_in_issue: 
         row.status = "published"
         row.published_at = utcnow()
         n += 1
+        emit("PricePublished", {"fund_code": fund_code, "as_of": as_of.isoformat(), "nav": f"{row.nav:.6f}"})
     db.flush()
     return n
 

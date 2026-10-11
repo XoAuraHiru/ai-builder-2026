@@ -24,6 +24,9 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    from app.events import get_event_bus, set_event_bus
+
+    set_event_bus(get_event_bus(settings))
     app = FastAPI(title="Atrium API", version="0.1.0", lifespan=lifespan)
     app.state.settings = settings
     app.include_router(health.router)
