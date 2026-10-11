@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     docai_location: str = "us"
     docai_proofing_processor: str = ""      # Document AI ID Proofing processor id; empty disables fraud signals
     lead_capture_limit_per_hour: int = 20   # per device and per IP hash, checked before any AI call
+    lead_capture_global_per_hour: int = 60  # all public submissions together: caps AI spend if identifiers are forged
 
     market_data_provider: str = "fake"      # fake | yfinance | alpaca
     market_cache_dir: str = "data/cache"

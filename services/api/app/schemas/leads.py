@@ -2,7 +2,9 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+import re
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 SourceOfFunds = Literal["salary", "business", "savings", "inheritance", "property_sale", "investments", "other",
                         "unspecified"]
@@ -21,6 +23,22 @@ class LeadIn(BaseModel):
     source_of_funds: SourceOfFunds = "unspecified"
     notes: str | None = Field(default=None, max_length=2000)
     device_id: str = Field(min_length=8, max_length=64, pattern=r"^[A-Za-z0-9-]+$")
+
+    @model_validator(mode="after")
+    def _normalise_phone(self):
+        """Accept '+1 415 555 0123' or '(415) 555-0123' the way people type them; store +<country><number>."""
+        if self.phone:
+            raw = self.phone.strip()
+            digits = re.sub(r"\D", "", raw)
+            if raw.startswith("+"):
+                self.phone = "+" + digits
+            elif self.country == "US" and len(digits) == 10:
+                self.phone = "+1" + digits
+            elif self.country == "US" and len(digits) == 11 and digits.startswith("1"):
+                self.phone = "+" + digits
+            else:
+                self.phone = digits or None
+        return self
 
 
 class LeadAck(BaseModel):

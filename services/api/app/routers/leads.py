@@ -37,7 +37,9 @@ def lead_or_404(db: Session, lead_id: str) -> Lead:
 @router.post("", response_model=LeadAck, status_code=201)
 def capture_lead(body: LeadIn, request: Request, db: Session = Depends(get_db), llm: LLM = Depends(get_llm)):
     ip = ip_hash(request)
-    check_capture_rate(db, body.device_id, ip, get_settings().lead_capture_limit_per_hour)
+    settings = get_settings()
+    check_capture_rate(db, body.device_id, ip, settings.lead_capture_limit_per_hour,
+                       settings.lead_capture_global_per_hour)
     lead = Lead(**body.model_dump(), ip_hash=ip)
     db.add(lead)
     db.flush()
