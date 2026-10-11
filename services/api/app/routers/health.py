@@ -1,8 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 router = APIRouter(tags=["health"])
 
 
 @router.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "service": "atrium-api"}
+def health(request: Request) -> dict[str, str]:
+    return {"status": "ok", "service": "atrium-api", "env": request.app.state.settings.env}
