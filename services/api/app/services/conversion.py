@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.events import emit
-from app.models import Account, Lead, Person
+from app.models import Account, Lead, LeadConversion, Person
 
 RISK_BAND = {"low": 2, "medium": 3, "high": 4}
 CONVERTIBLE = ("qualified", "proposal", "onboarding")
@@ -42,7 +42,11 @@ def convert_lead(db: Session, lead: Lead, by_email: str,
     db.add(account)
     db.flush()
     lead.stage, lead.converted_person_id = "client", person.id
+    reason = (override_reason or "").strip() or None
+    db.add(LeadConversion(lead_id=lead.id, person_id=person.id, account_id=account.id, converted_by=by_email,
+                          trust_score=lead.trust_score, trust_band=lead.trust_band, override_reason=reason))
+    # The reason is free text staff may fill with personal details: it stays in Cloud SQL, the event only flags it.
     emit("ClientOnboarded", {"lead_id": lead.id, "person_id": person.id, "account_id": account.id,
                              "trust_score": lead.trust_score, "trust_band": lead.trust_band,
-                             "override_reason": override_reason, "by": by_email})
+                             "override_recorded": reason is not None, "by": by_email})
     return person, account

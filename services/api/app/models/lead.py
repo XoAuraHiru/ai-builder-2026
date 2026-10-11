@@ -55,3 +55,17 @@ class IdentityCheck(IdMixin, Base):
     fraud_signals: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     findings: Mapped[list] = mapped_column(JSON, nullable=False)
     source: Mapped[str] = mapped_column(String(40), nullable=False)
+
+
+class LeadConversion(IdMixin, Base):
+    """Durable record of who turned a lead into a client, against which trust result, and why if overridden."""
+
+    __tablename__ = "lead_conversion"
+
+    lead_id: Mapped[str] = mapped_column(ForeignKey("lead.id"), nullable=False, unique=True)
+    person_id: Mapped[str] = mapped_column(ForeignKey("person.id"), nullable=False)
+    account_id: Mapped[str] = mapped_column(ForeignKey("account.id"), nullable=False)
+    converted_by: Mapped[str] = mapped_column(String(200), nullable=False)
+    trust_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    trust_band: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    override_reason: Mapped[str | None] = mapped_column(Text, nullable=True)

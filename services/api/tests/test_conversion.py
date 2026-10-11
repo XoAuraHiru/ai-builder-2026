@@ -45,3 +45,21 @@ def test_existing_email_and_double_conversion_are_refused(client, people, make_l
     assert client.post(f"/leads/{lead.id}/convert", json={}, headers=STAFF).status_code == 201
     again = client.post(f"/leads/{lead.id}/convert", json={}, headers=STAFF)
     assert again.status_code == 409 and "already" in again.json()["detail"]
+
+
+def test_override_reason_is_recorded_durably_and_kept_out_of_events(client, db, people, make_lead):
+    from sqlalchemy import select
+
+    from app.models import LeadConversion
+
+    bus = InProcessEventBus()
+    set_event_bus(bus)
+    lead = make_lead(trust_band="blocked", trust_score=20)
+    qualify(client, lead.id)
+    reason = "Verified passport in person on 12 Oct; document AI flag was a scanner artefact"
+    assert client.post(f"/leads/{lead.id}/convert", json={"override_reason": reason}, headers=STAFF).status_code == 201
+    record = db.scalar(select(LeadConversion).where(LeadConversion.lead_id == lead.id))
+    assert record.override_reason == reason and record.converted_by == "daniel@atrium.demo"
+    assert record.trust_band == "blocked" and record.account_id
+    event = next(e for e in bus.history if e.type == "ClientOnboarded")
+    assert event.payload["override_recorded"] is True and "override_reason" not in event.payload
