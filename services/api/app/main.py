@@ -4,22 +4,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.db import init_db
 from app.routers import accounts, funds, health, me
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
-    settings = get_settings()
-    if settings.auto_seed:
-        from app.db import SessionLocal
-        from app.seed.generate import generate, is_seeded
+    from app.seed.bootstrap import bootstrap_database
 
-        with SessionLocal() as db:
-            if not is_seeded(db):
-                generate(db, settings)
-                db.commit()
+    app.state.bootstrap = bootstrap_database(get_settings())
     yield
 
 
