@@ -22,3 +22,18 @@ def db():
         session.rollback()
         session.close()
         Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture()
+def account(db):
+    from datetime import date
+
+    from app.models import Account, Person
+
+    person = Person(kind="investor", full_name="Priya Raman", email="priya@example.test", country="US")
+    db.add(person)
+    db.flush()
+    acc = Account(person_id=person.id, number="ACC-0001", opened_on=date(2026, 1, 5))
+    db.add(acc)
+    db.commit()
+    return acc
