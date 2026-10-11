@@ -6,6 +6,10 @@ Atrium is an AI-native wealth operating system for US and global markets:
 **Acquire → Invest → Trade → Operate**, with Gemini, ADK agents, BigQuery and Document AI
 doing the scoring, explaining, guarding and reconciling at every step.
 
+## Live demo
+
+https://atrium-web-1070337126396.us-central1.run.app (pick a demo persona; every person and number is synthetic).
+
 ## Documents
 
 | File | What it is |
