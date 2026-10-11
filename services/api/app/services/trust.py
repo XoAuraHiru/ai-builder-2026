@@ -64,7 +64,7 @@ def _contact_signals(db: Session, lead: Lead) -> list[TrustSignal]:
     if matches:
         shared = "email" if any(m.email.lower() == lead.email.lower() for m in matches) else "phone"
         ids = ", ".join(m.id for m in matches[:3])
-        out.append(TrustSignal("T04", "Contact shared with another lead", -20,
+        out.append(TrustSignal("T04", "Contact shared with another lead", -25,
                                f"Shares its {shared} with {len(matches)} other lead(s): {ids}", "rule"))
     same_device = db.scalar(select(func.count()).select_from(Lead).where(
         Lead.id != lead.id, Lead.device_id == lead.device_id,

@@ -29,6 +29,7 @@ def test_duplicate_contact_names_the_other_lead(db, make_lead):
     second = make_lead(email="other@example.test")  # same phone
     report = assess_trust(db, second, None, None)
     assert codes(report) == ["T04"] and first.id in report.signals[0].evidence
+    assert report.band == "review"  # a contact shared with another applicant always earns a second look
 
 
 def test_device_velocity_counts_only_last_24_hours(db, make_lead):

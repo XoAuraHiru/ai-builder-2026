@@ -29,7 +29,10 @@ export function Nav() {
             </Link>
           ))}
         </nav>
-        <Link href="/login" className="ml-auto text-sm text-slate-500">
+        <Link href="/apply" className="ml-auto text-sm text-slate-500">
+          Prospect form
+        </Link>
+        <Link href="/login" className="text-sm text-slate-500">
           Switch user
         </Link>
       </div>
