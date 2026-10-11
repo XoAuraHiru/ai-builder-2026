@@ -10,9 +10,10 @@ from app.auth import CurrentUser, require_roles
 from app.config import get_settings
 from app.db import get_db
 from app.events import emit
-from app.models import Lead
+from app.models import AIDecision, Lead
 from app.schemas.leads import IdentityCheckOut, LeadAck, LeadIn, LeadOut, StageIn
 from app.services.capture_guard import check_capture_rate, ip_hash
+from app.services.lead_pipeline import process_lead, score_pending
 from app.services.identity import (MAX_BYTES, DocumentTooLarge, ProofingClient, UnsupportedDocument,
                                    analyze_identity, get_proofing)
 from app.services.trust import apply_trust
@@ -31,7 +32,7 @@ def lead_or_404(db: Session, lead_id: str) -> Lead:
 
 
 @router.post("", response_model=LeadAck, status_code=201)
-def capture_lead(body: LeadIn, request: Request, db: Session = Depends(get_db)):
+def capture_lead(body: LeadIn, request: Request, db: Session = Depends(get_db), llm: LLM = Depends(get_llm)):
     ip = ip_hash(request)
     check_capture_rate(db, body.device_id, ip, get_settings().lead_capture_limit_per_hour)
     lead = Lead(**body.model_dump(), ip_hash=ip)
@@ -39,7 +40,18 @@ def capture_lead(body: LeadIn, request: Request, db: Session = Depends(get_db)):
     db.flush()
     emit("LeadCreated", {"lead_id": lead.id, "source": lead.source})
     db.commit()
+    try:
+        process_lead(db, lead, llm)
+        db.commit()
+    except Exception:  # the prospect's submission must never fail because scoring did
+        db.rollback()
+        log.exception("scoring failed for lead %s; it stays pending", lead.id)
     return LeadAck(id=lead.id, status="received")
+
+
+@router.post("/score-pending")
+def score_pending_leads(db: Session = Depends(get_db), llm: LLM = Depends(get_llm), user: CurrentUser = Depends(staff)):
+    return {"scored": score_pending(db, llm)}
 
 
 @router.get("", response_model=list[LeadOut])
@@ -84,3 +96,20 @@ def upload_identity_document(lead_id: str, file: UploadFile = File(...), db: Ses
     return IdentityCheckOut(id=check.id, extracted=check.extracted, fraud_signals=check.fraud_signals,
                             findings=check.findings, source=check.source, trust_score=report.score,
                             trust_band=report.band)
+
+
+@router.post("/{lead_id}/rescore", response_model=LeadOut)
+def rescore(lead_id: str, db: Session = Depends(get_db), llm: LLM = Depends(get_llm),
+            user: CurrentUser = Depends(staff)):
+    lead = process_lead(db, lead_or_404(db, lead_id), llm)
+    db.commit()
+    return lead
+
+
+@router.get("/{lead_id}/decisions")
+def lead_decisions(lead_id: str, db: Session = Depends(get_db), user: CurrentUser = Depends(staff)):
+    lead_or_404(db, lead_id)
+    rows = db.scalars(select(AIDecision).where(AIDecision.subject_id == lead_id)
+                      .order_by(AIDecision.created_at)).all()
+    return [{"id": d.id, "created_at": d.created_at, "agent": d.agent, "purpose": d.purpose, "model": d.model,
+             "confidence": d.confidence, "cost_usd": str(d.cost_usd), "output": d.output} for d in rows]
