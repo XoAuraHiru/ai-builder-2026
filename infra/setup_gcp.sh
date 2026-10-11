@@ -29,9 +29,13 @@ gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregi
   firebase.googleapis.com identitytoolkit.googleapis.com iam.googleapis.com billingbudgets.googleapis.com
 
 step "Cloud SQL"
+# Smallest tier (shared core), zonal, 10 GB SSD, daily automated backups (a few MB of data: about a cent a month).
 if ! gcloud sql instances describe atrium-db >/dev/null 2>&1; then
   gcloud sql instances create atrium-db --database-version=POSTGRES_16 --edition=ENTERPRISE \
-    --tier=db-f1-micro --region="$REGION" --storage-size=10GB --availability-type=ZONAL
+    --tier=db-f1-micro --region="$REGION" --storage-size=10GB --availability-type=ZONAL \
+    --backup-start-time=03:00 --retained-backups-count=7
+elif [ "$(gcloud sql instances describe atrium-db --format='value(settings.backupConfiguration.enabled)')" != "True" ]; then
+  gcloud sql instances patch atrium-db --backup-start-time=03:00 --retained-backups-count=7 --quiet >/dev/null
 fi
 gcloud sql databases describe atrium --instance=atrium-db >/dev/null 2>&1 || gcloud sql databases create atrium --instance=atrium-db
 

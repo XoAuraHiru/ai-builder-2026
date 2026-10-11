@@ -17,6 +17,7 @@ case "$*" in "run deploy atrium-web"*) touch "$FAKE_LOG.web" ;; esac
 case "$*" in
   "auth list"*) echo "tester@example.test" ;;
   *"sql instances describe"*"connectionName"*) echo "proj:us-central1:atrium-db" ;;
+  *"sql instances describe"*"backupConfiguration"*) [ -n "${FAKE_EXISTING:-}" ] && echo "False" ;;
   *"sql users list"*) [ -n "${FAKE_EXISTING:-}" ] && echo "atrium" || echo "postgres" ;;
   *"secrets versions list"*) [ -n "${FAKE_EXISTING:-}" ] && echo "projects/p/secrets/atrium-database-url/versions/1" ;;
   *"billing budgets list"*) [ -n "${FAKE_EXISTING:-}" ] && echo "Atrium monthly budget" ;;
@@ -47,6 +48,7 @@ check "exits 0 (was $STATUS)" '[ "$STATUS" -eq 0 ]'
 check "stores the database URL secret" 'grep -q "secrets versions add atrium-database-url" "$FAKE_LOG"'
 check "creates the service account" 'grep -q "iam service-accounts create atrium-api" "$FAKE_LOG"'
 check "creates the Pub/Sub topic" 'grep -q "pubsub topics create atrium-events" "$FAKE_LOG"'
+check "creates the database with daily backups" 'grep "sql instances create atrium-db" "$FAKE_LOG" | grep -q -- "--backup-start-time"'
 check "creates the image repository" 'grep -q "artifacts repositories create cloud-run-source-deploy" "$FAKE_LOG"'
 check "sets an image cleanup policy" 'grep -q "artifacts repositories set-cleanup-policies cloud-run-source-deploy" "$FAKE_LOG"'
 check "creates a project-scoped budget alert" 'grep "billing budgets create" "$FAKE_LOG" | grep -q "filter-projects=projects/atrium-cup-2026"'
@@ -57,6 +59,7 @@ FAKE_EXISTING=1 BILLING_ACCOUNT=TEST-BILLING bash infra/setup_gcp.sh > "$WORK/se
 STATUS=$?
 check "exits 0 (was $STATUS)" '[ "$STATUS" -eq 0 ]'
 check "does not re-link billing (fails at the billing project quota)" '! grep -q "billing projects link" "$FAKE_LOG"'
+check "turns on backups for an existing database without them" 'grep -q "sql instances patch atrium-db.*--backup-start-time" "$FAKE_LOG"'
 check "leaves the live database password alone" '! grep -q "sql users set-password" "$FAKE_LOG"'
 check "does not add a new secret version" '! grep -q "secrets versions add" "$FAKE_LOG"'
 check "does not create a second budget" '! grep -q "billing budgets create" "$FAKE_LOG"'
