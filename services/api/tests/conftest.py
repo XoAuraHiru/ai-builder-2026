@@ -50,6 +50,17 @@ def account(db):
 
 
 @pytest.fixture()
+def people(db):
+    from app.models import Person
+
+    advisor = Person(kind="advisor", full_name="Daniel Okafor", email="daniel@atrium.demo")
+    investor = Person(kind="investor", full_name="Priya Raman", email="priya@atrium.demo")
+    db.add_all([advisor, investor])
+    db.commit()
+    return {"advisor": advisor, "investor": investor}
+
+
+@pytest.fixture()
 def client(db):
     from fastapi.testclient import TestClient
 
