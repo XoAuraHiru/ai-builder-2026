@@ -1,10 +1,14 @@
-"""Create tables and seed once, safely when several Cloud Run instances start against an empty database."""
+"""Create tables and seed once, safely when several Cloud Run instances start against an empty database.
+
+Runs on every cold start, so the already-seeded path stays light: the generator, pandas-heavy pricing
+and yfinance are imported only when the database is actually empty.
+"""
 import logging
 
-from sqlalchemy import text
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError, ProgrammingError
+from sqlalchemy.orm import Session
 
-import app.seed.generate as gen
 from app.config import Settings
 from app.db import Base, SessionLocal
 
@@ -12,6 +16,12 @@ log = logging.getLogger(__name__)
 
 # Any constant shared by every instance; Postgres serialises holders of the same advisory lock key.
 BOOTSTRAP_LOCK_KEY = 7_202_610
+
+
+def is_seeded(db: Session) -> bool:
+    from app.models import Person
+
+    return (db.scalar(select(func.count()).select_from(Person)) or 0) > 0
 
 
 def bootstrap_database(settings: Settings) -> str:
@@ -27,9 +37,11 @@ def bootstrap_database(settings: Settings) -> str:
             if not settings.auto_seed:
                 db.commit()
                 return "disabled"
-            if gen.is_seeded(db):
+            if is_seeded(db):
                 db.commit()
                 return "skipped"
+            import app.seed.generate as gen
+
             report = gen.generate(db, settings)
             db.commit()
             log.info("seeded database: %s", report)

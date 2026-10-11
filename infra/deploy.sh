@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Deploys the API and web services to Cloud Run.
 # Usage: bash infra/deploy.sh            (AUTH_MODE=firebase plus FIREBASE_* vars to require Firebase sign-in)
+# Both services scale to zero by default: you pay only while requests are served.
+# For the judging window keep them warm: API_MIN_INSTANCES=1 WEB_MIN_INSTANCES=1 bash infra/deploy.sh
 set -euo pipefail
 PROJECT_ID="${PROJECT_ID:-atrium-cup-2026}"
 REGION="${REGION:-us-central1}"
 AUTH_MODE="${AUTH_MODE:-dev}"
+API_MIN_INSTANCES="${API_MIN_INSTANCES:-0}"
+WEB_MIN_INSTANCES="${WEB_MIN_INSTANCES:-0}"
 export CLOUDSDK_CORE_PROJECT="$PROJECT_ID"
 cd "$(dirname "$0")/.."
 bash infra/preflight.sh
@@ -38,12 +42,12 @@ gcloud run deploy atrium-api --source services/api --region "$REGION" --allow-un
   --service-account "$SA" --add-cloudsql-instances "$CONN" \
   --set-secrets "DATABASE_URL=atrium-database-url:latest" \
   --set-env-vars "$API_ENV" \
-  --min-instances 1 --max-instances 3 --memory 1Gi --cpu 1 --timeout 300
+  --min-instances "$API_MIN_INSTANCES" --max-instances 3 --memory 1Gi --cpu 1 --cpu-boost --timeout 300
 API_URL="$(gcloud run services describe atrium-api --region "$REGION" --format='value(status.url)')"
 
 gcloud run deploy atrium-web --source apps/web --region "$REGION" --allow-unauthenticated --quiet \
   --set-env-vars "API_URL=${API_URL},AUTH_MODE=${AUTH_MODE},FIREBASE_PROJECT_ID=${PROJECT_ID},FIREBASE_API_KEY=${FIREBASE_API_KEY:-},FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-},FIREBASE_APP_ID=${FIREBASE_APP_ID:-}" \
-  --min-instances 1 --max-instances 3 --memory 512Mi
+  --min-instances "$WEB_MIN_INSTANCES" --max-instances 3 --memory 512Mi --cpu-boost
 WEB_URL="$(gcloud run services describe atrium-web --region "$REGION" --format='value(status.url)')"
 
 WEB_ORIGINS="$(web_origins)"

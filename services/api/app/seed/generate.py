@@ -11,11 +11,11 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
 from app.models import Account, Instruction, Person
+from app.seed.bootstrap import is_seeded
 from app.seed.funds import HOUSE_FUNDS, all_tickers, seed_funds
 from app.services.ledger import apply_posting, holdings, q_cash, q_units
 from app.services.market_data import MarketDataError, SnapshotMarketData, get_market_data
@@ -58,10 +58,6 @@ class GenerateReport:
     prices: int
     last_price_date: date
     price_source: str
-
-
-def is_seeded(db: Session) -> bool:
-    return (db.scalar(select(func.count()).select_from(Person)) or 0) > 0
 
 
 def _month_starts(start: date, end: date) -> list[date]:
