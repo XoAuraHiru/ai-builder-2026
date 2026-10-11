@@ -1,14 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+import logging
+from datetime import date
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.ai.llm import LLM, LLMError, get_llm
 from app.auth import CurrentUser, require_roles
 from app.config import get_settings
 from app.db import get_db
 from app.events import emit
 from app.models import Lead
-from app.schemas.leads import LeadAck, LeadIn, LeadOut, StageIn
+from app.schemas.leads import IdentityCheckOut, LeadAck, LeadIn, LeadOut, StageIn
 from app.services.capture_guard import check_capture_rate, ip_hash
+from app.services.identity import (MAX_BYTES, DocumentTooLarge, ProofingClient, UnsupportedDocument,
+                                   analyze_identity, get_proofing)
+from app.services.trust import apply_trust
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/leads", tags=["leads"])
 staff = require_roles("staff")
@@ -53,3 +62,25 @@ def change_stage(lead_id: str, body: StageIn, db: Session = Depends(get_db), use
     emit("LeadStageChanged", {"lead_id": lead.id, "from": previous, "to": body.stage, "by": user.email})
     db.commit()
     return lead
+
+
+@router.post("/{lead_id}/documents", response_model=IdentityCheckOut, status_code=201)
+def upload_identity_document(lead_id: str, file: UploadFile = File(...), db: Session = Depends(get_db),
+                             llm: LLM = Depends(get_llm), proofing: ProofingClient | None = Depends(get_proofing),
+                             user: CurrentUser = Depends(staff)):
+    lead = lead_or_404(db, lead_id)
+    data = file.file.read(MAX_BYTES + 1)
+    try:
+        check = analyze_identity(db, lead, data, file.content_type or "", llm, proofing, date.today())
+    except UnsupportedDocument as e:
+        raise HTTPException(status_code=415, detail=str(e)) from e
+    except DocumentTooLarge as e:
+        raise HTTPException(status_code=413, detail=str(e)) from e
+    except LLMError as e:
+        log.warning("identity analysis failed for lead %s: %s", lead_id, e)
+        raise HTTPException(status_code=502, detail="Document analysis is temporarily unavailable.") from e
+    report = apply_trust(db, lead)
+    db.commit()
+    return IdentityCheckOut(id=check.id, extracted=check.extracted, fraud_signals=check.fraud_signals,
+                            findings=check.findings, source=check.source, trust_score=report.score,
+                            trust_band=report.band)

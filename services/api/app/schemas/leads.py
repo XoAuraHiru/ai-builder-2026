@@ -58,3 +58,13 @@ class LeadOut(BaseModel):
     scored_at: datetime | None
     scoring_error: str | None
     converted_person_id: str | None
+
+
+class IdentityCheckOut(BaseModel):
+    id: str
+    extracted: dict
+    fraud_signals: dict | None
+    findings: list
+    source: str
+    trust_score: int
+    trust_band: str
