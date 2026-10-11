@@ -17,6 +17,9 @@ case "$*" in
   "auth list"*) echo "tester@example.test" ;;
   *"sql instances describe"*"connectionName"*) echo "proj:us-central1:atrium-db" ;;
   *"sql users list"*) echo "postgres" ;;
+  *"run services describe atrium-web"*"run.googleapis.com/urls"*)
+    { [ -n "${FAKE_WEB_EXISTS:-}" ] || [ -f "$FAKE_LOG.web" ]; } \
+      && echo '["https://atrium-web-123.us-central1.run.app","https://atrium-web-test.a.run.app"]' || exit 1 ;;
   *"run services describe atrium-web"*) { [ -n "${FAKE_WEB_EXISTS:-}" ] || [ -f "$FAKE_LOG.web" ]; } && echo "https://atrium-web-test.a.run.app" || exit 1 ;;
   *"run services describe atrium-api"*) echo "https://atrium-api-test.a.run.app" ;;
   "projects describe"*) exit 0 ;;
@@ -47,7 +50,8 @@ FAKE_WEB_EXISTS=1 bash infra/deploy.sh > "$WORK/deploy.out" 2>&1
 STATUS=$?
 API_DEPLOY="$(grep -m1 "run deploy atrium-api" "$FAKE_LOG")"
 check "exits 0 (was $STATUS)" '[ "$STATUS" -eq 0 ]'
-check "API deploy keeps CORS for the live web origin" 'echo "$API_DEPLOY" | grep -q "CORS_ORIGINS=https://atrium-web-test.a.run.app"'
+check "API deploy keeps CORS for the live web origin" 'echo "$API_DEPLOY" | grep -q "CORS_ORIGINS=.*https://atrium-web-test.a.run.app"'
+check "API deploy allows both Cloud Run URLs of the web service" 'echo "$API_DEPLOY" | grep -q "https://atrium-web-123.us-central1.run.app"'
 
 echo "deploy.sh on the very first release"
 : > "$FAKE_LOG"; rm -f "$FAKE_LOG.web"
@@ -55,5 +59,6 @@ bash infra/deploy.sh > "$WORK/deploy1.out" 2>&1
 STATUS=$?
 check "exits 0 (was $STATUS)" '[ "$STATUS" -eq 0 ]'
 check "sets CORS after the web service exists" 'grep "run services update atrium-api" "$FAKE_LOG" | grep -q "CORS_ORIGINS="'
+check "first-release CORS allows both Cloud Run URLs" 'grep "run services update atrium-api" "$FAKE_LOG" | grep -q "https://atrium-web-123.us-central1.run.app"'
 
 [ "$FAILS" -eq 0 ] && echo "all script tests passed" || { echo "$FAILS script test(s) failed"; exit 1; }

@@ -12,10 +12,22 @@ bash infra/preflight.sh
 CONN="$(gcloud sql instances describe atrium-db --format='value(connectionName)')"
 SA="atrium-api@${PROJECT_ID}.iam.gserviceaccount.com"
 
-# --set-env-vars replaces the whole map, so carry the live web origin into CORS on every API redeploy.
-PREV_WEB_URL="$(gcloud run services describe atrium-web --region "$REGION" --format='value(status.url)' 2>/dev/null || true)"
+# Every URL Cloud Run serves the web app on (it has a project-number URL and a legacy hash URL), comma-separated.
+web_origins() {
+  local urls
+  urls="$(gcloud run services describe atrium-web --region "$REGION" \
+    --format='value(metadata.annotations["run.googleapis.com/urls"])' 2>/dev/null || true)"
+  urls="$(printf '%s' "$urls" | tr -d '[]" ')"
+  if [ -z "$urls" ]; then
+    urls="$(gcloud run services describe atrium-web --region "$REGION" --format='value(status.url)' 2>/dev/null || true)"
+  fi
+  printf '%s' "$urls"
+}
+
+# --set-env-vars replaces the whole map, so carry the live web origins into CORS on every API redeploy.
+PREV_WEB_ORIGINS="$(web_origins)"
 CORS="http://localhost:3000"
-if [ -n "$PREV_WEB_URL" ]; then CORS="${PREV_WEB_URL},${CORS}"; fi
+if [ -n "$PREV_WEB_ORIGINS" ]; then CORS="${PREV_WEB_ORIGINS},${CORS}"; fi
 
 # "^@^" makes @ the separator, because CORS_ORIGINS itself contains a comma.
 API_ENV="^@^ENV=dev@AUTH_MODE=${AUTH_MODE}@GCP_PROJECT=${PROJECT_ID}@GCP_LOCATION=${REGION}"
@@ -34,10 +46,11 @@ gcloud run deploy atrium-web --source apps/web --region "$REGION" --allow-unauth
   --min-instances 1 --max-instances 3 --memory 512Mi
 WEB_URL="$(gcloud run services describe atrium-web --region "$REGION" --format='value(status.url)')"
 
-if [ "$WEB_URL" != "$PREV_WEB_URL" ]; then
-  # First release, or the web URL changed: the API learns the web origin now.
+WEB_ORIGINS="$(web_origins)"
+if [ "$WEB_ORIGINS" != "$PREV_WEB_ORIGINS" ]; then
+  # First release, or the web URLs changed: the API learns the web origins now.
   gcloud run services update atrium-api --region "$REGION" --quiet \
-    --update-env-vars "^@^CORS_ORIGINS=${WEB_URL},http://localhost:3000" >/dev/null
+    --update-env-vars "^@^CORS_ORIGINS=${WEB_ORIGINS},http://localhost:3000" >/dev/null
 fi
 echo "API: $API_URL"
 echo "WEB: $WEB_URL"
