@@ -57,7 +57,7 @@ def test_firebase_mode_verifies_bearer_token(client, db, world, monkeypatch):
     def fake_verify(token):
         if token != "good":
             raise ValueError("bad token")
-        return {"uid": "fb-priya", "email": "priya@atrium.demo"}
+        return {"uid": "fb-priya", "email": "priya@atrium.demo", "email_verified": True}
 
     monkeypatch.setattr(get_settings(), "auth_mode", "firebase")
     monkeypatch.setattr(auth_mod, "_verify_firebase_token", fake_verify)
@@ -67,3 +67,15 @@ def test_firebase_mode_verifies_bearer_token(client, db, world, monkeypatch):
     assert client.get(url, headers={"Authorization": "Bearer bad"}).status_code == 401
     assert client.get(url).status_code == 401
     assert db.scalar(select(Person).where(Person.email == "priya@atrium.demo")).firebase_uid == "fb-priya"
+
+
+def test_firebase_unverified_email_cannot_claim_a_person(client, db, world, monkeypatch):
+    import app.auth as auth_mod
+
+    monkeypatch.setattr(get_settings(), "auth_mode", "firebase")
+    monkeypatch.setattr(auth_mod, "_verify_firebase_token",
+                        lambda token: {"uid": "attacker", "email": "omar@atrium.demo", "email_verified": False})
+    acc = account_of(db, "priya@atrium.demo")
+    r = client.get(f"/accounts/{acc.id}/portfolio?{AS_OF}", headers={"Authorization": "Bearer forged"})
+    assert r.status_code == 401
+    assert db.scalar(select(Person).where(Person.email == "omar@atrium.demo")).firebase_uid is None

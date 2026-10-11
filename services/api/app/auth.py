@@ -66,7 +66,8 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> Current
         raise _unauthorized("invalid or expired token") from e
     uid, email = claims.get("uid", ""), (claims.get("email") or "").lower()
     person = db.scalar(select(Person).where(Person.firebase_uid == uid))
-    if person is None and email:
+    # Email is only proof of identity once Firebase has verified it; self sign-up can claim any address.
+    if person is None and email and claims.get("email_verified") is True:
         person = db.scalar(select(Person).where(Person.email == email))
         if person is not None and not person.firebase_uid:
             person.firebase_uid = uid
