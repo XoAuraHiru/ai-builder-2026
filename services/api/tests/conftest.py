@@ -37,3 +37,16 @@ def account(db):
     db.add(acc)
     db.commit()
     return acc
+
+
+@pytest.fixture()
+def client(db):
+    from fastapi.testclient import TestClient
+
+    from app.db import get_db
+    from app.main import app
+
+    app.dependency_overrides[get_db] = lambda: db
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
