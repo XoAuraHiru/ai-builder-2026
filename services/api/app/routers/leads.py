@@ -5,13 +5,14 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Upl
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.agents.advisor import get_agent_model
 from app.ai.llm import LLM, LLMError, get_llm
 from app.auth import CurrentUser, require_roles
 from app.config import get_settings
 from app.db import get_db
 from app.events import emit
 from app.models import AIDecision, Lead
-from app.schemas.leads import IdentityCheckOut, LeadAck, LeadIn, LeadOut, StageIn
+from app.schemas.leads import AskIn, IdentityCheckOut, LeadAck, LeadIn, LeadOut, StageIn
 from app.services.capture_guard import check_capture_rate, ip_hash
 from app.services.lead_pipeline import process_lead, score_pending
 from app.services.identity import (MAX_BYTES, DocumentTooLarge, ProofingClient, UnsupportedDocument,
@@ -113,3 +114,23 @@ def lead_decisions(lead_id: str, db: Session = Depends(get_db), user: CurrentUse
                       .order_by(AIDecision.created_at)).all()
     return [{"id": d.id, "created_at": d.created_at, "agent": d.agent, "purpose": d.purpose, "model": d.model,
              "confidence": d.confidence, "cost_usd": str(d.cost_usd), "output": d.output} for d in rows]
+
+
+@router.post("/{lead_id}/draft-reply")
+def draft(lead_id: str, db: Session = Depends(get_db), llm: LLM = Depends(get_llm),
+          model=Depends(get_agent_model), user: CurrentUser = Depends(staff)):
+    from app.agents.advisor import draft_reply
+
+    out = draft_reply(db, lead_or_404(db, lead_id), llm, model)
+    db.commit()
+    return out
+
+
+@router.post("/{lead_id}/ask")
+def ask(lead_id: str, body: AskIn, db: Session = Depends(get_db), llm: LLM = Depends(get_llm),
+        model=Depends(get_agent_model), user: CurrentUser = Depends(staff)):
+    from app.agents.advisor import ask_about_lead
+
+    answer = ask_about_lead(db, lead_or_404(db, lead_id), body.question, llm, model)
+    db.commit()
+    return {"answer": answer}

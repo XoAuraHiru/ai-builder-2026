@@ -34,7 +34,7 @@ dev = [
 testpaths = ["tests"]
 addopts = "-q"
 markers = ["network: tests that call real market-data providers (skipped unless ATRIUM_NETWORK_TESTS=1)"]
-filterwarnings = ["ignore:Dialect sqlite", "ignore:Using `httpx` with `starlette.testclient`"]
+filterwarnings = ["ignore:Dialect sqlite", "ignore:Using `httpx` with `starlette.testclient`", 'ignore:\[EXPERIMENTAL\]']
 
 [build-system]
 requires = ["hatchling"]

@@ -68,3 +68,7 @@ class IdentityCheckOut(BaseModel):
     source: str
     trust_score: int
     trust_band: str
+
+
+class AskIn(BaseModel):
+    question: str = Field(min_length=3, max_length=500)
