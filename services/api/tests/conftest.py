@@ -61,6 +61,26 @@ def people(db):
 
 
 @pytest.fixture()
+def make_lead(db):
+    from decimal import Decimal
+
+    from app.models import Lead
+
+    def _make(**overrides):
+        fields = dict(source="web", full_name="Ava Thompson", email="ava@example.test", phone="+14155550123",
+                      country="US", goals="Grow savings for retirement in 20 years", horizon_years=20,
+                      investable_usd=Decimal("60000"), monthly_usd=Decimal("500"), source_of_funds="salary",
+                      notes=None, device_id="dev-ava-0001", ip_hash="ip-test")
+        fields.update(overrides)
+        lead = Lead(**fields)
+        db.add(lead)
+        db.commit()
+        return lead
+
+    return _make
+
+
+@pytest.fixture()
 def client(db):
     from fastapi.testclient import TestClient
 
