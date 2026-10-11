@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     env: str = "local"                      # local | dev | prod
     database_url: str = "sqlite+pysqlite:///./atrium.db"
     auth_mode: str = "dev"                  # dev | firebase
+    cors_origins: str = "http://localhost:3000"  # comma-separated list of allowed browser origins
 
     gcp_project: str = ""
     gcp_location: str = "us-central1"
