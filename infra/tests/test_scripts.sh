@@ -7,11 +7,15 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/bin"
 export FAKE_LOG="$WORK/calls.log"
+FAKE_PY="$(command -v python || command -v python3)"
+export FAKE_PY
 
 # FAKE_EXISTING=1 simulates a project where setup already ran once; FAKE_WEB_EXISTS=1 a live web service.
 cat > "$WORK/bin/gcloud" <<'FAKE'
 #!/usr/bin/env bash
-echo "gcloud $*" >> "$FAKE_LOG"
+# Record the arguments through a native program, as the real gcloud receives them: on Windows, Git Bash
+# rewrites path-like arguments (for example https:// becomes https;\) when it calls a non-MSYS executable.
+"$FAKE_PY" -c 'import sys; print("gcloud " + " ".join(sys.argv[1:]))' "$@" >> "$FAKE_LOG"
 case "$*" in *"--data-file=-"*) cat >/dev/null ;; esac
 case "$*" in "run deploy atrium-web"*) touch "$FAKE_LOG.web" ;; esac
 case "$*" in
@@ -73,6 +77,7 @@ WEB_DEPLOY="$(grep -m1 "run deploy atrium-web" "$FAKE_LOG")"
 check "exits 0 (was $STATUS)" '[ "$STATUS" -eq 0 ]'
 check "API deploy keeps CORS for the live web origin" 'echo "$API_DEPLOY" | grep -q "CORS_ORIGINS=.*https://atrium-web-test.a.run.app"'
 check "API deploy allows both Cloud Run URLs of the web service" 'echo "$API_DEPLOY" | grep -q "https://atrium-web-123.us-central1.run.app"'
+check "API env values reach gcloud unmangled" 'echo "$API_DEPLOY" | grep -q "MARKET_CACHE_DIR=/tmp/cache@" && echo "$API_DEPLOY" | grep -q "CORS_ORIGINS=https://atrium-web-123.us-central1.run.app,"'
 check "API scales to zero by default" 'echo "$API_DEPLOY" | grep -q -- "--min-instances 0"'
 check "web scales to zero by default" 'echo "$WEB_DEPLOY" | grep -q -- "--min-instances 0"'
 check "both services use startup CPU boost" 'echo "$API_DEPLOY" | grep -q -- "--cpu-boost" && echo "$WEB_DEPLOY" | grep -q -- "--cpu-boost"'

@@ -77,7 +77,9 @@ step "image repository"
 gcloud artifacts repositories describe cloud-run-source-deploy --location="$REGION" >/dev/null 2>&1 \
   || gcloud artifacts repositories create cloud-run-source-deploy --repository-format=docker --location="$REGION" \
        --description="Cloud Run source deployments"
-POLICY="$(mktemp)"
+# Relative path: means the same thing to gcloud on Linux and on Windows (Git Bash).
+POLICY=".atrium-cleanup-policy.json"
+trap 'rm -f "$POLICY"' EXIT
 cat > "$POLICY" <<'JSON'
 [
   {"name": "keep-newest-3", "action": {"type": "Keep"}, "mostRecentVersions": {"keepCount": 3}},

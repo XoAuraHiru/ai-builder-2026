@@ -62,14 +62,18 @@ class PubSubEventBus:
     """Publishes every event to one Pub/Sub topic (attribute `type`) and dispatches locally too."""
 
     def __init__(self, project: str, topic: str, inner: InProcessEventBus | None = None) -> None:
-        self._publisher = _make_publisher()
-        self._topic_path = self._publisher.topic_path(project, topic)
+        # The gRPC client is created on first publish, not here: building it at startup would add to every
+        # scale-from-zero cold start, and most requests never publish.
+        self._publisher = None
+        self._topic_path = f"projects/{project}/topics/{topic}"
         self._inner = inner or InProcessEventBus()
 
     def subscribe(self, event_type: str, handler: Handler) -> None:
         self._inner.subscribe(event_type, handler)
 
     def publish(self, event: Event) -> None:
+        if self._publisher is None:
+            self._publisher = _make_publisher()
         # Fire and forget: the client batches and retries; blocking here would stall seeding (thousands of events).
         self._publisher.publish(self._topic_path, event.to_json().encode("utf-8"), type=event.type)
         self._inner.publish(event)

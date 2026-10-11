@@ -61,3 +61,26 @@ def test_pubsub_bus_publishes_json_with_type_attribute(monkeypatch):
     assert sent[0][1]["type"] == "PricePublished" and sent[0][2] == {"type": "PricePublished"}
     assert len(inner.history) == 1
     assert current_bus() is not None
+
+
+def test_pubsub_client_is_created_on_first_publish_not_at_startup(monkeypatch):
+    """The gRPC client is heavy; creating it at startup would lengthen every scale-from-zero cold start."""
+    import app.events as mod
+
+    created = []
+
+    class FakePublisher:
+        def publish(self, topic_path, data, **attrs):
+            created.append(("publish", topic_path))
+
+    def make():
+        created.append("client")
+        return FakePublisher()
+
+    monkeypatch.setattr(mod, "_make_publisher", make)
+    bus = PubSubEventBus(project="atrium-cup-2026", topic="atrium-events")
+    assert created == []
+    bus.publish(Event(type="PricePublished", payload={}))
+    bus.publish(Event(type="PricePublished", payload={}))
+    assert created == ["client", ("publish", "projects/atrium-cup-2026/topics/atrium-events"),
+                       ("publish", "projects/atrium-cup-2026/topics/atrium-events")]

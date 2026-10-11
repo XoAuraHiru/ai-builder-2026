@@ -4,6 +4,9 @@
 # Both services scale to zero by default: you pay only while requests are served.
 # For the judging window keep them warm: API_MIN_INSTANCES=1 WEB_MIN_INSTANCES=1 bash infra/deploy.sh
 set -euo pipefail
+# Git Bash on Windows rewrites path-like arguments (https://x, /tmp/x) passed to native programs such as gcloud.
+# Exempt only our "^@^" env-var lists; gcloud's own launcher on Windows still needs the conversion.
+export MSYS2_ARG_CONV_EXCL='^@^'
 PROJECT_ID="${PROJECT_ID:-atrium-cup-2026}"
 REGION="${REGION:-us-central1}"
 AUTH_MODE="${AUTH_MODE:-dev}"
