@@ -9,6 +9,8 @@ from app.services.ledger import apply_posting
 from app.services.portfolio import PriceUnavailable, valuation
 from app.services.pricing import publish_prices
 
+HDR = {"X-Dev-User": "priya@example.test"}
+
 
 @pytest.fixture()
 def priced_funds(db):
@@ -55,7 +57,7 @@ def test_valuation_raises_when_no_price_exists_yet(db, account, priced_funds):
 
 
 def test_portfolio_for_empty_account_is_zero(client, account, priced_funds):
-    r = client.get(f"/accounts/{account.id}/portfolio?as_of=2026-01-06")
+    r = client.get(f"/accounts/{account.id}/portfolio?as_of=2026-01-06", headers=HDR)
     assert r.status_code == 200
     body = r.json()
     assert body["total_value"] == "0.00" and body["holdings"] == [] and body["by_fund"] == {}
@@ -63,7 +65,7 @@ def test_portfolio_for_empty_account_is_zero(client, account, priced_funds):
 
 def test_portfolio_endpoint_returns_view(client, db, account, priced_funds):
     buy(db, account, "ATR-BAL", "100", "100", date(2026, 1, 2))
-    r = client.get(f"/accounts/{account.id}/portfolio?as_of=2026-01-06")
+    r = client.get(f"/accounts/{account.id}/portfolio?as_of=2026-01-06", headers=HDR)
     assert r.status_code == 200
     body = r.json()
     assert body["total_value"] == "10400.00"
@@ -72,7 +74,7 @@ def test_portfolio_endpoint_returns_view(client, db, account, priced_funds):
 
 
 def test_unknown_account_returns_404(client, account, priced_funds):
-    r = client.get("/accounts/nope/portfolio")
+    r = client.get("/accounts/nope/portfolio", headers=HDR)
     assert r.status_code == 404 and "account" in r.json()["detail"].lower()
 
 
