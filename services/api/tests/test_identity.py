@@ -107,3 +107,11 @@ def test_upload_is_staff_only(id_client, people, make_lead):
     r = client.post(f"/leads/{lead.id}/documents", files={"file": ("id.png", PNG, "image/png")},
                     headers={"X-Dev-User": "priya@atrium.demo"})
     assert r.status_code == 403
+
+
+def test_extraction_prompt_reads_fields_even_from_samples():
+    """Reading and judging are separate: a SPECIMEN card must still yield its name and dates for the checks."""
+    from app.services.identity import ID_PROMPT
+
+    text = ID_PROMPT.lower()
+    assert "even if" in text and "sample" in text and "not_an_identity_document" in text
