@@ -105,6 +105,32 @@ class YFinanceMarketData:
         return _to_decimal(price)
 
 
+SNAPSHOT_PATH = Path(__file__).resolve().parent.parent / "seed" / "prices_snapshot.csv"
+
+
+class SnapshotMarketData:
+    """Real adjusted closes for the house-fund ETFs, committed to the repo (refresh: python -m app.seed.snapshot).
+
+    Used when the live provider is unreachable, e.g. Yahoo throttling a cloud IP during auto-seed.
+    """
+
+    def __init__(self, path: Path = SNAPSHOT_PATH):
+        self._frame = pd.read_csv(path, index_col=0, parse_dates=True)
+
+    def history(self, tickers: Sequence[str], start: date, end: date) -> pd.DataFrame:
+        tickers = _validate(tickers)
+        missing = [t for t in tickers if t not in self._frame.columns]
+        if missing:
+            raise MarketDataError(f"price snapshot has no prices for {missing}")
+        return self._frame.loc[pd.Timestamp(start):pd.Timestamp(end), tickers]
+
+    def latest_price(self, ticker: str, as_of: date | None = None) -> Decimal:
+        df = self.history([ticker], date(1900, 1, 1), as_of or date.today())
+        if df.empty:
+            raise MarketDataError(f"price snapshot has no price for {ticker} on or before {as_of}")
+        return _to_decimal(df[ticker].iloc[-1])
+
+
 class AlpacaMarketData:
     """Latest trade from Alpaca's data API; history delegated (Alpaca's free data feed is IEX-only)."""
 

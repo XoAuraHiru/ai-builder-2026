@@ -54,3 +54,14 @@ def test_get_market_data_honours_provider_setting(tmp_path):
 def test_yfinance_real_download(tmp_path):
     df = YFinanceMarketData(Path(tmp_path)).history(["VTI", "BND"], date(2026, 9, 1), date(2026, 9, 30))
     assert {"VTI", "BND"} <= set(df.columns) and len(df) >= 18
+
+
+def test_snapshot_provider_serves_committed_real_prices():
+    from app.seed.funds import all_tickers
+    from app.services.market_data import SnapshotMarketData
+
+    df = SnapshotMarketData().history(all_tickers(), date(2026, 9, 1), date(2026, 9, 30))
+    assert list(df.columns) == all_tickers()
+    assert len(df) >= 18 and df.notna().all().all() and (df > 0).all().all()
+    with pytest.raises(MarketDataError):
+        SnapshotMarketData().history(["ZZZZ"], date(2026, 9, 1), date(2026, 9, 30))

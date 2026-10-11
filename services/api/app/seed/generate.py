@@ -5,6 +5,7 @@ Run:  uv run python -m app.seed.generate --seed 42 --provider yfinance
 from __future__ import annotations
 
 import argparse
+import logging
 import random
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
@@ -17,7 +18,9 @@ from app.config import Settings, get_settings
 from app.models import Account, Instruction, Person
 from app.seed.funds import HOUSE_FUNDS, all_tickers, seed_funds
 from app.services.ledger import apply_posting, holdings, q_cash, q_units
-from app.services.market_data import get_market_data
+from app.services.market_data import MarketDataError, SnapshotMarketData, get_market_data
+
+log = logging.getLogger(__name__)
 from app.services.pricing import build_nav_series, latest_price, publish_prices
 
 # Investors carry a risk band, a monthly contribution and target fund weights. Staff carry none.
@@ -54,6 +57,7 @@ class GenerateReport:
     postings: int
     prices: int
     last_price_date: date
+    price_source: str
 
 
 def is_seeded(db: Session) -> bool:
@@ -88,7 +92,13 @@ def generate(db: Session, settings: Settings, *, start: date = date(2024, 10, 1)
 
     # 1. Funds and their daily NAVs from constituent price history.
     seed_funds(db)
-    history = market.history(all_tickers(), start, end)
+    price_source = settings.market_data_provider
+    try:
+        history = market.history(all_tickers(), start, end)
+    except MarketDataError as e:
+        log.warning("live market data unavailable (%s); seeding from the committed price snapshot", e)
+        history = SnapshotMarketData().history(all_tickers(), start, end)
+        price_source = "snapshot"
     prices_written = 0
     trading_days: set[date] = set()
     for spec in HOUSE_FUNDS:
@@ -154,7 +164,7 @@ def generate(db: Session, settings: Settings, *, start: date = date(2024, 10, 1)
                         n_instr += 1
     db.flush()
     return GenerateReport(people=len(PERSONAS), accounts=len(accounts), instructions=n_instr, postings=n_instr,
-                          prices=prices_written, last_price_date=last_price_date)
+                          prices=prices_written, last_price_date=last_price_date, price_source=price_source)
 
 
 def main() -> None:

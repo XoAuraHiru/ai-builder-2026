@@ -65,3 +65,19 @@ def test_units_equal_net_amount_over_nav(db):
     price = db.scalar(select(Price).where(Price.fund_code == posting.instrument, Price.as_of == posting.value_date))
     assert price is not None
     assert posting.units == (-posting.cash / price.nav).quantize(Decimal("0.000001"))
+
+
+def test_generate_falls_back_to_price_snapshot_when_provider_fails(db, monkeypatch):
+    import app.seed.generate as gen
+    from app.services.market_data import MarketDataError
+
+    class Blocked:
+        def history(self, tickers, start, end):
+            raise MarketDataError("simulated: Yahoo blocked this IP")
+
+    monkeypatch.setattr(gen, "get_market_data", lambda settings: Blocked())
+    report = generate(db, Settings(_env_file=None, market_data_provider="yfinance", seed=42), end=date(2026, 10, 9))
+    db.commit()
+    assert report.price_source == "snapshot"
+    assert report.prices > 3000 and report.last_price_date >= date(2026, 10, 1)
+    assert pricing_guard(db, report.last_price_date) == []
