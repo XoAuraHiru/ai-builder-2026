@@ -14,18 +14,20 @@ from app.ml.lead_model import MODEL_PATH, LeadModel, train_local
 
 
 def _credentials():
+    """Prefer the gcloud CLI's signed-in account (the identity setup and deploy use); fall back to ADC.
+
+    Application Default Credentials on a developer machine often belong to another login or project.
+    """
+    from google.oauth2.credentials import Credentials
+
+    gcloud = shutil.which("gcloud") or shutil.which("gcloud.cmd")
+    if gcloud:
+        token = subprocess.run([gcloud, "auth", "print-access-token"], capture_output=True, text=True).stdout.strip()
+        if token:
+            return Credentials(token=token)
     import google.auth
-    from google.auth.exceptions import DefaultCredentialsError
 
-    try:
-        return google.auth.default()[0]
-    except DefaultCredentialsError:  # no Application Default Credentials here: borrow the gcloud user's token
-        from google.oauth2.credentials import Credentials
-
-        gcloud = shutil.which("gcloud") or shutil.which("gcloud.cmd") or "gcloud"
-        token = subprocess.run([gcloud, "auth", "print-access-token"], capture_output=True, text=True,
-                               check=True).stdout.strip()
-        return Credentials(token=token)
+    return google.auth.default()[0]
 
 
 def train_bigquery(project: str, dataset: str = "atrium") -> LeadModel:

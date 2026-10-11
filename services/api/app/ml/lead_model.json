@@ -1,13 +1,13 @@
 {
-  "intercept": -10.828834385412762,
+  "intercept": -10.542028500189907,
   "weights": {
-    "log_investable": 1.19240985272275,
-    "log_monthly": 0.47068351954475496,
-    "horizon": 0.9524515339523147,
-    "referral": 1.208459611110888,
-    "has_phone": 0.9168784717083786,
-    "completeness": 1.8186805487785844,
-    "goal_fit": 0.9911220437906622
+    "log_investable": 1.1121248257047622,
+    "log_monthly": 0.5017663227052049,
+    "horizon": 0.7875034898991027,
+    "referral": 1.315022723544678,
+    "has_phone": 0.9511230860215958,
+    "completeness": 1.9550292810703656,
+    "goal_fit": 1.0098372429233866
   },
   "means": {
     "log_investable": 4.773244425000001,
@@ -18,8 +18,8 @@
     "completeness": 0.4815625,
     "goal_fit": 0.745
   },
-  "source": "local",
-  "model_name": "atrium-lead-conversion-local",
-  "auc": 0.7941,
-  "trained_at": "2026-10-11T19:03:11+00:00"
+  "source": "bigquery-ml",
+  "model_name": "atrium-cup-2026.atrium.lead_conversion",
+  "auc": 0.7921,
+  "trained_at": "2026-10-11T19:22:49+00:00"
 }
