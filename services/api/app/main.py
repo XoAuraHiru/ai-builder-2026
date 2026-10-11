@@ -10,6 +10,15 @@ from app.routers import accounts, funds, health
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    settings = get_settings()
+    if settings.auto_seed:
+        from app.db import SessionLocal
+        from app.seed.generate import generate, is_seeded
+
+        with SessionLocal() as db:
+            if not is_seeded(db):
+                generate(db, settings)
+                db.commit()
     yield
 
 
