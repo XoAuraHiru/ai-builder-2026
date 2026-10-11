@@ -15,7 +15,7 @@ from app.models import AIDecision, Lead
 from app.schemas.leads import AskIn, ConvertIn, IdentityCheckOut, LeadAck, LeadIn, LeadOut, StageIn
 from app.services.capture_guard import check_capture_rate, ip_hash
 from app.services.conversion import ConversionError, convert_lead
-from app.services.lead_pipeline import process_lead, score_pending
+from app.services.lead_pipeline import count_pending, process_lead, score_pending
 from app.services.identity import (MAX_BYTES, DocumentTooLarge, ProofingClient, UnsupportedDocument,
                                    analyze_identity, get_proofing)
 from app.services.trust import apply_trust
@@ -56,7 +56,8 @@ def capture_lead(body: LeadIn, request: Request, db: Session = Depends(get_db), 
 
 @router.post("/score-pending")
 def score_pending_leads(db: Session = Depends(get_db), llm: LLM = Depends(get_llm), user: CurrentUser = Depends(staff)):
-    return {"scored": score_pending(db, llm)}
+    scored = score_pending(db, llm)
+    return {"scored": scored, "remaining": count_pending(db)}
 
 
 @router.get("", response_model=list[LeadOut])

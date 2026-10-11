@@ -2,7 +2,7 @@
 If Gemini is unavailable the deterministic scores still land and the lead says why the AI part is missing."""
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.ai.llm import LLM, LLMError
@@ -34,9 +34,14 @@ def process_lead(db: Session, lead: Lead, llm: LLM) -> Lead:
     return lead
 
 
-def score_pending(db: Session, llm: LLM, limit: int = 25) -> int:
+def score_pending(db: Session, llm: LLM, limit: int = 10) -> int:
+    """Score a small batch so one request stays well inside Cloud Run's timeout even with rate-limit retries."""
     pending = db.scalars(select(Lead).where(Lead.scored_at.is_(None)).order_by(Lead.created_at).limit(limit)).all()
     for lead in pending:
         process_lead(db, lead, llm)
         db.commit()
     return len(pending)
+
+
+def count_pending(db: Session) -> int:
+    return db.scalar(select(func.count()).select_from(Lead).where(Lead.scored_at.is_(None))) or 0

@@ -14,6 +14,7 @@ export default function AdvisorBoard() {
   const [leads, setLeads] = useState<Lead[] | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -38,13 +39,21 @@ export default function AdvisorBoard() {
   async function scorePending() {
     setBusy(true);
     setError("");
+    setProgress("");
     try {
-      await api("/leads/score-pending", { method: "POST" });
-      await load();
+      // The API scores a small batch per request; keep going until nothing is left, showing progress as we go.
+      for (let round = 0; round < 20; round++) {
+        const r = await api<{ scored: number; remaining: number }>("/leads/score-pending", { method: "POST" });
+        await load();
+        if (r.remaining === 0 || r.scored === 0) break;
+        setProgress(`${r.remaining} still to score…`);
+      }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : String(e));
     } finally {
       setBusy(false);
+      setProgress("");
+      await load(); // some leads may have been scored before an error; show them either way
     }
   }
 
@@ -62,7 +71,7 @@ export default function AdvisorBoard() {
         {pending > 0 && (
           <button onClick={scorePending} disabled={busy}
             className="rounded bg-[#0b5fff] px-4 py-2 text-sm font-medium text-white disabled:opacity-60">
-            {busy ? "Scoring with Gemini…" : `Score ${pending} new lead${pending > 1 ? "s" : ""} with AI`}
+            {busy ? `Scoring with Gemini… ${progress}` : `Score ${pending} new lead${pending > 1 ? "s" : ""} with AI`}
           </button>
         )}
       </div>

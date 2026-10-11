@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api, ApiError, apiUpload } from "@/lib/api";
 import { formatUsd } from "@/lib/allocation";
@@ -55,12 +55,18 @@ export default function LeadDetail() {
   const [converted, setConverted] = useState<{ account_number: string } | null>(null);
   const [actionError, setActionError] = useState<Record<string, string>>({});
 
+  const loaded = useRef(false);
+
   const load = useCallback(async () => {
     try {
       setLead(await api<Lead>(`/leads/${id}`));
       setDecisions(await api<Decision[]>(`/leads/${id}/decisions`));
+      loaded.current = true;
+      setActionError((prev) => ({ ...prev, load: "" }));
     } catch (e) {
-      setError(message(e));
+      // First load failing replaces the page; a refresh failing must not wipe a draft the advisor is editing.
+      if (loaded.current) setActionError((prev) => ({ ...prev, load: `Could not refresh: ${message(e)}` }));
+      else setError(message(e));
     }
   }, [id]);
 
@@ -106,9 +112,12 @@ export default function LeadDetail() {
               })}>
               {EDITABLE_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
+            {actionError.stage && <span className="ml-2 text-red-600">{actionError.stage}</span>}
           </label>
         )}
       </div>
+      {actionError.load && <p className="text-sm text-red-600">{actionError.load}</p>}
+      {actionError.rescore && <p className="text-sm text-red-600">AI scoring failed: {actionError.rescore}</p>}
 
       {lead.scoring_error && (
         <div className="flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">

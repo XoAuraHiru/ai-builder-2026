@@ -62,3 +62,13 @@ def test_ai_usage_totals(client, db, people):
     usage = client.get("/ai/usage", headers=STAFF).json()
     assert usage["decisions"] == 1 and usage["by_purpose"]["lead_enrichment"]["count"] == 1
     assert client.get("/ai/usage", headers={"X-Dev-User": "priya@atrium.demo"}).status_code == 403
+
+
+def test_score_pending_works_in_small_batches_and_reports_what_remains(client, db, people, make_lead):
+    seed_funds(db)
+    use_llm(client, FakeLLM({"lead_enrichment": ENRICHED}))
+    for i in range(12):
+        make_lead(email=f"batch{i}@example.test", phone=None, device_id=f"dev-batch-{i:04d}")
+    first = client.post("/leads/score-pending", headers=STAFF).json()
+    assert first == {"scored": 10, "remaining": 2}
+    assert client.post("/leads/score-pending", headers=STAFF).json() == {"scored": 2, "remaining": 0}
