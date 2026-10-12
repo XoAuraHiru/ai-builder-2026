@@ -105,7 +105,7 @@ export default function AlertPage() {
           {SCENARIO_COPY[alert.scenario] && <p className="max-w-[72ch] pt-2 text-sm text-muted">The rule: {SCENARIO_COPY[alert.scenario]}</p>}
         </KeyMoment>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start">
+        <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] 2xl:items-start">
           <Panel className="space-y-4 p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <h2 className="text-[17px] font-semibold">Case review</h2>

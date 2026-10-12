@@ -60,9 +60,8 @@ export default function SymbolPage() {
     <>
       <PageHeader title={detail.name} back={back} description={[detail.symbol, kindWords].filter(Boolean).join(". ") + "."}
         actions={<WatchButton symbol={detail.symbol} watched={detail.watched} onToggle={toggleWatch} withLabel />} />
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="min-w-0 space-y-10">
-          <div>
+      <div className="grid gap-10 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0 2xl:col-start-1">
             <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
               <Figure size="lg" label="Price" value={formatUsd(q.price)} />
               <p className={`num pb-1 text-[17px] font-medium ${change > 0 ? "text-gain" : change < 0 ? "text-loss" : "text-ink-2"}`}>
@@ -71,7 +70,15 @@ export default function SymbolPage() {
             </div>
             <p className="mt-2 text-xs text-muted">{priceSource(q.source, q.as_of)}</p>
             <div className="mt-3"><SessionDot session={detail.session} /></div>
-          </div>
+        </div>
+        <div className="min-w-0 max-w-[460px] 2xl:col-start-2 2xl:row-span-2 2xl:row-start-1 2xl:max-w-none">
+          {account
+            ? <OrderTicket key={detail.symbol} accountId={account.id} symbol={detail.symbol} price={q.price} held={held.units}
+                onPlaced={() => { loadHolding().catch(() => {}); }} />
+            : <EmptyState title="No investment account yet">Choose an investor on the front page to trade.</EmptyState>}
+          <p className="mt-4 text-xs text-muted">Paper trading at real prices: no real money moves. Nothing here is investment advice.</p>
+        </div>
+        <div className="min-w-0 space-y-10 2xl:col-start-1">
           <Section title="The last year" description="Daily closing prices, adjusted for dividends and splits.">
             <PriceChart points={detail.history} label={`${detail.name}: daily closes over the last year`} />
           </Section>
@@ -89,13 +96,6 @@ export default function SymbolPage() {
               <p className="mt-5 text-sm text-ink-2">You hold {held.units} {held.units === 1 ? "share" : "shares"}, worth {formatUsd(held.value)}.</p>
             )}
           </Section>
-        </div>
-        <div className="min-w-0">
-          {account
-            ? <OrderTicket key={detail.symbol} accountId={account.id} symbol={detail.symbol} price={q.price} held={held.units}
-                onPlaced={() => { loadHolding().catch(() => {}); }} />
-            : <EmptyState title="No investment account yet">Choose an investor persona to trade.</EmptyState>}
-          <p className="mt-4 text-xs text-muted">Paper trading at real prices: no real money moves. Nothing here is investment advice.</p>
         </div>
       </div>
     </>

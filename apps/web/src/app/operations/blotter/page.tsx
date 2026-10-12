@@ -72,7 +72,7 @@ export default function BlotterPage() {
                           {describeInstruction(r)}
                         </button>
                       </td>
-                      <td className={`${t.td} num`}>{r.reference ?? "None"}</td>
+                      <td className={`${t.td} num whitespace-nowrap`}>{r.reference ?? "None"}</td>
                       <td className={t.td}>
                         <Badge tone={state.tone}>{state.label}</Badge>
                         {waiting && <span className="mt-0.5 block text-xs text-caution">Waiting for money</span>}

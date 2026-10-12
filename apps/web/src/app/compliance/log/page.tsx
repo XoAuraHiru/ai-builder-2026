@@ -9,7 +9,7 @@ import { Figure, Loading, Notice, PageHeader, Section, tableStyles as t } from "
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 const subjectLabel = (s: string) => {
-  const words = s.replace(/_/g, " ").replace(/^aml/, "AML");
+  const words = s.replace(/_/g, " ").replace(/^aml\b/, "AML");
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
 

@@ -32,16 +32,20 @@ export default function FundsPage() {
           {stats.map((s) => (
             <li key={s.code}>
               <Link href={`/investor/funds/${s.code}`}
-                className="grid items-center gap-x-8 gap-y-2 py-4 hover:bg-surface md:grid-cols-[minmax(0,1fr)_11.5rem_7.5rem_8.5rem_6.5rem] md:px-2">
-                <span className="min-w-0">
-                  <span className="font-medium">{s.name}</span>
-                  <span className="block truncate text-sm text-ink-2">{funds[s.code]?.objective}</span>
+                className="flex flex-col gap-3 px-2 py-4 hover:bg-surface 2xl:grid 2xl:grid-cols-[minmax(0,1fr)_11.5rem_7.5rem_8.5rem_6.5rem] 2xl:items-center 2xl:gap-x-8">
+                <span className="flex flex-col gap-2 2xl:contents">
+                  <span className="min-w-0">
+                    <span className="font-semibold">{s.name}</span>
+                    <span className="block truncate text-sm text-ink-2">{funds[s.code]?.objective}</span>
+                  </span>
+                  <RiskBand band={s.risk_band} />
                 </span>
-                <RiskBand band={s.risk_band} />
-                <span className="num text-sm"><span className="block text-xs text-muted">Average a year</span>{formatPct(s.annual_return_pct)}</span>
-                <span className="num text-sm"><span className="block text-xs text-muted">Worst year</span>
-                  <span className={s.worst_year.return_pct < 0 ? "text-loss" : ""}>{formatPct(s.worst_year.return_pct, 1, true)}</span> in {s.worst_year.year}</span>
-                <span className="num text-sm"><span className="block text-xs text-muted">Yearly cost</span>{formatPct(s.total_fee_pct, 2)}</span>
+                <span className="grid grid-cols-3 gap-4 2xl:contents">
+                  <span className="num text-sm"><span className="block text-xs text-muted">Average a year</span>{formatPct(s.annual_return_pct)}</span>
+                  <span className="num text-sm"><span className="block text-xs text-muted">Worst year</span>
+                    <span className={s.worst_year.return_pct < 0 ? "text-loss" : ""}>{formatPct(s.worst_year.return_pct, 1, true)}</span> in {s.worst_year.year}</span>
+                  <span className="num text-sm"><span className="block text-xs text-muted">Yearly cost</span>{formatPct(s.total_fee_pct, 2)}</span>
+                </span>
               </Link>
             </li>
           ))}

@@ -89,7 +89,7 @@ export default function DayEndPage() {
   }
 
   const header = (
-    <PageHeader title="Day-end"
+    <PageHeader title="Today"
       description="Each weekday evening the day-end drafts fund prices from the market's closes, turns due monthly plans into orders, deals what it can, runs transaction monitoring and writes a brief. Prices wait for a second person before anything is dealt."
       actions={<Button busy={busy === "run"} onClick={runNow}>Run the day-end now</Button>} />
   );
@@ -119,7 +119,7 @@ export default function DayEndPage() {
           description={run ? `Started by ${run.triggered_by} on ${formatDate(run.started_at)}.` : "Cloud Scheduler starts the day-end at 5:15 pm New York time on weekdays; you can also run it now."}
           actions={run && <Badge tone={run.status === "ok" ? "gain" : "caution"}>{run.status === "ok" ? "Every step finished" : "Some steps need a look"}</Badge>}>
           {run ? (
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+            <div className="grid gap-8 2xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
               <MorningBrief run={run} />
               <Steps run={run} />
             </div>
