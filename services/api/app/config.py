@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     gemini_pro_output_usd_per_m: float = 12.0
     docai_location: str = "us"
     docai_proofing_processor: str = ""      # Document AI ID Proofing processor id; empty disables fraud signals
+    fund_search_engine: str = ""            # Vertex AI Search app id for fund documents; empty uses the local index
+    fund_search_location: str = "global"
     lead_capture_limit_per_hour: int = 20   # per device and per IP hash, checked before any AI call
     lead_capture_global_per_hour: int = 60  # all public submissions together: caps AI spend if identifiers are forged
 
