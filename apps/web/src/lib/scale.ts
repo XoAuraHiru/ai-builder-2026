@@ -41,3 +41,15 @@ export function nearestIndex(xs: number[], x: number): number {
   for (let i = 1; i < xs.length; i++) if (Math.abs(xs[i] - x) < Math.abs(xs[best] - x)) best = i;
   return best;
 }
+
+/** Ticks at 1, 2 and 5 times each power of ten inside [min, max], for log-scale axes. */
+export function logTicks(min: number, max: number): number[] {
+  const out: number[] = [];
+  for (let e = Math.floor(Math.log10(min)); e <= Math.ceil(Math.log10(max)); e++) {
+    for (const m of [1, 2, 5]) {
+      const v = m * 10 ** e;
+      if (v >= min && v <= max) out.push(v);
+    }
+  }
+  return out;
+}

@@ -155,7 +155,7 @@ export function RiskBand({ band, size = "sm", showLabel = true }: { band: number
         ))}
       </span>
       {showLabel && (
-        <span aria-hidden="true" className={`${size === "lg" ? "text-base" : "text-xs"} font-medium text-ink-2`}>
+        <span aria-hidden="true" className={`${size === "lg" ? "text-base" : "text-xs"} whitespace-nowrap font-medium text-ink-2`}>
           {band ? `Band ${band}, ${BAND_LABEL[band]}` : "Not set"}
         </span>
       )}

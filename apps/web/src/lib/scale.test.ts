@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { areaPath, linePath, linear, nearestIndex, niceTicks } from "./scale";
+import { areaPath, linePath, linear, logTicks, nearestIndex, niceTicks } from "./scale";
 
 describe("linear", () => {
   it("maps a domain onto a range", () => {
@@ -28,5 +28,14 @@ describe("paths", () => {
   });
   it("finds the nearest point", () => {
     expect(nearestIndex([0, 10, 20], 14)).toBe(1);
+  });
+});
+
+describe("logTicks", () => {
+  it("picks 1-2-5 steps across decades", () => {
+    expect(logTicks(8_000, 210_000)).toEqual([10_000, 20_000, 50_000, 100_000, 200_000]);
+  });
+  it("returns few ticks for a narrow range, so callers can fall back", () => {
+    expect(logTicks(9_500, 13_500)).toEqual([10_000]);
   });
 });
