@@ -28,6 +28,7 @@ from app.models.base import utcnow
 from app.models.instruction import STEP_STATES
 from app.models.operations import LINE_STATES
 from app.ops.day_end import run_day_end
+from app.ops.locks import serialise_operations
 from app.seed.operations import seed_waiting
 from app.services.allocation import funded_ids
 from app.services.approvals import OpsError, decide
@@ -290,12 +291,14 @@ def demo_payments(db: Session = Depends(get_db), user: CurrentUser = Depends(ops
 
 @router.post("/reconcile")
 def find_matches(db: Session = Depends(get_db), model=Depends(get_agent_model), user: CurrentUser = Depends(ops)):
+    serialise_operations(db)
     result = guarded(lambda: reconcile(db, model, utcnow()))
     db.commit()
     return {k: result[k] for k in ("rules", "agent", "scorer", "summary", "used_agent")}
 
 
 def _locked_match(db: Session, match_id: str) -> ReconMatch:
+    serialise_operations(db)  # before the row lock, in the same order as the day-end
     return found(db.scalar(select(ReconMatch).where(ReconMatch.id == match_id).with_for_update()), "proposal")
 
 
@@ -317,6 +320,7 @@ def reject_match(match_id: str, body: NoteIn, db: Session = Depends(get_db), use
 
 @router.post("/matches/manual", status_code=201)
 def ask_for_manual_match(body: ManualMatchIn, db: Session = Depends(get_db), user: CurrentUser = Depends(ops)):
+    serialise_operations(db)
     approval = guarded(lambda: request_manual_match(db, body.line_ids, body.instruction_ids, me(db, user),
                                                     body.reason))
     db.commit()
@@ -344,6 +348,7 @@ def approvals(state: Literal["pending", "decided", "all"] = "all", db: Session =
 @router.post("/approvals/{approval_id}/decide")
 def decide_approval(approval_id: str, body: ApprovalDecisionIn, db: Session = Depends(get_db),
                     user: CurrentUser = Depends(ops)):
+    serialise_operations(db)
     approval = found(db.scalar(select(Approval).where(Approval.id == approval_id).with_for_update()), "request")
     guarded(lambda: decide(db, approval, me(db, user), approve=body.approve, code=body.code, note=body.note))
     db.commit()

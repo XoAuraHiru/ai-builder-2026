@@ -15,7 +15,7 @@ from datetime import date, datetime
 
 import pandas as pd
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.ai.decisions import record_decision
@@ -26,6 +26,7 @@ from app.markets.quotes import NEW_YORK
 from app.ml.aml_model import AmlModel
 from app.models import Approval, OpsRun, Price, StatementLine
 from app.models.base import utcnow
+from app.ops.locks import serialise_operations
 from app.services.aml import run_monitoring
 from app.services.allocation import allocate, create_due_recurring
 from app.services.fund_pricing import draft_prices, last_closed_session
@@ -64,9 +65,7 @@ def rule_brief(steps: list[dict]) -> dict:
 
 def run_day_end(db: Session, *, now: datetime, triggered_by: str, llm: LLM, closes: pd.DataFrame | None = None,
                 model: AmlModel | None = None) -> OpsRun:
-    if db.get_bind().dialect.name == "postgresql":
-        # One day-end at a time: the scheduled job and the workspace button wait for each other.
-        db.execute(text("SELECT pg_advisory_xact_lock(hashtext('day-end'))"))
+    serialise_operations(db)  # the scheduled job, the button and operations decisions wait for each other
     as_of = last_closed_session(now)
     today = now.astimezone(NEW_YORK).date()
     run = OpsRun(kind="day_end", as_of=as_of, triggered_by=triggered_by, status="running", steps=[])

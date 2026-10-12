@@ -189,3 +189,29 @@ def test_the_demo_authenticator_is_for_staff_in_persona_sign_in_only(api, staff,
     monkeypatch.setattr(auth_mod, "_verify_firebase_token",
                         lambda token: {"uid": "fb-sam", "email": "sam@atrium.demo", "email_verified": True})
     assert api.get("/me/authenticator", headers={"Authorization": "Bearer good"}).status_code == 404
+
+
+def test_on_postgres_decisions_wait_for_a_running_day_end(api, db, staff, monkeypatch):
+    """Accepting a match while a day-end is dealing would leave a paid subscription dealt but never settled, so every
+    decision that touches instructions or statement lines takes the day-end's lock first."""
+    reference = payment_reference(db.scalar(select(Instruction.id)))
+    data = f"Date,Description,Amount\n2026-10-09,ACH CREDIT PRIYA RAMAN REF {reference},1500.00\n".encode()
+    api.post("/ops/statements", headers=MEI, files={"file": ("lock.csv", data, "text/csv")})
+    asked = api.post("/ops/prices/publish", headers=MEI, json={"as_of": "2026-10-09", "reason": "Checked."}).json()
+    locks, real_execute = [], db.execute
+
+    def execute(statement, *args, **kwargs):
+        if "pg_advisory_xact_lock" in str(statement):
+            locks.append(str(statement))
+            return None
+        return real_execute(statement, *args, **kwargs)
+
+    monkeypatch.setattr(db.get_bind().dialect, "name", "postgresql")
+    monkeypatch.setattr(db, "execute", execute)
+    assert api.post("/ops/reconcile", headers=MEI).status_code == 200
+    match_id = api.get("/ops/reconciliation", headers=MEI).json()["proposals"][0]["id"]
+    assert api.post(f"/ops/matches/{match_id}/accept", headers=SAM, json={}).status_code == 200
+    assert api.post(f"/ops/approvals/{asked['id']}/decide", headers=SAM,
+                    json={"approve": True, "code": code(staff["sam"])}).status_code == 200
+    assert api.post("/compliance/monitoring", headers=OMAR).status_code == 200
+    assert len(locks) == 4 and all("day-end" in lock for lock in locks)
