@@ -1,0 +1,476 @@
+{
+ "as_of": "2026-10-12",
+ "source": "Yahoo Finance via yfinance",
+ "symbols": {
+  "AAPL": {
+   "avg_volume": 45268204,
+   "category": null,
+   "industry": "Consumer Electronics",
+   "market_cap": 4912984883200,
+   "name": "Apple Inc.",
+   "sector": "technology",
+   "summary": "Apple Inc.",
+   "total_assets": null
+  },
+  "AGG": {
+   "avg_volume": 9661304,
+   "category": "Intermediate Core Bond",
+   "industry": null,
+   "market_cap": null,
+   "name": "iShares Core U.S. Aggregate Bond ETF",
+   "sector": null,
+   "summary": "The index measures the performance of the total U.S.",
+   "total_assets": 135651655680
+  },
+  "AMD": {
+   "avg_volume": 23106220,
+   "category": null,
+   "industry": "Semiconductors",
+   "market_cap": 992708001792,
+   "name": "Advanced Micro Devices, Inc.",
+   "sector": "technology",
+   "summary": "Advanced Micro Devices, Inc.",
+   "total_assets": null
+  },
+  "AMZN": {
+   "avg_volume": 39235829,
+   "category": null,
+   "industry": "Internet Retail",
+   "market_cap": 2830652145664,
+   "name": "Amazon.com, Inc.",
+   "sector": "consumer_cyclical",
+   "summary": "Amazon.com, Inc.",
+   "total_assets": null
+  },
+  "AVGO": {
+   "avg_volume": 22383850,
+   "category": null,
+   "industry": "Semiconductors",
+   "market_cap": 1725858185216,
+   "name": "Broadcom Inc.",
+   "sector": "technology",
+   "summary": "Broadcom Inc.",
+   "total_assets": null
+  },
+  "BAC": {
+   "avg_volume": 33964868,
+   "category": null,
+   "industry": "Banks - Diversified",
+   "market_cap": 379846098944,
+   "name": "Bank of America Corporation",
+   "sector": "financial_services",
+   "summary": "Bank of America Corporation, through its subsidiaries, provides various financial products and services for individual consumers, small and middle-market businesses, institutional investors, large corporations, and governments worldwide.",
+   "total_assets": null
+  },
+  "BIL": {
+   "avg_volume": 9954760,
+   "category": "Ultrashort Bond",
+   "industry": null,
+   "market_cap": null,
+   "name": "State Street SPDR Bloomberg 1-3 Month T-Bill ETF",
+   "sector": null,
+   "summary": "The fund invests substantially all, but at least 80%, of its total assets in the securities comprising the index and in securities that the Adviser determines have economic characteristics that are substantially identical to the economic c\u2026",
+   "total_assets": 49792606208
+  },
+  "BND": {
+   "avg_volume": 9184457,
+   "category": "Intermediate Core Bond",
+   "industry": null,
+   "market_cap": null,
+   "name": "Vanguard Total Bond Market Index Fund ETF Shares",
+   "sector": null,
+   "summary": "This index measures the performance of a wide spectrum of public, investment-grade, taxable, fixed income securities in the United States-including government, corporate, and international dollar-denominated bonds, as well as mortgage-back\u2026",
+   "total_assets": 389050990592
+  },
+  "COST": {
+   "avg_volume": 2068112,
+   "category": null,
+   "industry": "Discount Stores",
+   "market_cap": 419608035328,
+   "name": "Costco Wholesale Corporation",
+   "sector": "consumer_defensive",
+   "summary": "Costco Wholesale Corporation, together with its subsidiaries, engages in the operation of membership warehouses in the United States, Puerto Rico, Canada, Mexico, Japan, the United Kingdom, Korea, Australia, Taiwan, China, Spain, France, S\u2026",
+   "total_assets": null
+  },
+  "CRM": {
+   "avg_volume": 13216229,
+   "category": null,
+   "industry": "Software - Application",
+   "market_cap": 188573990912,
+   "name": "Salesforce, Inc.",
+   "sector": "technology",
+   "summary": "Salesforce, Inc.",
+   "total_assets": null
+  },
+  "CVX": {
+   "avg_volume": 8275298,
+   "category": null,
+   "industry": "Oil & Gas Integrated",
+   "market_cap": 415820677120,
+   "name": "Chevron Corporation",
+   "sector": "energy",
+   "summary": "Chevron Corporation, through its subsidiaries, engages in the integrated energy and chemicals operations.",
+   "total_assets": null
+  },
+  "DIS": {
+   "avg_volume": 9393573,
+   "category": null,
+   "industry": "Entertainment",
+   "market_cap": 186568523776,
+   "name": "The Walt Disney Company",
+   "sector": "communication_services",
+   "summary": "The Walt Disney Company operates as an entertainment company in Americas, Europe, and the Asia Pacific.",
+   "total_assets": null
+  },
+  "GOOGL": {
+   "avg_volume": 26968564,
+   "category": null,
+   "industry": "Internet Content & Information",
+   "market_cap": 4300779028480,
+   "name": "Alphabet Inc.",
+   "sector": "communication_services",
+   "summary": "Alphabet Inc.",
+   "total_assets": null
+  },
+  "HD": {
+   "avg_volume": 4352671,
+   "category": null,
+   "industry": "Home Improvement Retail",
+   "market_cap": 290068267008,
+   "name": "The Home Depot, Inc.",
+   "sector": "consumer_cyclical",
+   "summary": "The Home Depot, Inc.",
+   "total_assets": null
+  },
+  "INTC": {
+   "avg_volume": 107139090,
+   "category": null,
+   "industry": "Semiconductors",
+   "market_cap": 553455190016,
+   "name": "Intel Corporation",
+   "sector": "technology",
+   "summary": "Intel Corporation designs, develops, manufactures, markets, sells, and services computing and related end products and services in the United States, Ireland, Israel, and internationally.",
+   "total_assets": null
+  },
+  "JNJ": {
+   "avg_volume": 6999150,
+   "category": null,
+   "industry": "Drug Manufacturers - General",
+   "market_cap": 630043836416,
+   "name": "Johnson & Johnson",
+   "sector": "healthcare",
+   "summary": "Johnson & Johnson, together with its subsidiaries, engages in the research and development, manufacture, and sale of a range of products in the healthcare field worldwide.",
+   "total_assets": null
+  },
+  "JPM": {
+   "avg_volume": 7279728,
+   "category": null,
+   "industry": "Banks - Diversified",
+   "market_cap": 885149401088,
+   "name": "JPMorgan Chase & Co.",
+   "sector": "financial_services",
+   "summary": "JPMorgan Chase & Co.",
+   "total_assets": null
+  },
+  "KO": {
+   "avg_volume": 15850587,
+   "category": null,
+   "industry": "Beverages - Non-Alcoholic",
+   "market_cap": 378839465984,
+   "name": "The Coca-Cola Company",
+   "sector": "consumer_defensive",
+   "summary": "The Coca-Cola Company, a beverage company, manufactures and sells various nonalcoholic beverages in the United States and internationally.",
+   "total_assets": null
+  },
+  "LLY": {
+   "avg_volume": 2479087,
+   "category": null,
+   "industry": "Drug Manufacturers - General",
+   "market_cap": 1051603894272,
+   "name": "Eli Lilly and Company",
+   "sector": "healthcare",
+   "summary": "Eli Lilly and Company discovers, develops, manufactures, and markets human pharmaceutical products in the United States, Europe, China, Japan, and internationally.",
+   "total_assets": null
+  },
+  "MA": {
+   "avg_volume": 2852481,
+   "category": null,
+   "industry": "Credit Services",
+   "market_cap": 516092493824,
+   "name": "Mastercard Incorporated",
+   "sector": "financial_services",
+   "summary": "Mastercard Incorporated, a technology company, provides transaction processing and other payment-related products and services in the United States and internationally.",
+   "total_assets": null
+  },
+  "META": {
+   "avg_volume": 18627257,
+   "category": null,
+   "industry": "Internet Content & Information",
+   "market_cap": 1830816186368,
+   "name": "Meta Platforms, Inc.",
+   "sector": "communication_services",
+   "summary": "Meta Platforms, Inc.",
+   "total_assets": null
+  },
+  "MSFT": {
+   "avg_volume": 27591040,
+   "category": null,
+   "industry": "Software - Infrastructure",
+   "market_cap": 3973186846720,
+   "name": "Microsoft Corporation",
+   "sector": "technology",
+   "summary": "Microsoft Corporation, a technology company, develops and supports a portfolio of technology solutions for individuals and businesses worldwide.",
+   "total_assets": null
+  },
+  "NFLX": {
+   "avg_volume": 36868340,
+   "category": null,
+   "industry": "Entertainment",
+   "market_cap": 292724965376,
+   "name": "Netflix, Inc.",
+   "sector": "communication_services",
+   "summary": "Netflix, Inc.",
+   "total_assets": null
+  },
+  "NKE": {
+   "avg_volume": 31411923,
+   "category": null,
+   "industry": "Footwear & Accessories",
+   "market_cap": 51555065856,
+   "name": "NIKE, Inc.",
+   "sector": "consumer_cyclical",
+   "summary": "NIKE, Inc., together with its subsidiaries, designs, develops, markets, and sells athletic footwear, apparel, equipment, accessories, and services for men, women, and kids in North America, Europe, the Middle East, Africa, Greater China, t\u2026",
+   "total_assets": null
+  },
+  "NVDA": {
+   "avg_volume": 120322753,
+   "category": null,
+   "industry": "Semiconductors",
+   "market_cap": 5536424132608,
+   "name": "NVIDIA Corporation",
+   "sector": "technology",
+   "summary": "NVIDIA Corporation operates as a data center scale AI infrastructure company in the United States, Taiwan, China, Hong Kong, Europe, and internationally.",
+   "total_assets": null
+  },
+  "ORCL": {
+   "avg_volume": 31675659,
+   "category": null,
+   "industry": "Software - Infrastructure",
+   "market_cap": 428654231552,
+   "name": "Oracle Corporation",
+   "sector": "technology",
+   "summary": "Oracle Corporation offers products and services that build, run and support enterprise information technology frameworks worldwide.",
+   "total_assets": null
+  },
+  "PEP": {
+   "avg_volume": 8326998,
+   "category": null,
+   "industry": "Beverages - Non-Alcoholic",
+   "market_cap": 171664506880,
+   "name": "PepsiCo, Inc.",
+   "sector": "consumer_defensive",
+   "summary": "PepsiCo, Inc.",
+   "total_assets": null
+  },
+  "PG": {
+   "avg_volume": 8483134,
+   "category": null,
+   "industry": "Household & Personal Products",
+   "market_cap": 351257722880,
+   "name": "The Procter & Gamble Company",
+   "sector": "consumer_defensive",
+   "summary": "The Procter & Gamble Company provides branded consumer packaged goods worldwide.",
+   "total_assets": null
+  },
+  "QQQ": {
+   "avg_volume": 35094639,
+   "category": "Large Growth",
+   "industry": null,
+   "market_cap": null,
+   "name": "Invesco QQQ Trust",
+   "sector": null,
+   "summary": "To maintain the correspondence between the composition and weights of the securities in the trust (the \"securities\") and the stocks in the NASDAQ-100 Index\u00ae, the adviser adjusts the securities from time to time to conform to periodic chang\u2026",
+   "total_assets": 498945982464
+  },
+  "SCHD": {
+   "avg_volume": 22814245,
+   "category": "Large Value",
+   "industry": null,
+   "market_cap": null,
+   "name": "Schwab U.S. Dividend Equity ETF",
+   "sector": null,
+   "summary": "To pursue its goal, the fund generally invests in stocks that are included in the index.",
+   "total_assets": 107887099904
+  },
+  "SGOV": {
+   "avg_volume": 20907981,
+   "category": "Ultrashort Bond",
+   "industry": null,
+   "market_cap": null,
+   "name": "iShares 0-3 Month Treasury Bond ETF",
+   "sector": null,
+   "summary": "The index measures the performance of public obligations of the U.S.",
+   "total_assets": 112259588096
+  },
+  "SPY": {
+   "avg_volume": 43478743,
+   "category": "Large Blend",
+   "industry": null,
+   "market_cap": null,
+   "name": "State Street SPDR S&P 500 ETF Trust",
+   "sector": null,
+   "summary": "The trust seeks to achieve its investment objective by holding a portfolio of the common stocks that are included in the index (the \u201cPortfolio\u201d), with the weight of each stock in the Portfolio substantially corresponding to the weight of s\u2026",
+   "total_assets": 809216114688
+  },
+  "TSLA": {
+   "avg_volume": 37612851,
+   "category": null,
+   "industry": "Auto Manufacturers",
+   "market_cap": 1511491895296,
+   "name": "Tesla, Inc.",
+   "sector": "consumer_cyclical",
+   "summary": "Tesla, Inc.",
+   "total_assets": null
+  },
+  "UNH": {
+   "avg_volume": 4993293,
+   "category": null,
+   "industry": "Healthcare Plans",
+   "market_cap": 340457717760,
+   "name": "UnitedHealth Group Incorporated",
+   "sector": "healthcare",
+   "summary": "UnitedHealth Group Incorporated operates as a health care company in the United States and internationally.",
+   "total_assets": null
+  },
+  "V": {
+   "avg_volume": 6538850,
+   "category": null,
+   "industry": "Credit Services",
+   "market_cap": 723626622976,
+   "name": "Visa Inc.",
+   "sector": "financial_services",
+   "summary": "Visa Inc.",
+   "total_assets": null
+  },
+  "VCIT": {
+   "avg_volume": 10101743,
+   "category": "Corporate Bond",
+   "industry": null,
+   "market_cap": null,
+   "name": "Vanguard Intermediate-Term Corporate Bond Index Fund ETF Shares",
+   "sector": null,
+   "summary": "The fund employs an indexing investment approach designed to track the performance of the Bloomberg U.S.",
+   "total_assets": 68645912576
+  },
+  "VEA": {
+   "avg_volume": 9652292,
+   "category": "Foreign Large Blend",
+   "industry": null,
+   "market_cap": null,
+   "name": "Vanguard FTSE Developed Markets Index Fund ETF Shares",
+   "sector": null,
+   "summary": "The fund employs an indexing investment approach designed to track the performance of the FTSE Developed All Cap ex U.S.",
+   "total_assets": 313543393280
+  },
+  "VGT": {
+   "avg_volume": 4033640,
+   "category": "Technology",
+   "industry": null,
+   "market_cap": null,
+   "name": "Vanguard Information Technology Index Fund ETF Shares",
+   "sector": null,
+   "summary": "The fund employs an indexing investment approach designed to track the performance of the index, an index made up of stocks of large, mid-size, and small U.S.",
+   "total_assets": 177927127040
+  },
+  "VOO": {
+   "avg_volume": 7076525,
+   "category": "Large Blend",
+   "industry": null,
+   "market_cap": null,
+   "name": "Vanguard S&P 500 ETF",
+   "sector": null,
+   "summary": "The fund manager employs an indexing investment approach designed to track the performance of the Standard & Poor's 500 Index, a widely recognized benchmark of U.S.",
+   "total_assets": 1729312194560
+  },
+  "VT": {
+   "avg_volume": 2458878,
+   "category": "Global Large-Stock Blend",
+   "industry": null,
+   "market_cap": null,
+   "name": "Vanguard Total World Stock Index Fund ETF Shares",
+   "sector": null,
+   "summary": "The fund employs an indexing investment approach designed to track the performance of the FTSE Global All Cap Index.",
+   "total_assets": 101182521344
+  },
+  "VTI": {
+   "avg_volume": 3039787,
+   "category": "Large Blend",
+   "industry": null,
+   "market_cap": null,
+   "name": "Vanguard Morningstar Total Stock Market ETF",
+   "sector": null,
+   "summary": "The fund manager employs an indexing investment approach designed to track the performance of the CRSP U.S.",
+   "total_assets": 2322096979968
+  },
+  "VUG": {
+   "avg_volume": 5942032,
+   "category": "Large Growth",
+   "industry": null,
+   "market_cap": null,
+   "name": "Vanguard Morningstar Growth ETF",
+   "sector": null,
+   "summary": "The fund manager employs an indexing investment approach designed to track the performance of the target index, a broadly diversified index made up of the growth stocks of large U.S.",
+   "total_assets": 392072069120
+  },
+  "VXUS": {
+   "avg_volume": 5134225,
+   "category": "Foreign Large Blend",
+   "industry": null,
+   "market_cap": null,
+   "name": "Vanguard Total International Stock Index Fund ETF Shares",
+   "sector": null,
+   "summary": "The manager employs an indexing investment approach designed to track the performance of the FTSE Global All Cap ex US Index, a float-adjusted market-capitalization-weighted index designed to measure equity market performance of companies\u2026",
+   "total_assets": 649285074944
+  },
+  "VYM": {
+   "avg_volume": 1146057,
+   "category": "Large Value",
+   "industry": null,
+   "market_cap": null,
+   "name": "Vanguard High Dividend Yield Index Fund ETF Shares",
+   "sector": null,
+   "summary": "The fund employs an indexing investment approach designed to track the performance of the the Target Index, which consists of common stocks of companies that pay dividends that generally are higher than average (excluding real estate inves\u2026",
+   "total_assets": 95754289152
+  },
+  "WMT": {
+   "avg_volume": 23667898,
+   "category": null,
+   "industry": "Discount Stores",
+   "market_cap": 886132113408,
+   "name": "Walmart Inc.",
+   "sector": "consumer_defensive",
+   "summary": "Walmart Inc.",
+   "total_assets": null
+  },
+  "XLK": {
+   "avg_volume": 7438332,
+   "category": "Technology",
+   "industry": null,
+   "market_cap": null,
+   "name": "State Street Technology Select Sector SPDR ETF",
+   "sector": null,
+   "summary": "In seeking to track the performance of the index, the fund employs a replication strategy, which means that the fund typically invests in substantially all of the securities represented in the index in approximately the same proportions as\u2026",
+   "total_assets": 127297691648
+  },
+  "XOM": {
+   "avg_volume": 13937951,
+   "category": null,
+   "industry": "Oil & Gas Integrated",
+   "market_cap": 694666395648,
+   "name": "ExxonMobil Holdings Corporation",
+   "sector": "energy",
+   "summary": "ExxonMobil Holdings Corporation engages in the exploration and production of crude oil and natural gas in the United States, Canada, and internationally.",
+   "total_assets": null
+  }
+ }
+}
