@@ -96,6 +96,15 @@ def _statement(prompt: str) -> dict:
     return {"lines": out}
 
 
+def _case(prompt: str) -> dict:
+    ids = re.findall(r'"id": "([^"]+)"', prompt.split("<evidence>")[-1].split("</evidence>")[0])
+    return {"triage": "request_information",
+            "triage_reason": "Offline mode: connect Gemini Pro for a suggested triage.",
+            "narrative": [{"text": "Offline mode: the alert's evidence is listed above; Gemini Pro drafts the case "
+                                   "narrative when connected.", "evidence": ids[:2]}],
+            "questions": ["What does the client say about these movements?"]}
+
+
 def offline_llm() -> FakeLLM:
     return FakeLLM({
         "lead_enrichment": _enrich,
@@ -107,4 +116,5 @@ def offline_llm() -> FakeLLM:
         "risk_profile_chat": _risk_chat, "fund_fit": _fund_fit, "proposal": _proposal,
         "order_explainer": _narrative, "held_order_review": _review,
         "statement_normalise": _statement,
+        "aml_case_review": _case,
     }, model="offline")
