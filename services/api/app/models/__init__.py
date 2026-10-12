@@ -8,9 +8,10 @@ from app.models.lead import LEAD_SOURCES, LEAD_STAGES, IdentityCheck, Lead, Lead
 from app.models.ledger import INSTRUMENT_TYPES, POSTING_TYPES, Lot, Posting
 from app.models.person import PERSON_KINDS, Person
 from app.models.price import PRICE_STATUSES, Price
+from app.models.risk_profile import RiskProfile
 
 __all__ = [
     "AIDecision", "Account", "Fund", "FundConstituent", "FUND_CATEGORIES", "Instruction", "INSTRUCTION_STATES",
-    "INSTRUCTION_TYPES", "IdentityCheck", "Lead", "LeadConversion", "LEAD_SOURCES", "LEAD_STAGES", "Lot", "Posting", "POSTING_TYPES", "INSTRUMENT_TYPES", "Person",
-    "PERSON_KINDS", "Price", "PRICE_STATUSES",
+    "INSTRUCTION_TYPES", "IdentityCheck", "Lead", "LeadConversion", "LEAD_SOURCES", "LEAD_STAGES", "Lot", "Posting",
+    "POSTING_TYPES", "INSTRUMENT_TYPES", "Person", "PERSON_KINDS", "Price", "PRICE_STATUSES", "RiskProfile",
 ]
