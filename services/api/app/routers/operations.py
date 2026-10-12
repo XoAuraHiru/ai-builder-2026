@@ -217,7 +217,9 @@ def blotter(state: str | None = None, db: Session = Depends(get_db), user: Curre
                     "holder": account.person.full_name, "account_number": account.number, "amount": usd(i.amount),
                     "units": None if i.units is None else f"{Decimal(i.units):.6f}", "state": i.state,
                     "requested_at": i.requested_at, "dealing_date": i.dealing_date,
-                    "funded": (i.id in funded) if i.type == "subscribe" else None, "steps": steps.get(i.id, []),
+                    # settled means the money arrived, whether or not it was matched on a statement Atrium holds
+                    "funded": (i.state == "settled" or i.id in funded) if i.type == "subscribe" else None,
+                    "steps": steps.get(i.id, []),
                     "posting_id": posting.id if posting else None,
                     "not_reversible_because": why_not_reversible(db, posting) if posting else None})
     return out

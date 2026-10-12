@@ -126,6 +126,14 @@ def test_a_manual_match_and_the_blotter(api, db):
     assert api.post("/ops/reversals", headers=MEI, json={"posting_id": "nope", "reason": "x"}).status_code == 422
 
 
+def test_a_settled_subscription_is_paid_even_without_a_statement_match(api, db, account):
+    db.add(Instruction(account_id=account.id, fund_code="ATR-BAL", type="subscribe", amount=Decimal("900"),
+                       state="settled", requested_at=datetime(2026, 9, 2, 14, tzinfo=timezone.utc)))
+    db.commit()
+    rows = {r["state"]: r for r in api.get("/ops/blotter", headers=MEI).json()}
+    assert rows["settled"]["funded"] is True and rows["accepted"]["funded"] is False
+
+
 def test_the_persona_demo_can_add_payments_to_wait_for(api, db, people, monkeypatch):
     db.add(Account(person_id=people["investor"].id, number="ACC-0002", opened_on=date(2026, 1, 5)))
     db.commit()
