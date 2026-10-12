@@ -22,7 +22,8 @@ describe("formatPct and formatSignedUsd", () => {
   it("rounds percentages and can show a plus sign", () => {
     expect(formatPct(12.345)).toBe("12.3%");
     expect(formatPct(3, 1, true)).toBe("+3.0%");
-    expect(formatPct(-3, 1, true)).toBe("-3.0%");
+    expect(formatPct(-3, 1, true)).toBe("−3.0%");
+    expect(formatPct(-41.52)).toBe("−41.5%");
   });
   it("signs money with a true minus", () => {
     expect(formatSignedUsd(-1234.5)).toBe("−$1,234.50");

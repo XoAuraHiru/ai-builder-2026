@@ -61,13 +61,21 @@ export function Field({ label, hint, error, className = "", children }:
   );
 }
 
+/** Digits with thousands separators for display; the value passed around stays plain ("25000.5"). */
+export function groupDigits(raw: string): string {
+  if (!raw) return "";
+  const [whole, fraction] = raw.split(".");
+  const grouped = whole ? Number(whole).toLocaleString("en-US") : "0";
+  return fraction !== undefined ? `${grouped}.${fraction.slice(0, 2)}` : grouped;
+}
+
 export function MoneyInput({ value, onChange, placeholder, label, id }:
   { value: string; onChange: (v: string) => void; placeholder?: string; label?: string; id?: string }) {
   return (
     <span className="relative block">
       <span aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">$</span>
-      <input id={id} inputMode="decimal" aria-label={label} className={`${inputClass} num pl-7`} value={value}
-        placeholder={placeholder} onChange={(e) => onChange(e.target.value.replace(/[^\d.]/g, ""))} />
+      <input id={id} inputMode="decimal" aria-label={label} className={`${inputClass} num pl-7`} value={groupDigits(value)}
+        placeholder={placeholder} onChange={(e) => onChange(e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1"))} />
     </span>
   );
 }

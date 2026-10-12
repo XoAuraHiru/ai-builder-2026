@@ -100,6 +100,16 @@ def join_words(items: list[str]) -> str:
     return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1] if items else ""
 
 
+def overlap_words(o: Overlap) -> str:
+    """Only the overlaps that exist: "20.1% in the same companies", not "0.0% in the same ETFs and ..."."""
+    parts = []
+    if o.shared_etfs_pct > 0:
+        parts.append(f"{o.shared_etfs_pct:.1f}% in the same ETFs")
+    if o.shared_companies_pct > 0:
+        parts.append(f"{o.shared_companies_pct:.1f}% in the same companies")
+    return join_words(parts) or "no shared holdings"
+
+
 def _ranked(values: dict[str, float], total: float, labels: dict[str, str] | None = None) -> list[Exposure]:
     rows = [Exposure(name=(labels or {}).get(k, k), value_usd=round(v, 2), pct=round(v / total * 100, 1))
             for k, v in values.items() if v > 0.005]
@@ -217,6 +227,5 @@ def _warnings(holdings, funds, total, companies, sectors, region, overlaps) -> l
         if o.shared_etfs_pct >= OVERLAP_ETF_PCT or o.shared_companies_pct >= OVERLAP_COMPANY_PCT:
             shared = f" Both hold {join_words(o.top_shared)}." if o.top_shared else ""
             out.append(XRayWarning("OVERLAP", "caution", "Two funds own the same things",
-                                   f"{o.names[0]} and {o.names[1]} overlap: {o.shared_etfs_pct:.1f}% in the same ETFs "
-                                   f"and {o.shared_companies_pct:.1f}% in the same companies.{shared}"))
+                                   f"{o.names[0]} and {o.names[1]} overlap: {overlap_words(o)}.{shared}"))
     return out

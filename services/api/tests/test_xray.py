@@ -46,3 +46,11 @@ def test_overlap_between_funds_is_reported():
     assert pair.funds == ["ATR-GRW", "ATR-TEC"] and pair.shared_etfs_pct == 0.0
     # Growth holds 6.7% NVIDIA and Technology 15.4% (0.6 x 0.15 + 0.4 x 0.16): they share 6.7%.
     assert pair.shared_companies_pct == 6.7 and pair.top_shared == ["NVIDIA"]
+
+
+def test_overlap_warnings_name_only_the_overlaps_that_exist():
+    heavy = {**PROFILES, "VOO": {**PROFILES["VOO"], "top_holdings": [{"symbol": "NVDA", "name": "NVIDIA", "weight": 0.3}]},
+             "XLK": {**PROFILES["XLK"], "top_holdings": [{"symbol": "NVDA", "name": "NVIDIA", "weight": 0.5}]}}
+    x = xray({"ATR-GRW": 3_000.0, "ATR-TEC": 7_000.0}, FUNDS, heavy)  # they share 17.7% of their money in NVIDIA
+    message = next(w.message for w in x.warnings if w.code == "OVERLAP")
+    assert "same ETFs" not in message and "in the same companies" in message

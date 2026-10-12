@@ -20,9 +20,11 @@ export function compactUsd(value: number): string {
   return `${sign}$${Math.round(n)}`;
 }
 
+/** Percentages with a true minus sign for negatives, so they align with money figures. */
 export function formatPct(value: string | number, digits = 1, signed = false): string {
   const n = Number(value);
-  const text = `${n.toFixed(digits)}%`;
+  const text = `${Math.abs(n).toFixed(digits)}%`;
+  if (n < 0 && Number(Math.abs(n).toFixed(digits)) !== 0) return `−${text}`;
   return signed && n > 0 ? `+${text}` : text;
 }
 
