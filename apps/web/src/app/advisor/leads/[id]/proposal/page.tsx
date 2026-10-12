@@ -73,7 +73,9 @@ export default function PrintableProposal() {
         <h2 className="font-semibold">Sources</h2>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-ink-2">
           {proposal.content.passages.filter((p) => used.has(p.id)).map((p) => <li key={p.id}>{p.title}</li>)}
-          {used.has("projection") && <li>Atrium simulation engine, monthly returns {projection?.window}</li>}
+          {used.has("projection") && projection && (
+            <li>Atrium simulation engine, monthly returns from {formatMonth(projection.window.split(" to ")[0])} to {formatMonth(projection.window.split(" to ")[1])}</li>
+          )}
         </ul>
         <p className="mt-6 text-xs text-muted">
           Projections are simulations over past market history, not forecasts, and you can lose money. Atrium is a prototype with
