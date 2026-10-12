@@ -12,6 +12,7 @@ from app.routers.accounts import account_or_404
 from app.routers.invest import EXPLAIN_BUSY, all_funds
 from app.schemas.insights import ExplainedRisk, ExplainedXRay, RiskOut, XRayOut
 from app.seed.history import load_etf_document
+from app.knowledge.docs import month_name
 from app.services.narrative import write_narrative
 from app.services.portfolio import PortfolioView, PriceUnavailable, valuation
 from app.services.risk_metrics import risk_report
@@ -64,7 +65,7 @@ def risk_facts(r: RiskOut, funds: dict[str, Fund]) -> dict:
         return funds[code].name if code in funds else code
 
     return {
-        "history_window": f"{r.window_start} to {r.window_end}", "portfolio_value_usd": round(r.value_usd),
+        "history_window": f"{month_name(r.window_start)} to {month_name(r.window_end)}", "portfolio_value_usd": round(r.value_usd),
         "volatility_pct": r.annual_volatility_pct, "beta_to_sp500": r.beta, "worst_fall_pct": r.max_drawdown_pct,
         "worst_fall_from": r.drawdown_peak, "worst_fall_to": r.drawdown_trough,
         "bad_month_loss_pct": r.var95_1m_pct, "bad_month_loss_usd": round(r.var95_1m_usd), "sharpe_ratio": r.sharpe,

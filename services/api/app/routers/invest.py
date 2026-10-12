@@ -9,6 +9,7 @@ from app.auth import CurrentUser, get_current_user
 from app.db import get_db
 from app.models import Fund, Person
 from app.schemas.invest import ExplainedWhatIf, WhatIfIn, WhatIfOut
+from app.knowledge.docs import month_name
 from app.services.narrative import write_narrative
 from app.services.whatif import Plan, WhatIfError, simulate
 
@@ -50,7 +51,7 @@ def whatif_facts(out: WhatIfOut, risk_band: int | None) -> dict:
         "plan": {"starting_amount_usd": round(out.initial_usd), "monthly_usd": round(out.monthly_usd),
                  "years": out.years, "goal_usd": round(out.goal_usd) if out.goal_usd else None,
                  "total_paid_in_usd": round(out.contributed)},
-        "history_window": f"{out.window_start} to {out.window_end}", "simulated_paths": out.paths,
+        "history_window": f"{month_name(out.window_start)} to {month_name(out.window_end)}", "simulated_paths": out.paths,
         "reader_risk_band": risk_band,
         "scenarios": [{
             "name": s.label, "annual_fee_pct": round(s.fee_bps / 100, 2),
