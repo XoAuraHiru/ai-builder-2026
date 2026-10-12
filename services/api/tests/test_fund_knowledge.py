@@ -90,3 +90,12 @@ def test_search_falls_back_to_the_local_index_when_vertex_fails():
                                  local)
     hits = search.search("fees", ["ATR-BAL"])
     assert hits.passages[0].id == "ATR-BAL#fees" and "unavailable" in hits.retriever
+
+
+def test_a_chunk_spanning_sections_maps_to_each_section_it_contains():
+    local = LocalFundSearch()
+    content = ("# Atrium Technology (ATR-TEC)\n\n## Objective\n\nConcentrated growth from the US technology sector.\n\n"
+               "## What it holds\n\nAtrium Technology holds 2 exchange-traded funds")
+    session = FakeSession({"results": [{"chunk": {"content": content, "documentMetadata": {"uri": "gs://b/funds/ATR-TEC.html"}}}]})
+    hits = VertexFundSearch("p", "e", local=local, session=session).search("technology", ["ATR-TEC"])
+    assert [p.id for p in hits.passages] == ["ATR-TEC#objective", "ATR-TEC#what-it-holds"]

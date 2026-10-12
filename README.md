@@ -10,6 +10,16 @@ doing the scoring, explaining, guarding and reconciling at every step.
 
 https://atrium-web-1070337126396.us-central1.run.app (pick a demo persona; every person and number is synthetic).
 
+## What you can try
+
+| Persona | What to open |
+|---|---|
+| Priya Raman (investor) | Overview, What-if Studio (10,000 simulated futures over real history since 2007), Portfolio X-ray (companies under the funds), Risk (the mix has drifted above the risk profile), fund pages with a cited "is it right for you?" reading, the risk-profile conversation, Orders with suitability checks, and the Copilot agent |
+| Lucas Moreau (investor) | The X-ray: about a tenth of the portfolio sits in one company, held through six ETFs |
+| Daniel Okafor (advisor) | The lead pipeline with three fraud stories, identity checks, AI replies, and personalised proposals written by Gemini Pro with a printable view |
+
+Every AI paragraph is set in a serif face beside a gold rule and says which model wrote it. Every dollar and percentage figure it writes is checked against the engine that produced it, and claims about funds cite the fact-sheet section they come from.
+
 ## Documents
 
 | File | What it is |
@@ -41,8 +51,8 @@ Open the web app and pick a demo persona (dev auth mode). Every person and trans
 Tests:
 
 ```bash
-cd services/api && uv run pytest     # API: ledger, pricing, market data, portfolio, auth, events
-cd apps/web && pnpm test             # web: pure data transforms
+cd services/api && uv run pytest     # API: ledger, leads, trust, what-if, risk, X-ray, fund search, instructions, agents
+cd apps/web && pnpm test             # web: formatting, chart scales, navigation, invest and order helpers
 ```
 
 ## Deploy to Google Cloud
@@ -57,6 +67,8 @@ Region `us-central1`. The scripts never change your active gcloud configuration.
 The default deployment uses `AUTH_MODE=dev`: anyone with the URL can pick a demo persona, including staff. That is deliberate for a synthetic-data demo. `AUTH_MODE=firebase` requires Firebase sign-in with a verified email.
 
 If Yahoo Finance is unreachable from Cloud Run, seeding falls back to the committed real-price snapshot in `services/api/app/seed/prices_snapshot.csv`. Refresh it locally with `uv run python -m app.seed.snapshot`.
+
+The Invest features read committed data, so production never calls Yahoo for them: month-end prices since June 2007 (`app/seed/history_monthly.csv`) and ETF look-through profiles (`app/seed/etf_profiles.json`). Refresh both with `uv run python -m app.seed.history`, then rebuild the fund fact sheets with `uv run python -m app.knowledge.build` and rerun `infra/setup_gcp.sh` so Vertex AI Search re-indexes them.
 
 ## Running cost
 
@@ -83,8 +95,8 @@ API_MIN_INSTANCES=1 WEB_MIN_INSTANCES=1 bash infra/deploy.sh
 
 | Path | What |
 |---|---|
-| `services/api` | FastAPI core: people, accounts, house funds, prices, append-only ledger, events, auth |
-| `apps/web` | Next.js workspaces: investor today; advisor, operations and compliance in later plans |
+| `services/api` | FastAPI core: ledger, leads, risk profiles, what-if engine, risk and X-ray analytics, fund documents and search, instructions, ADK agents |
+| `apps/web` | Next.js workspaces on the Atrium design system: investor and advisor today; operations and compliance in the Operate release |
 | `infra` | GCP setup, deploy and preflight scripts |
 | `docs` | Blueprint, implementation plans, diagrams |
 

@@ -9,6 +9,7 @@ BILLING="${BILLING_ACCOUNT:?set BILLING_ACCOUNT (gcloud billing accounts list)}"
 BUDGET_USD="${BUDGET_USD:-15}"
 # Scope the project to this process only; the caller's active gcloud configuration is left alone.
 export CLOUDSDK_CORE_PROJECT="$PROJECT_ID"
+cd "$(dirname "$0")/.."  # paths below are relative to the repository root
 
 step() { printf '\n== %s\n' "$1"; }
 # Counts exact-line matches. grep -c reads all input, so it never SIGPIPEs the producer under pipefail.
@@ -107,6 +108,33 @@ if [ "$STORED" != "$PROCESSOR_ID" ]; then
   printf '%s' "$PROCESSOR_ID" | gcloud secrets versions add atrium-docai-proofing-processor --data-file=- >/dev/null
 fi
 echo "ID proofing processor: $PROCESSOR_ID"
+
+step "Vertex AI Search fund documents"
+# The fund fact sheets (HTML built by `python -m app.knowledge.build`) are indexed with layout-aware chunking; the API
+# searches them to ground every fund answer, and falls back to its local index if search is unreachable.
+BUCKET="gs://${PROJECT_ID}-fund-docs"
+gcloud storage buckets describe "$BUCKET" >/dev/null 2>&1 \
+  || gcloud storage buckets create "$BUCKET" --location=US --uniform-bucket-level-access >/dev/null
+gcloud storage cp services/api/app/knowledge/html/*.html "$BUCKET/funds/" >/dev/null
+DE="https://discoveryengine.googleapis.com/v1/projects/${PROJECT_ID}/locations/global/collections/default_collection"
+DE_HEADERS=(-H "Authorization: Bearer ${TOKEN}" -H "X-Goog-User-Project: ${PROJECT_ID}" -H "Content-Type: application/json")
+if ! curl -sf "${DE_HEADERS[@]}" "$DE/dataStores/atrium-fund-docs" >/dev/null; then
+  curl -sf -X POST "${DE_HEADERS[@]}" "$DE/dataStores?dataStoreId=atrium-fund-docs" -d '{
+    "displayName": "Atrium fund documents", "industryVertical": "GENERIC", "solutionTypes": ["SOLUTION_TYPE_SEARCH"],
+    "contentConfig": "CONTENT_REQUIRED",
+    "documentProcessingConfig": {"defaultParsingConfig": {"layoutParsingConfig": {}},
+      "chunkingConfig": {"layoutBasedChunkingConfig": {"chunkSize": 300, "includeAncestorHeadings": true}}}}' >/dev/null
+  for _ in $(seq 1 30); do curl -sf "${DE_HEADERS[@]}" "$DE/dataStores/atrium-fund-docs" >/dev/null && break; sleep 5; done
+fi
+# FULL reconciliation keeps the index identical to the bucket: rerun this step after rebuilding the documents.
+curl -sf -X POST "${DE_HEADERS[@]}" "$DE/dataStores/atrium-fund-docs/branches/default_branch/documents:import" \
+  -d "{\"gcsSource\": {\"inputUris\": [\"${BUCKET}/funds/*.html\"], \"dataSchema\": \"content\"}, \"reconciliationMode\": \"FULL\"}" >/dev/null
+if ! curl -sf "${DE_HEADERS[@]}" "$DE/engines/atrium-fund-search" >/dev/null; then
+  curl -sf -X POST "${DE_HEADERS[@]}" "$DE/engines?engineId=atrium-fund-search" -d '{
+    "displayName": "Atrium fund search", "solutionType": "SOLUTION_TYPE_SEARCH", "industryVertical": "GENERIC",
+    "dataStoreIds": ["atrium-fund-docs"], "searchEngineConfig": {"searchTier": "SEARCH_TIER_ENTERPRISE"}}' >/dev/null
+fi
+echo "fund search app: atrium-fund-search (the import runs in the background for a few minutes)"
 
 step "image repository"
 # `gcloud run deploy --source` pushes here. Keep the three newest images, delete anything older than a day.

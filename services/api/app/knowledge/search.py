@@ -139,9 +139,13 @@ class VertexFundSearch:
             code = uri.rsplit("/", 1)[-1].rsplit(".", 1)[0]
             if not code or (fund_codes and code not in fund_codes):
                 continue
-            passage = self.local.match(code, chunk.get("content", ""))
-            if passage not in out:
-                out.append(passage)
+            content = chunk.get("content", "")
+            # Layout chunks keep their headings ("## Fees"), so a chunk maps exactly to the sections it contains.
+            known = {p.id: p for p in self.local.passages if p.fund_code == code}
+            sections = [known[f"{code}#{slug(h)}"] for h in re.findall(r"(?m)^## (.+)$", content) if f"{code}#{slug(h)}" in known]
+            for passage in sections or [self.local.match(code, content)]:
+                if passage not in out and len(out) < k:
+                    out.append(passage)
             if len(out) == k:
                 break
         return SearchHits(out, self.name)
