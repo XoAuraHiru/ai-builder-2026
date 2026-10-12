@@ -1,0 +1,828 @@
+{
+ "as_of": "2026-10-12",
+ "etfs": {
+  "AGG": {
+   "expense_ratio": 0.0003,
+   "sectors": {},
+   "top_holdings": []
+  },
+  "BIL": {
+   "expense_ratio": 0.001353,
+   "sectors": {},
+   "top_holdings": []
+  },
+  "BND": {
+   "expense_ratio": 0.0003,
+   "sectors": {},
+   "top_holdings": []
+  },
+  "QQQ": {
+   "expense_ratio": 0.0018,
+   "sectors": {
+    "basic_materials": 0.0092,
+    "communication_services": 0.1259,
+    "consumer_cyclical": 0.1007,
+    "consumer_defensive": 0.0556,
+    "energy": 0.0045,
+    "financial_services": 0.0019,
+    "healthcare": 0.0379,
+    "industrials": 0.0511,
+    "technology": 0.6033,
+    "utilities": 0.0101
+   },
+   "top_holdings": [
+    {
+     "name": "NVIDIA Corp",
+     "symbol": "NVDA",
+     "weight": 0.083274
+    },
+    {
+     "name": "Apple Inc",
+     "symbol": "AAPL",
+     "weight": 0.073534
+    },
+    {
+     "name": "Microsoft Corp",
+     "symbol": "MSFT",
+     "weight": 0.057623
+    },
+    {
+     "name": "Micron Technology Inc",
+     "symbol": "MU",
+     "weight": 0.050245
+    },
+    {
+     "name": "Advanced Micro Devices Inc",
+     "symbol": "AMD",
+     "weight": 0.041714
+    },
+    {
+     "name": "Amazon.com Inc",
+     "symbol": "AMZN",
+     "weight": 0.04066
+    },
+    {
+     "name": "Meta Platforms Inc Class A",
+     "symbol": "META",
+     "weight": 0.032626
+    },
+    {
+     "name": "Alphabet Inc Class A",
+     "symbol": "GOOGL",
+     "weight": 0.030548
+    },
+    {
+     "name": "Alphabet Inc Class C",
+     "symbol": "GOOG",
+     "weight": 0.028494
+    },
+    {
+     "name": "Tesla Inc",
+     "symbol": "TSLA",
+     "weight": 0.028201
+    }
+   ]
+  },
+  "SCHD": {
+   "expense_ratio": 0.0006,
+   "sectors": {
+    "communication_services": 0.0595,
+    "consumer_cyclical": 0.0673,
+    "consumer_defensive": 0.2007,
+    "energy": 0.1535,
+    "financial_services": 0.0918,
+    "healthcare": 0.1933,
+    "industrials": 0.0731,
+    "technology": 0.1598,
+    "utilities": 0.0009
+   },
+   "top_holdings": [
+    {
+     "name": "Texas Instruments Inc",
+     "symbol": "TXN",
+     "weight": 0.046567
+    },
+    {
+     "name": "Qualcomm Inc",
+     "symbol": "QCOM",
+     "weight": 0.045626
+    },
+    {
+     "name": "Procter & Gamble Co",
+     "symbol": "PG",
+     "weight": 0.042315
+    },
+    {
+     "name": "Merck & Co Inc",
+     "symbol": "MRK",
+     "weight": 0.041466
+    },
+    {
+     "name": "Coca-Cola Co",
+     "symbol": "KO",
+     "weight": 0.041454
+    },
+    {
+     "name": "Chevron Corp",
+     "symbol": "CVX",
+     "weight": 0.040649
+    },
+    {
+     "name": "Amgen Inc",
+     "symbol": "AMGN",
+     "weight": 0.040295
+    },
+    {
+     "name": "UnitedHealth Group Inc",
+     "symbol": "UNH",
+     "weight": 0.039516
+    },
+    {
+     "name": "PepsiCo Inc",
+     "symbol": "PEP",
+     "weight": 0.038576
+    },
+    {
+     "name": "Verizon Communications Inc",
+     "symbol": "VZ",
+     "weight": 0.038566
+    }
+   ]
+  },
+  "SGOV": {
+   "expense_ratio": 0.0009,
+   "sectors": {},
+   "top_holdings": []
+  },
+  "SPY": {
+   "expense_ratio": 0.000945,
+   "sectors": {
+    "basic_materials": 0.0156,
+    "communication_services": 0.0995,
+    "consumer_cyclical": 0.0874,
+    "consumer_defensive": 0.0433,
+    "energy": 0.034,
+    "financial_services": 0.112,
+    "healthcare": 0.0926,
+    "industrials": 0.0754,
+    "realestate": 0.017,
+    "technology": 0.4045,
+    "utilities": 0.0188
+   },
+   "top_holdings": [
+    {
+     "name": "NVIDIA Corp",
+     "symbol": "NVDA",
+     "weight": 0.083616
+    },
+    {
+     "name": "Apple Inc",
+     "symbol": "AAPL",
+     "weight": 0.07353
+    },
+    {
+     "name": "Microsoft Corp",
+     "symbol": "MSFT",
+     "weight": 0.05762
+    },
+    {
+     "name": "Amazon.com Inc",
+     "symbol": "AMZN",
+     "weight": 0.037
+    },
+    {
+     "name": "Alphabet Inc Class A",
+     "symbol": "GOOGL",
+     "weight": 0.030546
+    },
+    {
+     "name": "Broadcom Inc",
+     "symbol": "AVGO",
+     "weight": 0.025279
+    },
+    {
+     "name": "Alphabet Inc Class C",
+     "symbol": "GOOG",
+     "weight": 0.024504
+    },
+    {
+     "name": "Meta Platforms Inc Class A",
+     "symbol": "META",
+     "weight": 0.024194
+    },
+    {
+     "name": "Micron Technology Inc",
+     "symbol": "MU",
+     "weight": 0.0182
+    },
+    {
+     "name": "Tesla Inc",
+     "symbol": "TSLA",
+     "weight": 0.015127
+    }
+   ]
+  },
+  "VCIT": {
+   "expense_ratio": 0.0003,
+   "sectors": {},
+   "top_holdings": []
+  },
+  "VEA": {
+   "expense_ratio": 0.0003,
+   "sectors": {
+    "basic_materials": 0.0764,
+    "communication_services": 0.0353,
+    "consumer_cyclical": 0.0739,
+    "consumer_defensive": 0.0532,
+    "energy": 0.0499,
+    "financial_services": 0.244,
+    "healthcare": 0.0791,
+    "industrials": 0.1786,
+    "realestate": 0.0242,
+    "technology": 0.1554,
+    "utilities": 0.0298
+   },
+   "top_holdings": [
+    {
+     "name": "Samsung Electronics Co Ltd",
+     "symbol": "005930.KQ",
+     "weight": 0.026129
+    },
+    {
+     "name": "SK hynix Inc",
+     "symbol": "000660.KQ",
+     "weight": 0.020117
+    },
+    {
+     "name": "ASML Holding NV",
+     "symbol": "ASML.AS",
+     "weight": 0.019622
+    },
+    {
+     "name": "HSBC Holdings PLC",
+     "symbol": "HSBA.L",
+     "weight": 0.010537
+    },
+    {
+     "name": "Roche Holding AG Ordinary Shares new",
+     "symbol": "ROP.SW",
+     "weight": 0.009193
+    },
+    {
+     "name": "Royal Bank of Canada",
+     "symbol": "RY",
+     "weight": 0.008576
+    },
+    {
+     "name": "Novartis AG Registered Shares",
+     "symbol": "NOVN.SW",
+     "weight": 0.008507
+    },
+    {
+     "name": "Shell PLC",
+     "symbol": "SHEL.L",
+     "weight": 0.00771
+    },
+    {
+     "name": "Nestle SA",
+     "symbol": "NESN.SW",
+     "weight": 0.007506
+    },
+    {
+     "name": "Mitsubishi UFJ Financial Group Inc",
+     "symbol": "8306.T",
+     "weight": 0.007435
+    }
+   ]
+  },
+  "VGT": {
+   "expense_ratio": 0.0009,
+   "sectors": {
+    "basic_materials": 0.0001,
+    "consumer_cyclical": 0.0006,
+    "financial_services": 0.0034,
+    "healthcare": 0.0001,
+    "industrials": 0.0031,
+    "technology": 0.9927
+   },
+   "top_holdings": [
+    {
+     "name": "NVIDIA Corp",
+     "symbol": "NVDA",
+     "weight": 0.177398
+    },
+    {
+     "name": "Apple Inc",
+     "symbol": "AAPL",
+     "weight": 0.157978
+    },
+    {
+     "name": "Microsoft Corp",
+     "symbol": "MSFT",
+     "weight": 0.115182
+    },
+    {
+     "name": "Broadcom Inc",
+     "symbol": "AVGO",
+     "weight": 0.045234
+    },
+    {
+     "name": "Micron Technology Inc",
+     "symbol": "MU",
+     "weight": 0.041831
+    },
+    {
+     "name": "Advanced Micro Devices Inc",
+     "symbol": "AMD",
+     "weight": 0.029517
+    },
+    {
+     "name": "Cisco Systems Inc",
+     "symbol": "CSCO",
+     "weight": 0.017134
+    },
+    {
+     "name": "Palantir Technologies Inc Ordinary Shares - Class A",
+     "symbol": "PLTR",
+     "weight": 0.016102
+    },
+    {
+     "name": "Intel Corp",
+     "symbol": "INTC",
+     "weight": 0.01542
+    },
+    {
+     "name": "Lam Research Corp",
+     "symbol": "LRCX",
+     "weight": 0.014893
+    }
+   ]
+  },
+  "VOO": {
+   "expense_ratio": 0.0003,
+   "sectors": {
+    "basic_materials": 0.0168,
+    "communication_services": 0.095,
+    "consumer_cyclical": 0.0931,
+    "consumer_defensive": 0.0446,
+    "energy": 0.0348,
+    "financial_services": 0.1202,
+    "healthcare": 0.0929,
+    "industrials": 0.0775,
+    "realestate": 0.018,
+    "technology": 0.3872,
+    "utilities": 0.0199
+   },
+   "top_holdings": [
+    {
+     "name": "NVIDIA Corp",
+     "symbol": "NVDA",
+     "weight": 0.08082
+    },
+    {
+     "name": "Apple Inc",
+     "symbol": "AAPL",
+     "weight": 0.070339
+    },
+    {
+     "name": "Microsoft Corp",
+     "symbol": "MSFT",
+     "weight": 0.056958
+    },
+    {
+     "name": "Amazon.com Inc",
+     "symbol": "AMZN",
+     "weight": 0.038435
+    },
+    {
+     "name": "Alphabet Inc Class A",
+     "symbol": "GOOGL",
+     "weight": 0.030075
+    },
+    {
+     "name": "Broadcom Inc",
+     "symbol": "AVGO",
+     "weight": 0.026502
+    },
+    {
+     "name": "Alphabet Inc Class C",
+     "symbol": "GOOG",
+     "weight": 0.023961
+    },
+    {
+     "name": "Meta Platforms Inc Class A",
+     "symbol": "META",
+     "weight": 0.018998
+    },
+    {
+     "name": "Micron Technology Inc",
+     "symbol": "MU",
+     "weight": 0.016343
+    },
+    {
+     "name": "Tesla Inc",
+     "symbol": "TSLA",
+     "weight": 0.015657
+    }
+   ]
+  },
+  "VT": {
+   "expense_ratio": 0.0006,
+   "sectors": {
+    "basic_materials": 0.0411,
+    "communication_services": 0.0726,
+    "consumer_cyclical": 0.0896,
+    "consumer_defensive": 0.045,
+    "energy": 0.0406,
+    "financial_services": 0.1649,
+    "healthcare": 0.086,
+    "industrials": 0.1111,
+    "realestate": 0.0226,
+    "technology": 0.3033,
+    "utilities": 0.0233
+   },
+   "top_holdings": [
+    {
+     "name": "NVIDIA Corp",
+     "symbol": "NVDA",
+     "weight": 0.043189
+    },
+    {
+     "name": "Apple Inc",
+     "symbol": "AAPL",
+     "weight": 0.038413
+    },
+    {
+     "name": "Microsoft Corp",
+     "symbol": "MSFT",
+     "weight": 0.031601
+    },
+    {
+     "name": "Amazon.com Inc",
+     "symbol": "AMZN",
+     "weight": 0.021131
+    },
+    {
+     "name": "Alphabet Inc Class A",
+     "symbol": "GOOGL",
+     "weight": 0.016823
+    },
+    {
+     "name": "Taiwan Semiconductor Manufacturing Co Ltd",
+     "symbol": "2330.TW",
+     "weight": 0.015327
+    },
+    {
+     "name": "Broadcom Inc",
+     "symbol": "AVGO",
+     "weight": 0.014448
+    },
+    {
+     "name": "Alphabet Inc Class C",
+     "symbol": "GOOG",
+     "weight": 0.013129
+    },
+    {
+     "name": "Meta Platforms Inc Class A",
+     "symbol": "META",
+     "weight": 0.010549
+    },
+    {
+     "name": "Micron Technology Inc",
+     "symbol": "MU",
+     "weight": 0.009064
+    }
+   ]
+  },
+  "VTI": {
+   "expense_ratio": 0.0003,
+   "sectors": {
+    "basic_materials": 0.0192,
+    "communication_services": 0.0876,
+    "consumer_cyclical": 0.0921,
+    "consumer_defensive": 0.0426,
+    "energy": 0.0368,
+    "financial_services": 0.1238,
+    "healthcare": 0.1006,
+    "industrials": 0.0911,
+    "realestate": 0.0228,
+    "technology": 0.3637,
+    "utilities": 0.0198
+   },
+   "top_holdings": [
+    {
+     "name": "NVIDIA Corp",
+     "symbol": "NVDA",
+     "weight": 0.068748
+    },
+    {
+     "name": "Apple Inc",
+     "symbol": "AAPL",
+     "weight": 0.063032
+    },
+    {
+     "name": "Microsoft Corp",
+     "symbol": "MSFT",
+     "weight": 0.051041
+    },
+    {
+     "name": "Amazon.com Inc",
+     "symbol": "AMZN",
+     "weight": 0.034063
+    },
+    {
+     "name": "Alphabet Inc Class A",
+     "symbol": "GOOGL",
+     "weight": 0.02696
+    },
+    {
+     "name": "Broadcom Inc",
+     "symbol": "AVGO",
+     "weight": 0.023749
+    },
+    {
+     "name": "Alphabet Inc Class C",
+     "symbol": "GOOG",
+     "weight": 0.021214
+    },
+    {
+     "name": "Meta Platforms Inc Class A",
+     "symbol": "META",
+     "weight": 0.017024
+    },
+    {
+     "name": "Micron Technology Inc",
+     "symbol": "MU",
+     "weight": 0.014644
+    },
+    {
+     "name": "Tesla Inc",
+     "symbol": "TSLA",
+     "weight": 0.014038
+    }
+   ]
+  },
+  "VUG": {
+   "expense_ratio": 0.0003,
+   "sectors": {
+    "basic_materials": 0.005,
+    "communication_services": 0.1453,
+    "consumer_cyclical": 0.1129,
+    "consumer_defensive": 0.0133,
+    "energy": 0.003,
+    "financial_services": 0.0422,
+    "healthcare": 0.0462,
+    "industrials": 0.0449,
+    "realestate": 0.0096,
+    "technology": 0.5775
+   },
+   "top_holdings": [
+    {
+     "name": "NVIDIA Corp",
+     "symbol": "NVDA",
+     "weight": 0.136193
+    },
+    {
+     "name": "Apple Inc",
+     "symbol": "AAPL",
+     "weight": 0.124883
+    },
+    {
+     "name": "Microsoft Corp",
+     "symbol": "MSFT",
+     "weight": 0.101206
+    },
+    {
+     "name": "Alphabet Inc Class A",
+     "symbol": "GOOGL",
+     "weight": 0.053407
+    },
+    {
+     "name": "Amazon.com Inc",
+     "symbol": "AMZN",
+     "weight": 0.047627
+    },
+    {
+     "name": "Alphabet Inc Class C",
+     "symbol": "GOOG",
+     "weight": 0.042057
+    },
+    {
+     "name": "Broadcom Inc",
+     "symbol": "AVGO",
+     "weight": 0.041044
+    },
+    {
+     "name": "Meta Platforms Inc Class A",
+     "symbol": "META",
+     "weight": 0.033852
+    },
+    {
+     "name": "Tesla Inc",
+     "symbol": "TSLA",
+     "weight": 0.027931
+    },
+    {
+     "name": "Eli Lilly and Co",
+     "symbol": "LLY",
+     "weight": 0.026449
+    }
+   ]
+  },
+  "VXUS": {
+   "expense_ratio": 0.0005,
+   "sectors": {
+    "basic_materials": 0.077,
+    "communication_services": 0.0433,
+    "consumer_cyclical": 0.0807,
+    "consumer_defensive": 0.0477,
+    "energy": 0.0476,
+    "financial_services": 0.2329,
+    "healthcare": 0.0689,
+    "industrials": 0.1511,
+    "realestate": 0.0233,
+    "technology": 0.1987,
+    "utilities": 0.0289
+   },
+   "top_holdings": [
+    {
+     "name": "Taiwan Semiconductor Manufacturing Co Ltd",
+     "symbol": "2330.TW",
+     "weight": 0.03974
+    },
+    {
+     "name": "Samsung Electronics Co Ltd",
+     "symbol": "005930.KQ",
+     "weight": 0.018965
+    },
+    {
+     "name": "SK hynix Inc",
+     "symbol": "000660.KQ",
+     "weight": 0.014602
+    },
+    {
+     "name": "ASML Holding NV",
+     "symbol": "ASML.AS",
+     "weight": 0.014245
+    },
+    {
+     "name": "Tencent Holdings Ltd",
+     "symbol": "0700.HK",
+     "weight": 0.007812
+    },
+    {
+     "name": "HSBC Holdings PLC",
+     "symbol": "HSBA.L",
+     "weight": 0.00765
+    },
+    {
+     "name": "Roche Holding AG Ordinary Shares new",
+     "symbol": "ROP.SW",
+     "weight": 0.006672
+    },
+    {
+     "name": "Royal Bank of Canada",
+     "symbol": "RY",
+     "weight": 0.006219
+    },
+    {
+     "name": "Novartis AG Registered Shares",
+     "symbol": "NOVN.SW",
+     "weight": 0.006172
+    },
+    {
+     "name": "Alibaba Group Holding Ltd Ordinary Shares",
+     "symbol": "9988.HK",
+     "weight": 0.005898
+    }
+   ]
+  },
+  "VYM": {
+   "expense_ratio": 0.0004,
+   "sectors": {
+    "basic_materials": 0.0329,
+    "communication_services": 0.0338,
+    "consumer_cyclical": 0.0629,
+    "consumer_defensive": 0.0812,
+    "energy": 0.0999,
+    "financial_services": 0.2165,
+    "healthcare": 0.1363,
+    "industrials": 0.1159,
+    "realestate": 0.0002,
+    "technology": 0.1696,
+    "utilities": 0.0507
+   },
+   "top_holdings": [
+    {
+     "name": "Broadcom Inc",
+     "symbol": "AVGO",
+     "weight": 0.069294
+    },
+    {
+     "name": "JPMorgan Chase & Co",
+     "symbol": "JPM",
+     "weight": 0.038287
+    },
+    {
+     "name": "ExxonMobil Holdings Corp",
+     "symbol": "XOM",
+     "weight": 0.02694
+    },
+    {
+     "name": "Johnson & Johnson",
+     "symbol": "JNJ",
+     "weight": 0.025765
+    },
+    {
+     "name": "AbbVie Inc",
+     "symbol": "ABBV",
+     "weight": 0.01826
+    },
+    {
+     "name": "Cisco Systems Inc",
+     "symbol": "CSCO",
+     "weight": 0.017558
+    },
+    {
+     "name": "Bank of America Corp",
+     "symbol": "BAC",
+     "weight": 0.016476
+    },
+    {
+     "name": "Chevron Corp",
+     "symbol": "CVX",
+     "weight": 0.015382
+    },
+    {
+     "name": "Merck & Co Inc",
+     "symbol": "MRK",
+     "weight": 0.014703
+    },
+    {
+     "name": "Caterpillar Inc",
+     "symbol": "CAT",
+     "weight": 0.01457
+    }
+   ]
+  },
+  "XLK": {
+   "expense_ratio": 0.0008,
+   "sectors": {
+    "technology": 1.0
+   },
+   "top_holdings": [
+    {
+     "name": "NVIDIA Corp",
+     "symbol": "NVDA",
+     "weight": 0.154659
+    },
+    {
+     "name": "Apple Inc",
+     "symbol": "AAPL",
+     "weight": 0.136004
+    },
+    {
+     "name": "Microsoft Corp",
+     "symbol": "MSFT",
+     "weight": 0.106577
+    },
+    {
+     "name": "Advanced Micro Devices Inc",
+     "symbol": "AMD",
+     "weight": 0.05059
+    },
+    {
+     "name": "Broadcom Inc",
+     "symbol": "AVGO",
+     "weight": 0.046755
+    },
+    {
+     "name": "Micron Technology Inc",
+     "symbol": "MU",
+     "weight": 0.044658
+    },
+    {
+     "name": "Intel Corp",
+     "symbol": "INTC",
+     "weight": 0.033849
+    },
+    {
+     "name": "Palantir Technologies Inc Ordinary Shares - Class A",
+     "symbol": "PLTR",
+     "weight": 0.024383
+    },
+    {
+     "name": "Cisco Systems Inc",
+     "symbol": "CSCO",
+     "weight": 0.024036
+    },
+    {
+     "name": "Lam Research Corp",
+     "symbol": "LRCX",
+     "weight": 0.023291
+    }
+   ]
+  }
+ },
+ "source": "Yahoo Finance via yfinance"
+}
