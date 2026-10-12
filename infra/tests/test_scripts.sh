@@ -56,7 +56,7 @@ case "$*" in
   *discoveryengine*"engines/atrium-fund-search"*) [ -n "${FAKE_EXISTING:-}" ] && echo '{"name": "atrium-fund-search"}' || exit 22 ;;
   *"-X POST"*) echo '{"name": "projects/1/locations/us/processors/new456", "type": "ID_PROOFING_PROCESSOR"}' ;;
   *) if [ -n "${FAKE_EXISTING:-}" ]; then
-       echo '{"processors": [{"name": "projects/1/locations/us/processors/abc123", "displayName": "atrium-id-proofing"}]}'
+       echo '{"processors": [{"name": "projects/1/locations/us/processors/abc123", "displayName": "atrium-id-proofing"}, {"name": "projects/1/locations/us/processors/abc123", "displayName": "atrium-bank-statements"}]}'
      else echo '{}'; fi ;;
 esac
 FAKE
@@ -91,6 +91,11 @@ check "uploads the fund fact sheets" 'grep "storage cp" "$FAKE_LOG" | grep -q "A
 check "creates the search data store with layout chunking" 'grep -q "dataStoreId=atrium-fund-docs" "$FAKE_LOG" && grep -q "layoutBasedChunkingConfig" "$FAKE_LOG"'
 check "imports the documents with full reconciliation" 'grep -q "documents:import" "$FAKE_LOG" && grep -q "\"FULL\"" "$FAKE_LOG"'
 check "creates an Enterprise search app" 'grep -q "engineId=atrium-fund-search" "$FAKE_LOG" && grep -q "SEARCH_TIER_ENTERPRISE" "$FAKE_LOG"'
+check "enables Cloud Scheduler" 'grep "services enable" "$FAKE_LOG" | grep -q "cloudscheduler.googleapis.com"'
+check "lets the service account start the day-end job" 'grep -q "add-iam-policy-binding.*roles/run.invoker" "$FAKE_LOG"'
+check "creates the bank statement processor" 'grep "^curl" "$FAKE_LOG" | grep -q "BANK_STATEMENT_PROCESSOR"'
+check "stores the statement processor id as a secret" 'grep -q "secrets versions add atrium-docai-statement-processor" "$FAKE_LOG"'
+check "creates the blind-index key once" 'grep -q "secrets versions add atrium-blind-index-key" "$FAKE_LOG"'
 
 echo "setup_gcp.sh rerun on a project that is already set up"
 : > "$FAKE_LOG"; rm -f "$FAKE_LOG.datastore"
@@ -104,6 +109,7 @@ check "does not add a new secret version" '! grep -q "secrets versions add" "$FA
 check "does not create a second budget" '! grep -q "billing budgets create" "$FAKE_LOG"'
 check "does not recreate the dataset or subscription" '! grep -q "mk --dataset" "$FAKE_LOG" && ! grep -q "subscriptions create" "$FAKE_LOG"'
 check "reuses the existing ID proofing processor" '! grep -q "ID_PROOFING_PROCESSOR" "$FAKE_LOG"'
+check "reuses the existing bank statement processor" '! grep -q "BANK_STATEMENT_PROCESSOR" "$FAKE_LOG"'
 check "reuses the data store and search app" '! grep -q "dataStoreId=" "$FAKE_LOG" && ! grep -q "engineId=" "$FAKE_LOG"'
 check "still re-imports the documents" 'grep -q "documents:import" "$FAKE_LOG"'
 
@@ -120,6 +126,11 @@ check "API env values reach gcloud unmangled" 'echo "$API_DEPLOY" | grep -q "MAR
 check "API runs Gemini from the global endpoint" 'echo "$API_DEPLOY" | grep -q "LLM_PROVIDER=gemini" && echo "$API_DEPLOY" | grep -q "GOOGLE_CLOUD_LOCATION=global" && echo "$API_DEPLOY" | grep -q "GOOGLE_GENAI_USE_ENTERPRISE=true"'
 check "API gets the ID proofing processor from Secret Manager" 'echo "$API_DEPLOY" | grep -q "DOCAI_PROOFING_PROCESSOR=atrium-docai-proofing-processor:latest"'
 check "API searches fund documents with Vertex AI Search" 'echo "$API_DEPLOY" | grep -q "FUND_SEARCH_ENGINE=atrium-fund-search@FUND_SEARCH_LOCATION=global"'
+check "API gets the statement processor and the blind-index key from Secret Manager" 'echo "$API_DEPLOY" | grep -q "DOCAI_STATEMENT_PROCESSOR=atrium-docai-statement-processor:latest" && echo "$API_DEPLOY" | grep -q "BLIND_INDEX_KEY=atrium-blind-index-key:latest"'
+check "deploys the day-end job from the API image" 'grep "run jobs deploy atrium-day-end" "$FAKE_LOG" | grep -q -- "--image" && grep "run jobs deploy atrium-day-end" "$FAKE_LOG" | grep -q "app.ops.day_end"'
+check "the day-end job reaches the database and its secrets" 'grep "run jobs deploy atrium-day-end" "$FAKE_LOG" | grep -q -- "--set-cloudsql-instances" && grep "run jobs deploy atrium-day-end" "$FAKE_LOG" | grep -q "BLIND_INDEX_KEY=atrium-blind-index-key:latest"'
+check "schedules the day-end on weekday evenings in New York" 'grep "scheduler jobs create http atrium-day-end" "$FAKE_LOG" | grep -q "15 17 \* \* 1-5" && grep "scheduler jobs create http atrium-day-end" "$FAKE_LOG" | grep -q "America/New_York"'
+check "Scheduler calls the Cloud Run job API unmangled" 'grep "scheduler jobs create http atrium-day-end" "$FAKE_LOG" | grep -q -- "--uri=https://run.googleapis.com/v2/projects/atrium-cup-2026/locations/us-central1/jobs/atrium-day-end:run"'
 check "API scales to zero by default" 'echo "$API_DEPLOY" | grep -q -- "--min-instances 0"'
 check "web scales to zero by default" 'echo "$WEB_DEPLOY" | grep -q -- "--min-instances 0"'
 check "both services use startup CPU boost" 'echo "$API_DEPLOY" | grep -q -- "--cpu-boost" && echo "$WEB_DEPLOY" | grep -q -- "--cpu-boost"'
@@ -131,6 +142,7 @@ echo "deploy.sh with warm instances for the judging window"
 FAKE_WEB_EXISTS=1 API_MIN_INSTANCES=1 WEB_MIN_INSTANCES=1 bash infra/deploy.sh > "$WORK/deploy-warm.out" 2>&1
 check "API keeps one warm instance" 'grep -m1 "run deploy atrium-api" "$FAKE_LOG" | grep -q -- "--min-instances 1"'
 check "web keeps one warm instance" 'grep -m1 "run deploy atrium-web" "$FAKE_LOG" | grep -q -- "--min-instances 1"'
+check "an existing schedule is updated, not created twice" 'FAKE_EXISTING=1 FAKE_WEB_EXISTS=1 bash infra/deploy.sh >/dev/null 2>&1; grep -q "scheduler jobs update http atrium-day-end" "$FAKE_LOG"'
 
 echo "deploy.sh on the very first release"
 : > "$FAKE_LOG"; rm -f "$FAKE_LOG.web" "$FAKE_LOG.datastore"

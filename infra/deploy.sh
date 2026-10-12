@@ -6,7 +6,7 @@
 set -euo pipefail
 # Git Bash on Windows rewrites path-like arguments (https://x, /tmp/x) passed to native programs such as gcloud.
 # Exempt only our "^@^" env-var lists; gcloud's own launcher on Windows still needs the conversion.
-export MSYS2_ARG_CONV_EXCL='^@^'
+export MSYS2_ARG_CONV_EXCL='^@^;--uri='
 PROJECT_ID="${PROJECT_ID:-atrium-cup-2026}"
 REGION="${REGION:-us-central1}"
 AUTH_MODE="${AUTH_MODE:-dev}"
@@ -47,10 +47,28 @@ API_ENV="${API_ENV}@FUND_SEARCH_ENGINE=atrium-fund-search@FUND_SEARCH_LOCATION=g
 
 gcloud run deploy atrium-api --source services/api --region "$REGION" --allow-unauthenticated --quiet \
   --service-account "$SA" --add-cloudsql-instances "$CONN" \
-  --set-secrets "DATABASE_URL=atrium-database-url:latest,DOCAI_PROOFING_PROCESSOR=atrium-docai-proofing-processor:latest" \
+  --set-secrets "DATABASE_URL=atrium-database-url:latest,DOCAI_PROOFING_PROCESSOR=atrium-docai-proofing-processor:latest,DOCAI_STATEMENT_PROCESSOR=atrium-docai-statement-processor:latest,BLIND_INDEX_KEY=atrium-blind-index-key:latest" \
   --set-env-vars "$API_ENV" \
   --min-instances "$API_MIN_INSTANCES" --max-instances 3 --memory 1Gi --cpu 1 --cpu-boost --timeout 300
 API_URL="$(gcloud run services describe atrium-api --region "$REGION" --format='value(status.url)')"
+
+# The day-end (app/ops/day_end.py) runs as a Cloud Run job from the image just deployed, so there is no second build.
+SECRETS="DATABASE_URL=atrium-database-url:latest,DOCAI_STATEMENT_PROCESSOR=atrium-docai-statement-processor:latest,BLIND_INDEX_KEY=atrium-blind-index-key:latest"
+IMAGE="$(gcloud run services describe atrium-api --region "$REGION" --format='value(spec.template.spec.containers[0].image)')"
+gcloud run jobs deploy atrium-day-end --image "$IMAGE" --region "$REGION" --quiet \
+  --service-account "$SA" --set-cloudsql-instances "$CONN" --set-secrets "$SECRETS" --set-env-vars "$API_ENV" \
+  --command python --args=-m,app.ops.day_end --max-retries 1 --task-timeout 900 --memory 1Gi --cpu 1 >/dev/null
+# Weekdays at 5:15 pm in New York, once every close has printed. Scheduler calls the Cloud Run Admin API as the
+# service account, which may start the job (roles/run.invoker).
+RUN_URI="https://run.googleapis.com/v2/projects/${PROJECT_ID}/locations/${REGION}/jobs/atrium-day-end:run"
+SCHEDULE=(--location "$REGION" --schedule "15 17 * * 1-5" --time-zone "America/New_York" --uri="$RUN_URI"
+          --http-method POST --oauth-service-account-email "$SA" --quiet)
+if gcloud scheduler jobs describe atrium-day-end --location "$REGION" >/dev/null 2>&1; then
+  gcloud scheduler jobs update http atrium-day-end "${SCHEDULE[@]}" >/dev/null
+else
+  gcloud scheduler jobs create http atrium-day-end "${SCHEDULE[@]}" >/dev/null
+fi
+echo "day-end job: atrium-day-end, weekdays 5:15 pm America/New_York"
 
 gcloud run deploy atrium-web --source apps/web --region "$REGION" --allow-unauthenticated --quiet \
   --set-env-vars "API_URL=${API_URL},AUTH_MODE=${AUTH_MODE},FIREBASE_PROJECT_ID=${PROJECT_ID},FIREBASE_API_KEY=${FIREBASE_API_KEY:-},FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-},FIREBASE_APP_ID=${FIREBASE_APP_ID:-}" \
