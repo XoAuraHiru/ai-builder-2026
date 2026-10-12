@@ -25,6 +25,10 @@ class ReversalError(OpsError):
 def why_not_reversible(db: Session, posting: Posting) -> str | None:
     if posting.instrument_type != "fund" or posting.posting_type != "subscription" or posting.units <= 0:
         return "Only a fund allocation (a subscription posting) can be reversed here."
+    instruction = db.get(Instruction, posting.reference)
+    if instruction is not None and instruction.type != "subscribe":
+        return ("These units came in through a switch, which is reversed as a whole, not one leg at a time; that is "
+                "not supported here.")
     if db.scalar(select(Posting.id).where(Posting.reversal_of == posting.id)) is not None:
         return "This posting has already been reversed."
     lot = db.scalar(select(Lot).where(Lot.posting_id == posting.id))

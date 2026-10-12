@@ -57,3 +57,23 @@ def test_only_an_intact_fund_allocation_can_be_reversed(db, account, staff, allo
         request_reversal(db, cash.id, staff["mei"], "Wrong account.")
     with pytest.raises(ReversalError, match="not found"):
         request_reversal(db, "nope", staff["mei"], "Wrong account.")
+
+
+def test_a_switch_is_not_reversed_one_leg_at_a_time(db, account, staff):
+    seed_funds(db)
+    switch = Instruction(account_id=account.id, fund_code="ATR-BAL", type="switch", units=Decimal("2"),
+                         to_fund_code="ATR-INC", state="settled")
+    db.add(switch)
+    db.flush()
+    apply_posting(db, account_id=account.id, instrument="ATR-BAL", instrument_type="fund", posting_type="subscription",
+                  units=Decimal("20"), cash=Decimal("-2000"), price=Decimal("100"), value_date=date(2026, 10, 1),
+                  reference="SEED")
+    apply_posting(db, account_id=account.id, instrument="ATR-BAL", instrument_type="fund", posting_type="redemption",
+                  units=Decimal("-2"), cash=Decimal("200"), price=Decimal("100"), value_date=date(2026, 10, 9),
+                  reference=switch.id)
+    inbound = apply_posting(db, account_id=account.id, instrument="ATR-INC", instrument_type="fund",
+                            posting_type="subscription", units=Decimal("2"), cash=Decimal("-200"), price=Decimal("100"),
+                            value_date=date(2026, 10, 9), reference=switch.id)
+    db.commit()
+    with pytest.raises(ReversalError, match="switch"):
+        request_reversal(db, inbound.id, staff["mei"], "Wrong fund.")
