@@ -105,6 +105,11 @@ def _case(prompt: str) -> dict:
             "questions": ["What does the client say about these movements?"]}
 
 
+def _brief(prompt: str) -> dict:
+    return {"headline": "Offline mode: connect Gemini for a written morning brief.",
+            "points": ["Every step of the run is listed with its outcome."], "watch": []}
+
+
 def offline_llm() -> FakeLLM:
     return FakeLLM({
         "lead_enrichment": _enrich,
@@ -117,4 +122,5 @@ def offline_llm() -> FakeLLM:
         "order_explainer": _narrative, "held_order_review": _review,
         "statement_normalise": _statement,
         "aml_case_review": _case,
+        "ops_brief": _brief,
     }, model="offline")
