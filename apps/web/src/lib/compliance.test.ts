@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { citationLabels, layoutGraph, purposeLabel, type GraphNode } from "./compliance";
+import { citationLabels, layoutGraph, purposeLabel, thresholdBars, type EvidenceRow, type GraphNode } from "./compliance";
 
 const NODES: GraphNode[] = [
   { id: "person:b", kind: "person", label: "Noah Williams", flagged: false },
@@ -27,5 +27,15 @@ describe("labels", () => {
     expect(purposeLabel("aml_case_review")).toBe("AML case review");
     expect(purposeLabel("ops_brief")).toBe("Morning brief");
     expect(purposeLabel("something_new")).toBe("Something new");
+  });
+});
+
+describe("thresholdBars", () => {
+  it("scales each payment against the reporting line, labelled by its evidence row", () => {
+    const ev = (id: string, amount: string | null, kind = "instruction") => ({ kind, id, date: "2026-10-06", amount, detail: "" }) as EvidenceRow;
+    const { bars, linePct } = thresholdBars([ev("a", "9400.00"), ev("b", "9750.00"), ev("c", "9900.00"), ev("bank", null, "bank_link")], 10000);
+    expect(bars.map((b) => [b.label, Math.round(b.pct)])).toEqual([["E1", 87], ["E2", 90], ["E3", 92]]);
+    expect(Math.round(linePct)).toBe(93);
+    expect(thresholdBars([ev("x", null, "feature")], 10000).bars).toEqual([]);
   });
 });
