@@ -16,3 +16,4 @@ class Person(IdMixin, Base):
     country: Mapped[str] = mapped_column(String(2), nullable=False, default="US")
     risk_band: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 1..5, set by onboarding (Plan 3)
     firebase_uid: Mapped[str | None] = mapped_column(String(128), nullable=True, unique=True)
+    totp_secret: Mapped[str | None] = mapped_column(String(32), nullable=True)  # staff authenticator (step-up)

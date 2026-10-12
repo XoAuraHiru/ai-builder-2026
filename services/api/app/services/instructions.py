@@ -69,6 +69,12 @@ def usd(amount: Decimal) -> str:
     return f"${amount:,.2f}"
 
 
+def payment_reference(instruction_id: str) -> str:
+    """The reference an investor quotes when paying for a subscription: short, unambiguous, easy to find in a bank
+    narration. Statements often drop the hyphen, so matching ignores it."""
+    return f"ATR-{instruction_id[:8].upper()}"
+
+
 def preview_redemption(fund_code: str, lots: list[LotView], nav: Decimal, nav_as_of: date, *,
                        amount: Decimal | None = None, units: Decimal | None = None) -> RedemptionPreview:
     """Which lots a sale would use, first in first out, and the gain it would realise. Writes nothing."""

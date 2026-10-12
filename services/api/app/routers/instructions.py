@@ -10,7 +10,8 @@ from app.models import STEP_STATES, Account, Fund, Instruction, InstructionStep,
 from app.routers.accounts import account_or_404
 from app.schemas.instructions import (InstructionIn, InstructionOut, PlanOut, RecurringIn, RecurringOut, RedemptionOut,
                                       StepOut)
-from app.services.instructions import InstructionRejected, create_recurring, plan_instruction, submit_instruction
+from app.services.instructions import (InstructionRejected, create_recurring, payment_reference, plan_instruction,
+                                       submit_instruction)
 
 router = APIRouter(prefix="/accounts", tags=["instructions"])
 STEP_ORDER = {state: i for i, state in enumerate(STEP_STATES)}
@@ -45,7 +46,8 @@ def instruction_out(db: Session, i: Instruction, funds: dict[str, Fund]) -> Inst
                           to_fund_name=funds[i.to_fund_code].name if i.to_fund_code else None,
                           amount=i.amount, units=i.units, state=i.state, acknowledged_risk=i.acknowledged_risk,
                           requested_at=i.requested_at,
-                          steps=[StepOut(state=s.state, note=s.note, at=s.created_at) for s in steps])
+                          steps=[StepOut(state=s.state, note=s.note, at=s.created_at) for s in steps],
+                          payment_reference=payment_reference(i.id) if i.type == "subscribe" else None)
 
 
 def recurring_out(plan: RecurringPlan, funds: dict[str, Fund]) -> RecurringOut:

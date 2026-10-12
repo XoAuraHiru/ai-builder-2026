@@ -121,3 +121,21 @@ def paper(db):
                           units=-sign * gross, cash=Decimal("0"), price=Decimal("1"), value_date=day, reference=ref)
 
     return Paper()
+
+
+@pytest.fixture()
+def staff(db):
+    """Two operations people (the maker and the checker of four-eyes approvals) and a compliance officer, each with a
+    fixed authenticator secret so tests can compute their one-time codes."""
+    from app.models import Person
+
+    out = {}
+    for key, kind, name, email, secret in (
+            ("mei", "ops", "Mei Tanaka", "mei@atrium.demo", "JBSWY3DPEHPK3PXP"),
+            ("sam", "ops", "Sam Ortiz", "sam@atrium.demo", "KRSXG5CTMVRXEZLU"),
+            ("omar", "compliance", "Omar Haddad", "omar@atrium.demo", "MFRGGZDFMZTWQ2LK")):
+        person = Person(kind=kind, full_name=name, email=email, totp_secret=secret)
+        db.add(person)
+        out[key] = person
+    db.commit()
+    return out
