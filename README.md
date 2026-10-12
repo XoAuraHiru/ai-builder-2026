@@ -62,6 +62,17 @@ If Yahoo Finance is unreachable from Cloud Run, seeding falls back to the commit
 
 Both Cloud Run services scale to zero, so compute is billed only while requests are served and normally stays inside Cloud Run's free tier. The one always-on piece is Cloud SQL (db-f1-micro, 10 GB SSD, daily backups): about $9.40 a month. A budget alert emails the billing admins at 50, 90 and 100 percent of $15 a month.
 
+AI is pay-per-use. Measured on the live system (Gemini 3.8 Flash on the global endpoint, October 2026 prices):
+
+| Action | Cost each |
+|---|---|
+| Score a new lead (Gemini enrichment) | $0.0015 |
+| Identity check (Gemini extraction + Document AI ID Proofing) | $0.102 |
+| AI first-reply draft (ADK agent + compliance review) | $0.008 |
+| Advisor question to the concierge agent | $0.003 |
+
+At demo volumes (100 leads, 30 drafts, 30 questions and 20 identity checks a month) that adds about $2.50, so the whole system runs at roughly $12 a month. Every call is listed with its cost under `GET /ai/usage` and on each lead's AI activity panel, and lands in BigQuery (`atrium.events`).
+
 Cold start after idle time: about 6 seconds for the API and 2 to 4 seconds for the web app. For the judging window, keep both warm (about $23 a month extra):
 
 ```bash

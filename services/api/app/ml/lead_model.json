@@ -1,0 +1,25 @@
+{
+  "intercept": -10.542028500189907,
+  "weights": {
+    "log_investable": 1.1121248257047622,
+    "log_monthly": 0.5017663227052049,
+    "horizon": 0.7875034898991027,
+    "referral": 1.315022723544678,
+    "has_phone": 0.9511230860215958,
+    "completeness": 1.9550292810703656,
+    "goal_fit": 1.0098372429233866
+  },
+  "means": {
+    "log_investable": 4.773244425000001,
+    "log_monthly": 2.498444555,
+    "horizon": 0.49262500625,
+    "referral": 0.27,
+    "has_phone": 0.69625,
+    "completeness": 0.4815625,
+    "goal_fit": 0.745
+  },
+  "source": "bigquery-ml",
+  "model_name": "atrium-cup-2026.atrium.lead_conversion",
+  "auc": 0.7921,
+  "trained_at": "2026-10-11T19:22:49+00:00"
+}

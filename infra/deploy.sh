@@ -40,10 +40,13 @@ if [ -n "$PREV_WEB_ORIGINS" ]; then CORS="${PREV_WEB_ORIGINS},${CORS}"; fi
 API_ENV="^@^ENV=dev@AUTH_MODE=${AUTH_MODE}@GCP_PROJECT=${PROJECT_ID}@GCP_LOCATION=${REGION}"
 API_ENV="${API_ENV}@MARKET_DATA_PROVIDER=yfinance@MARKET_CACHE_DIR=/tmp/cache@PUBSUB_ENABLED=true@AUTO_SEED=true"
 API_ENV="${API_ENV}@CORS_ORIGINS=${CORS}"
+# Gemini serves from the global endpoint; ADK reads the GOOGLE_* variables, the app reads LLM_PROVIDER and GEMINI_*.
+API_ENV="${API_ENV}@LLM_PROVIDER=gemini@GEMINI_LOCATION=global@GOOGLE_GENAI_USE_ENTERPRISE=true"
+API_ENV="${API_ENV}@GOOGLE_CLOUD_PROJECT=${PROJECT_ID}@GOOGLE_CLOUD_LOCATION=global@DOCAI_LOCATION=us"
 
 gcloud run deploy atrium-api --source services/api --region "$REGION" --allow-unauthenticated --quiet \
   --service-account "$SA" --add-cloudsql-instances "$CONN" \
-  --set-secrets "DATABASE_URL=atrium-database-url:latest" \
+  --set-secrets "DATABASE_URL=atrium-database-url:latest,DOCAI_PROOFING_PROCESSOR=atrium-docai-proofing-processor:latest" \
   --set-env-vars "$API_ENV" \
   --min-instances "$API_MIN_INSTANCES" --max-instances 3 --memory 1Gi --cpu 1 --cpu-boost --timeout 300
 API_URL="$(gcloud run services describe atrium-api --region "$REGION" --format='value(status.url)')"

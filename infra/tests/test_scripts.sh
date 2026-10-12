@@ -31,13 +31,31 @@ case "$*" in
       && echo '["https://atrium-web-123.us-central1.run.app","https://atrium-web-test.a.run.app"]' || exit 1 ;;
   *"run services describe atrium-web"*) { [ -n "${FAKE_WEB_EXISTS:-}" ] || [ -f "$FAKE_LOG.web" ]; } && echo "https://atrium-web-test.a.run.app" || exit 1 ;;
   *"run services describe atrium-api"*) echo "https://atrium-api-test.a.run.app" ;;
+  *"secrets versions access"*) [ -n "${FAKE_EXISTING:-}" ] && printf 'abc123' ;;
+  "projects describe"*"projectNumber"*) echo "1234" ;;
   "projects describe"*) exit 0 ;;
   *" describe "*) [ -n "${FAKE_EXISTING:-}" ] && exit 0 || exit 1 ;;
 esac
 exit 0
 FAKE
+cat > "$WORK/bin/bq" <<'FAKE'
+#!/usr/bin/env bash
+echo "bq $*" >> "$FAKE_LOG"
+case "$*" in *" show "*) [ -n "${FAKE_EXISTING:-}" ] && exit 0 || exit 1 ;; esac
+exit 0
+FAKE
+cat > "$WORK/bin/curl" <<'FAKE'
+#!/usr/bin/env bash
+echo "curl $*" >> "$FAKE_LOG"
+case "$*" in
+  *"-X POST"*) echo '{"name": "projects/1/locations/us/processors/new456", "type": "ID_PROOFING_PROCESSOR"}' ;;
+  *) if [ -n "${FAKE_EXISTING:-}" ]; then
+       echo '{"processors": [{"name": "projects/1/locations/us/processors/abc123", "displayName": "atrium-id-proofing"}]}'
+     else echo '{}'; fi ;;
+esac
+FAKE
 printf '#!/usr/bin/env bash\nexit 1\n' > "$WORK/bin/firebase"
-chmod +x "$WORK/bin/gcloud" "$WORK/bin/firebase"
+chmod +x "$WORK/bin/gcloud" "$WORK/bin/firebase" "$WORK/bin/bq" "$WORK/bin/curl"
 export PATH="$WORK/bin:$PATH"
 
 FAILS=0
@@ -56,6 +74,12 @@ check "creates the database with daily backups" 'grep "sql instances create atri
 check "creates the image repository" 'grep -q "artifacts repositories create cloud-run-source-deploy" "$FAKE_LOG"'
 check "sets an image cleanup policy" 'grep -q "artifacts repositories set-cleanup-policies cloud-run-source-deploy" "$FAKE_LOG"'
 check "creates a project-scoped budget alert" 'grep "billing budgets create" "$FAKE_LOG" | grep -q "filter-projects=projects/atrium-cup-2026"'
+check "creates the BigQuery dataset" 'grep -q "^bq .*mk --dataset" "$FAKE_LOG"'
+check "creates the events table" 'grep "^bq .*query" "$FAKE_LOG" | grep -q "CREATE TABLE IF NOT EXISTS"'
+check "lets Pub/Sub write to BigQuery" 'grep -q "service-1234@gcp-sa-pubsub.iam.gserviceaccount.com" "$FAKE_LOG"'
+check "creates the BigQuery subscription" 'grep "pubsub subscriptions create atrium-events-bq" "$FAKE_LOG" | grep -q "bigquery-table=atrium-cup-2026:atrium.events"'
+check "creates the ID proofing processor" 'grep "^curl" "$FAKE_LOG" | grep -q "ID_PROOFING_PROCESSOR"'
+check "stores the processor id as a secret" 'grep -q "secrets versions add atrium-docai-proofing-processor" "$FAKE_LOG"'
 
 echo "setup_gcp.sh rerun on a project that is already set up"
 : > "$FAKE_LOG"
@@ -67,6 +91,8 @@ check "turns on backups for an existing database without them" 'grep -q "sql ins
 check "leaves the live database password alone" '! grep -q "sql users set-password" "$FAKE_LOG"'
 check "does not add a new secret version" '! grep -q "secrets versions add" "$FAKE_LOG"'
 check "does not create a second budget" '! grep -q "billing budgets create" "$FAKE_LOG"'
+check "does not recreate the dataset or subscription" '! grep -q "mk --dataset" "$FAKE_LOG" && ! grep -q "subscriptions create" "$FAKE_LOG"'
+check "reuses the existing ID proofing processor" '! grep -q "X POST" "$FAKE_LOG"'
 
 echo "deploy.sh when the web service already exists"
 : > "$FAKE_LOG"; rm -f "$FAKE_LOG.web"
@@ -78,6 +104,8 @@ check "exits 0 (was $STATUS)" '[ "$STATUS" -eq 0 ]'
 check "API deploy keeps CORS for the live web origin" 'echo "$API_DEPLOY" | grep -q "CORS_ORIGINS=.*https://atrium-web-test.a.run.app"'
 check "API deploy allows both Cloud Run URLs of the web service" 'echo "$API_DEPLOY" | grep -q "https://atrium-web-123.us-central1.run.app"'
 check "API env values reach gcloud unmangled" 'echo "$API_DEPLOY" | grep -q "MARKET_CACHE_DIR=/tmp/cache@" && echo "$API_DEPLOY" | grep -q "CORS_ORIGINS=https://atrium-web-123.us-central1.run.app,"'
+check "API runs Gemini from the global endpoint" 'echo "$API_DEPLOY" | grep -q "LLM_PROVIDER=gemini" && echo "$API_DEPLOY" | grep -q "GOOGLE_CLOUD_LOCATION=global" && echo "$API_DEPLOY" | grep -q "GOOGLE_GENAI_USE_ENTERPRISE=true"'
+check "API gets the ID proofing processor from Secret Manager" 'echo "$API_DEPLOY" | grep -q "DOCAI_PROOFING_PROCESSOR=atrium-docai-proofing-processor:latest"'
 check "API scales to zero by default" 'echo "$API_DEPLOY" | grep -q -- "--min-instances 0"'
 check "web scales to zero by default" 'echo "$WEB_DEPLOY" | grep -q -- "--min-instances 0"'
 check "both services use startup CPU boost" 'echo "$API_DEPLOY" | grep -q -- "--cpu-boost" && echo "$WEB_DEPLOY" | grep -q -- "--cpu-boost"'

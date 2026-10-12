@@ -58,3 +58,16 @@ export type Portfolio = {
   by_asset_class: Record<string, string>;
   by_region: Record<string, string>;
 };
+
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const cfg = await getConfig();
+  const res = await fetch(`${cfg.apiUrl}${path}`, { method: "POST", body: form, headers: await authHeaders() });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      detail = (await res.json()).detail ?? detail;
+    } catch {}
+    throw new ApiError(res.status, detail);
+  }
+  return (await res.json()) as T;
+}

@@ -72,6 +72,42 @@ done
 step "Pub/Sub"
 gcloud pubsub topics describe atrium-events >/dev/null 2>&1 || gcloud pubsub topics create atrium-events
 
+step "BigQuery event log"
+# Every domain event (AI decisions included, metadata only) lands in BigQuery through a Pub/Sub subscription: no code.
+PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')"
+bq --project_id="$PROJECT_ID" show --dataset "$PROJECT_ID:atrium" >/dev/null 2>&1 \
+  || bq --project_id="$PROJECT_ID" --location=US mk --dataset --description="Atrium events, AI decision log, models" \
+       "$PROJECT_ID:atrium" >/dev/null
+bq --project_id="$PROJECT_ID" query --use_legacy_sql=false --quiet \
+  "CREATE TABLE IF NOT EXISTS \`$PROJECT_ID.atrium.events\` (subscription_name STRING, message_id STRING, publish_time TIMESTAMP, data JSON, attributes JSON) PARTITION BY DATE(publish_time)" >/dev/null
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-pubsub.iam.gserviceaccount.com" \
+  --role=roles/bigquery.dataEditor --condition=None --quiet >/dev/null
+gcloud pubsub subscriptions describe atrium-events-bq >/dev/null 2>&1 \
+  || gcloud pubsub subscriptions create atrium-events-bq --topic=atrium-events \
+       --bigquery-table="$PROJECT_ID:atrium.events" --write-metadata >/dev/null
+
+step "Document AI identity proofing"
+# There is no gcloud command group for Document AI processors, so this uses the REST API.
+DOCAI="https://us-documentai.googleapis.com/v1/projects/${PROJECT_ID}/locations/us/processors"
+TOKEN="$(gcloud auth print-access-token)"
+PY="$(command -v python3 || command -v python)"
+PROCESSOR_ID="$(curl -s -H "Authorization: Bearer ${TOKEN}" "$DOCAI" | "$PY" -c 'import json, sys
+d = json.load(sys.stdin)
+print(next((p["name"].rsplit("/", 1)[-1] for p in d.get("processors", []) if p.get("displayName") == "atrium-id-proofing"), ""))')"
+if [ -z "$PROCESSOR_ID" ]; then
+  PROCESSOR_ID="$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
+    -d '{"type": "ID_PROOFING_PROCESSOR", "displayName": "atrium-id-proofing"}' "$DOCAI" \
+    | "$PY" -c 'import json, sys; print(json.load(sys.stdin)["name"].rsplit("/", 1)[-1])')"
+fi
+gcloud secrets describe atrium-docai-proofing-processor >/dev/null 2>&1 \
+  || gcloud secrets create atrium-docai-proofing-processor --replication-policy=automatic >/dev/null
+STORED="$(gcloud secrets versions access latest --secret=atrium-docai-proofing-processor 2>/dev/null || true)"
+if [ "$STORED" != "$PROCESSOR_ID" ]; then
+  printf '%s' "$PROCESSOR_ID" | gcloud secrets versions add atrium-docai-proofing-processor --data-file=- >/dev/null
+fi
+echo "ID proofing processor: $PROCESSOR_ID"
+
 step "image repository"
 # `gcloud run deploy --source` pushes here. Keep the three newest images, delete anything older than a day.
 gcloud artifacts repositories describe cloud-run-source-deploy --location="$REGION" >/dev/null 2>&1 \

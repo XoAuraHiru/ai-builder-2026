@@ -37,12 +37,17 @@ def bootstrap_database(settings: Settings) -> str:
             if not settings.auto_seed:
                 db.commit()
                 return "disabled"
+            from app.seed.leads import seed_demo_leads  # light: models only
+
             if is_seeded(db):
+                if seed_demo_leads(db):  # databases seeded before leads existed get them once
+                    log.info("seeded demo leads")
                 db.commit()
                 return "skipped"
             import app.seed.generate as gen
 
             report = gen.generate(db, settings)
+            seed_demo_leads(db)
             db.commit()
             log.info("seeded database: %s", report)
             return "seeded"

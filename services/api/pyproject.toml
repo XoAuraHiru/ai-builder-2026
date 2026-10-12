@@ -16,19 +16,25 @@ dependencies = [
   "firebase-admin>=6.5",
   "google-cloud-pubsub>=2.21",
   "pg8000>=1.31",
+  "google-genai>=2.29",
+  "google-adk>=2.11",
+  "google-cloud-documentai>=3.16",
+  "google-cloud-bigquery>=3.46",
+  "python-multipart>=0.0.9",
 ]
 
 [dependency-groups]
 dev = [
   "pytest>=8.2",
   "httpx>=0.27",
+  "pillow>=10.4",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
 markers = ["network: tests that call real market-data providers (skipped unless ATRIUM_NETWORK_TESTS=1)"]
-filterwarnings = ["ignore:Dialect sqlite", "ignore:Using `httpx` with `starlette.testclient`"]
+filterwarnings = ["ignore:Dialect sqlite", "ignore:Using `httpx` with `starlette.testclient`", 'ignore:\[EXPERIMENTAL\]']
 
 [build-system]
 requires = ["hatchling"]
