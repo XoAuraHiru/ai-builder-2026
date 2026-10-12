@@ -54,10 +54,21 @@ Return findings with the exact phrase, the rule, a one-sentence explanation and 
 Return an empty list if the draft is compliant."""
 
 
+NEGATION = re.compile(r"\b(not|never|no|cannot|can't|don't|doesn't|won't|isn't|aren't)\b", re.IGNORECASE)
+
+
+def _negated(text: str, start: int) -> bool:
+    """True when the phrase is denied in its own sentence ("we cannot guarantee returns"): a disclaimer, not a promise."""
+    sentence_start = max(text.rfind(c, 0, start) for c in ".!?\n") + 1
+    return bool(NEGATION.search(" ".join(text[sentence_start:start].split()[-4:])))
+
+
 def _rule_findings(text: str) -> list[ComplianceFinding]:
     out = []
     for pattern, rule, explanation, suggestion in RULES:
         for match in re.finditer(pattern, text, flags=re.IGNORECASE):
+            if _negated(text, match.start()):
+                continue
             out.append(ComplianceFinding(phrase=match.group(0), rule=rule, explanation=explanation,
                                          suggestion=suggestion))
     return out
