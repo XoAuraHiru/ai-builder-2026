@@ -84,7 +84,7 @@ export default function LeadDetail() {
 
   return (
     <>
-      <PageHeader title={lead.full_name} back={{ href: "/advisor", label: "Lead pipeline" }}
+      <PageHeader title={lead.full_name} back={{ href: "/advisor", label: "Leads" }}
         description={`${lead.email}, ${lead.phone ?? "no phone"}. Came via ${lead.source} on ${formatDate(lead.created_at)}.`}
         actions={lead.stage !== "client" ? (
           <label className="flex items-center gap-2 text-sm">Stage

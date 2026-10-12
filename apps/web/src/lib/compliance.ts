@@ -73,3 +73,16 @@ export function layoutGraph(nodes: GraphNode[], width: number, rowHeight: number
   });
   return { at, height };
 }
+
+export type ThresholdBar = { id: string; label: string; date: string; amount: number; pct: number };
+
+/** Payment rows drawn against a reporting threshold: each bar's height and the line's, as a share of the chart. */
+export function thresholdBars(evidence: EvidenceRow[], threshold: number): { bars: ThresholdBar[]; linePct: number } {
+  const labels = citationLabels(evidence);
+  const rows = evidence.filter((e) => e.amount !== null && (e.kind === "instruction" || e.kind === "posting"));
+  const top = Math.max(threshold * 1.08, ...rows.map((r) => Number(r.amount)));
+  return {
+    bars: rows.map((r) => ({ id: r.id, label: labels[r.id], date: r.date, amount: Number(r.amount), pct: (Number(r.amount) / top) * 100 })),
+    linePct: (threshold / top) * 100,
+  };
+}

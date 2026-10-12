@@ -1,52 +1,63 @@
 import { describe, expect, it } from "vitest";
-import { isActive, isPublic, WORKSPACES, workspacesFor } from "./nav";
+import { entryRoute, routeKind, sectionFor, tabFor, WORKSPACES, workspaceFor } from "./nav";
 
-describe("workspacesFor", () => {
-  it("gives investors only the investor workspace", () => {
-    expect(workspacesFor(["investor"]).map((w) => w.key)).toEqual(["investor"]);
+const investor = WORKSPACES.investor;
+
+describe("workspaceFor", () => {
+  it("gives each person only their own workspace", () => {
+    expect(workspaceFor(["investor"])?.key).toBe("investor");
+    expect(workspaceFor(["advisor", "staff"])?.key).toBe("advisor");
+    expect(workspaceFor(["ops", "staff"])?.key).toBe("operations");
+    expect(workspaceFor(["compliance", "staff"])?.key).toBe("compliance");
+    expect(workspaceFor(["admin", "staff"])?.key).toBe("advisor");
+    expect(workspaceFor([])).toBeNull();
   });
-  it("puts a staff member's own workspace first", () => {
-    expect(workspacesFor(["ops", "staff"]).map((w) => w.key)).toEqual(["operations", "advisor", "compliance"]);
-    expect(workspacesFor(["advisor", "staff"])[0].key).toBe("advisor");
-    expect(workspacesFor(["compliance", "staff"])[0].key).toBe("compliance");
-  });
-  it("gives unknown roles nothing", () => {
-    expect(workspacesFor([])).toEqual([]);
+  it("keeps every rail to five items at most", () => {
+    for (const w of Object.values(WORKSPACES)) expect(w.sections.length).toBeLessThanOrEqual(5);
   });
 });
 
-describe("isActive", () => {
-  it("matches workspace roots exactly", () => {
-    expect(isActive("/investor", "/investor")).toBe(true);
-    expect(isActive("/investor/funds", "/investor")).toBe(false);
+describe("sectionFor", () => {
+  it("maps deep pages to their rail item", () => {
+    expect(sectionFor(investor, "/investor")?.key).toBe("home");
+    expect(sectionFor(investor, "/investor/xray")?.key).toBe("portfolio");
+    expect(sectionFor(investor, "/investor/profile")?.key).toBe("portfolio");
+    expect(sectionFor(investor, "/investor/markets/NVDA")?.key).toBe("markets");
+    expect(sectionFor(investor, "/investor/trades")?.key).toBe("markets");
+    expect(sectionFor(investor, "/investor/funds/ATR-BAL")?.key).toBe("funds");
+    expect(sectionFor(investor, "/investor/orders")?.key).toBe("funds");
+    expect(sectionFor(investor, "/investor/what-if")?.key).toBe("plan");
+    expect(sectionFor(investor, "/investor/copilot")).toBeNull();
+    expect(sectionFor(WORKSPACES.advisor, "/advisor/leads/abc/proposal")?.key).toBe("leads");
+    expect(sectionFor(WORKSPACES.advisor, "/advisor/held")?.key).toBe("held");
+    expect(sectionFor(WORKSPACES.operations, "/operations")?.key).toBe("today");
+    expect(sectionFor(WORKSPACES.operations, "/operations/approvals")?.key).toBe("approvals");
+    expect(sectionFor(WORKSPACES.compliance, "/compliance/alerts/x")?.key).toBe("alerts");
+    expect(sectionFor(WORKSPACES.compliance, "/compliance/log")?.key).toBe("log");
   });
-  it("keeps a section active on its detail pages", () => {
-    expect(isActive("/investor/funds/ATR-BAL", "/investor/funds")).toBe(true);
-    expect(isActive("/advisor/leads/abc", "/advisor")).toBe(true);
-  });
-  it("knows the trading pages", () => {
-    expect(WORKSPACES.investor.links.map((l) => l.href)).toEqual(expect.arrayContaining(["/investor/markets", "/investor/trades"]));
-    expect(WORKSPACES.advisor.links.map((l) => l.label)).toContain("Held orders");
-    expect(isActive("/investor/markets/NVDA", "/investor/markets")).toBe(true);
-    expect(isActive("/advisor/held", "/advisor")).toBe(false);
-  });
-  it("knows the operations pages", () => {
-    expect(WORKSPACES.operations.links.map((l) => l.label)).toEqual(["Day-end", "Reconciliation", "Approvals", "Blotter"]);
-    expect(isActive("/operations", "/operations")).toBe(true);
-    expect(isActive("/operations/approvals", "/operations")).toBe(false);
-    expect(isActive("/operations/approvals", "/operations/approvals")).toBe(true);
-  });
-  it("knows the compliance pages", () => {
-    expect(WORKSPACES.compliance.links.map((l) => l.label)).toEqual(["Alerts", "Decision log"]);
-    expect(isActive("/compliance/alerts/abc", "/compliance")).toBe(true);
-    expect(isActive("/compliance/log", "/compliance")).toBe(false);
+  it("finds the tab inside a section", () => {
+    const portfolio = sectionFor(investor, "/investor/risk")!;
+    expect(tabFor(portfolio, "/investor/risk")?.label).toBe("Risk");
+    const markets = sectionFor(investor, "/investor/markets/NVDA")!;
+    expect(tabFor(markets, "/investor/markets/NVDA")?.label).toBe("Markets");
+    expect(tabFor(markets, "/investor/trades")?.label).toBe("Your trades");
   });
 });
 
-describe("isPublic", () => {
-  it("knows the pages that need no sign-in", () => {
-    expect(isPublic("/apply")).toBe(true);
-    expect(isPublic("/login")).toBe(true);
-    expect(isPublic("/investor")).toBe(false);
+describe("routeKind", () => {
+  it("tells the front door, public pages and the app apart", () => {
+    expect(routeKind("/")).toBe("front");
+    expect(routeKind("/login")).toBe("public");
+    expect(routeKind("/apply")).toBe("public");
+    expect(routeKind("/investor")).toBe("app");
+  });
+});
+
+describe("entryRoute", () => {
+  it("sends a signed-in person home, asks for real sign-in when needed, and lets persona sign-in proceed", () => {
+    expect(entryRoute("firebase", "/compliance")).toBe("/compliance");
+    expect(entryRoute("firebase", null)).toBe("/login");
+    expect(entryRoute("dev", "/investor")).toBeNull();
+    expect(entryRoute("dev", null)).toBeNull();
   });
 });

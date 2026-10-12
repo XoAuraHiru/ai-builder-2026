@@ -57,3 +57,39 @@ export function deviceId(storage: KeyValueStore): string {
   storage.setItem("atrium.deviceId", id);
   return id;
 }
+
+export type Triage = { attention: Lead[]; call: Lead[]; clients: Lead[]; unscored: Lead[]; closed: Lead[] };
+
+/** Leads in the order an advisor should see them: the risky ones first, then the ones worth a call by fit. */
+export function triage(leads: Lead[]): Triage {
+  const out: Triage = { attention: [], call: [], clients: [], unscored: [], closed: [] };
+  for (const l of leads) {
+    if (l.stage === "client") out.clients.push(l);
+    else if (l.stage === "disqualified") out.closed.push(l);
+    else if (!l.scored_at) out.unscored.push(l);
+    else if (l.trust_band === "high_risk" || l.trust_band === "blocked") out.attention.push(l);
+    else out.call.push(l);
+  }
+  const byFit = (a: Lead, b: Lead) => (b.lead_score ?? -1) - (a.lead_score ?? -1) || a.full_name.localeCompare(b.full_name);
+  out.attention.sort((a, b) => (a.trust_score ?? 101) - (b.trust_score ?? 101) || a.full_name.localeCompare(b.full_name));
+  out.call.sort(byFit);
+  out.clients.sort(byFit);
+  return out;
+}
+
+const has = (l: Lead, code: string) => (l.trust_signals ?? []).some((s) => s.code === code);
+
+export function attentionHeadline(attention: Lead[]): string {
+  const ring = attention.filter((l) => has(l, "T05"));
+  if (ring.length >= 2) {
+    const throwaway = ring.every((l) => has(l, "T01"));
+    return `${ring.length} leads arrived from one device within 24 hours${throwaway ? ", each with a throwaway email address" : ""}.`;
+  }
+  if (attention.length === 1) return `${attention[0].full_name} needs a look before anyone calls.`;
+  return `${attention.length} leads need a look before anyone calls them.`;
+}
+
+export function strongestSignal(lead: Lead): string | null {
+  const signals = [...(lead.trust_signals ?? [])].sort((a, b) => b.weight - a.weight);
+  return signals[0]?.label ?? null;
+}

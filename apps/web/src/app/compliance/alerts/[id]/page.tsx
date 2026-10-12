@@ -5,14 +5,43 @@ import { useParams } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { formatDate, formatUsd } from "@/lib/format";
 import {
-  citationLabels, EVIDENCE_KIND, SCENARIO_COPY, SEVERITY_LABEL, SEVERITY_TONE, STATE_LABEL, TRIAGE_COPY,
-  type AlertDetail, type CaseReview,
+  citationLabels, EVIDENCE_KIND, SCENARIO_COPY, SEVERITY_LABEL, SEVERITY_TONE, STATE_LABEL, thresholdBars, TRIAGE_COPY,
+  type AlertDetail, type CaseReview, type EvidenceRow,
 } from "@/lib/compliance";
 import { AiProse } from "@/components/ai-prose";
 import { EntityGraph } from "@/components/entity-graph";
-import { Badge, Button, Field, inputClass, Loading, Notice, PageHeader, Section } from "@/components/ui";
+import { Badge, Button, Field, inputClass, KeyMoment, Loading, Notice, PageHeader, Panel, Section } from "@/components/ui";
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
+const CHIP = "num inline-flex h-5 min-w-6 items-center justify-center rounded-[5px] bg-daylight-wash px-1 align-[2px] font-sans text-[11px] font-semibold text-daylight-ink no-underline hover:bg-daylight hover:text-ink";
+
+function ThresholdChart({ evidence }: { evidence: EvidenceRow[] }) {
+  const { bars, linePct } = thresholdBars(evidence, 10000);
+  if (bars.length === 0) return null;
+  const columns = { gridTemplateColumns: `repeat(${bars.length}, minmax(0, 1fr))` };
+  return (
+    <figure className="m-0">
+      <div role="img" className="relative h-56 border-b border-line-strong"
+        aria-label={`${bars.length} payments, ${bars.map((b) => `${formatUsd(b.amount)} on ${formatDate(b.date)}`).join(", ")}, each below the $10,000 reporting threshold`}>
+        <div aria-hidden="true" className="absolute inset-x-0 border-t-2 border-dashed border-loss" style={{ bottom: `${linePct}%` }} />
+        <span aria-hidden="true" className="num absolute right-0 bg-surface pl-2 text-xs font-semibold text-loss" style={{ bottom: `calc(${linePct}% + 6px)` }}>
+          $10,000 reporting threshold
+        </span>
+        <div aria-hidden="true" className="absolute inset-0 grid items-end gap-6 px-4 sm:gap-12 sm:px-12" style={columns}>
+          {bars.map((b) => <div key={b.id} className="rounded-t-[8px] bg-ink" style={{ height: `${b.pct}%` }} />)}
+        </div>
+      </div>
+      <div className="mt-3 grid gap-6 px-4 sm:gap-12 sm:px-12" style={columns}>
+        {bars.map((b) => (
+          <span key={b.id} className="flex flex-col items-center text-center">
+            <span className="num font-semibold">{formatUsd(b.amount)}</span>
+            <span className="text-[13px] text-muted">{formatDate(b.date)} <a href={`#ev-${b.id}`} className={CHIP}>{b.label}</a></span>
+          </span>
+        ))}
+      </div>
+    </figure>
+  );
+}
 
 function Review({ review, labels }: { review: CaseReview; labels: Record<string, string> }) {
   const problems = [
@@ -20,15 +49,13 @@ function Review({ review, labels }: { review: CaseReview; labels: Record<string,
     review.dropped_citations.length ? `${review.dropped_citations.length} citation${review.dropped_citations.length === 1 ? "" : "s"} to rows that are not in the evidence were removed` : "",
   ].filter(Boolean);
   return (
-    <AiProse caption={`Written by ${review.model} from the alert, its evidence and the linked entities. A suggestion only: you decide.`}
+    <AiProse caption={`Written by ${review.model} from the alert, its evidence and the linked accounts. A suggestion only: you decide.`}
       warning={review.verified ? undefined : `Check before relying on this: ${problems.join("; ")}.`}>
       <p><span className="font-semibold">Suggestion: {TRIAGE_COPY[review.triage]}.</span> {review.triage_reason}</p>
       {review.narrative.map((part, i) => (
         <p key={i} className="mt-3">
           {part.text}{" "}
-          {part.evidence.map((id) => (
-            <a key={id} href={`#ev-${id}`} className="num ml-0.5 align-super font-sans text-[11px] text-daylight-ink underline underline-offset-2">{labels[id]}</a>
-          ))}
+          {part.evidence.map((id) => <a key={id} href={`#ev-${id}`} className={`${CHIP} ml-0.5`}>{labels[id]}</a>)}
         </p>
       ))}
       {review.questions.length > 0 && (
@@ -73,58 +100,70 @@ export default function AlertPage() {
         description={`${alert.person.name}${alert.account_number ? `, account ${alert.account_number}` : ""}. Raised ${formatDate(alert.raised_at)}.`}
         actions={<><Badge tone={SEVERITY_TONE[alert.severity]}>{SEVERITY_LABEL[alert.severity]} severity</Badge><Badge>{STATE_LABEL[alert.state]}</Badge></>} />
       <div className="space-y-10">
-        <Section title="What monitoring found">
-          <p className="max-w-[72ch] text-[15px]">{alert.summary}</p>
-          {SCENARIO_COPY[alert.scenario] && <p className="mt-2 max-w-[72ch] text-sm text-muted">The rule: {SCENARIO_COPY[alert.scenario]}</p>}
+        <KeyMoment tone="alert" label="What monitoring found" title={alert.summary}>
+          {alert.scenario === "structuring" && <ThresholdChart evidence={alert.evidence} />}
+          {SCENARIO_COPY[alert.scenario] && <p className="max-w-[72ch] pt-2 text-sm text-muted">The rule: {SCENARIO_COPY[alert.scenario]}</p>}
+        </KeyMoment>
+
+        <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] 2xl:items-start">
+          <Panel className="space-y-4 p-6">
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <h2 className="text-[17px] font-semibold">Case review</h2>
+              {alert.ai_review?.verified && <Badge tone="gain">Figures and citations checked</Badge>}
+            </div>
+            {alert.ai_review ? <Review review={alert.ai_review} labels={labels} /> : (
+              <div className="space-y-3">
+                <p className="text-sm text-ink-2">Gemini Pro reads the alert, its evidence and the linked accounts, and suggests what to do. It takes about half a minute.</p>
+                <Button variant="secondary" busy={busy === "review"} disabled={Boolean(busy)}
+                  onClick={() => post("review", `/compliance/alerts/${alert.id}/review`, undefined, "The case review is unavailable right now.")}>
+                  Ask Gemini Pro for a case review
+                </Button>
+              </div>
+            )}
+          </Panel>
+
+          <Panel className="space-y-4 p-6">
+            <h2 className="text-[17px] font-semibold">Your decision</h2>
+            {alert.state === "open" ? (
+              <>
+                <Field label="Your note" hint="The record of why. Escalating means filing a suspicious activity report.">
+                  <textarea className={`${inputClass} min-h-24`} value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} />
+                </Field>
+                {error && <Notice tone="error">{error}</Notice>}
+                <div className="flex flex-wrap gap-2.5">
+                  <Button variant="danger" busy={busy === "escalate"} disabled={!note.trim() || Boolean(busy)}
+                    onClick={() => post("escalate", `/compliance/alerts/${alert.id}/decide`, { decision: "escalate", note }, "Atrium could not record the decision.")}>Escalate</Button>
+                  <Button variant="secondary" busy={busy === "close"} disabled={!note.trim() || Boolean(busy)}
+                    onClick={() => post("close", `/compliance/alerts/${alert.id}/decide`, { decision: "close", note }, "Atrium could not record the decision.")}>Close the alert</Button>
+                </div>
+              </>
+            ) : (
+              <Notice tone={alert.state === "escalated" ? "caution" : "info"} title={`${STATE_LABEL[alert.state]} by ${alert.decided_by} on ${formatDate(alert.decided_at ?? alert.raised_at)}`}>
+                {alert.decision_note}
+              </Notice>
+            )}
+          </Panel>
+        </div>
+
+        <Section title="Who is linked" description="People joined to the subject by a shared bank account, a shared device or an outside payer.">
+          <Panel className="p-5 sm:p-6"><EntityGraph nodes={alert.graph.nodes} edges={alert.graph.edges} /></Panel>
         </Section>
+
         <Section title="Evidence" description="The exact rows behind the alert.">
-          <ol className="divide-y divide-line border-y border-line text-sm">
+          <ol className="rounded-panel border border-line bg-surface px-5 text-sm">
             {alert.evidence.map((e) => (
-              <li key={e.id} id={`ev-${e.id}`} className="grid scroll-mt-24 grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 py-3 target:bg-daylight-wash">
-                <span className="num font-medium">{labels[e.id]}</span>
+              <li key={e.id} id={`ev-${e.id}`} className="grid scroll-mt-24 grid-cols-[2.5rem_minmax(0,1fr)] gap-x-3 border-t border-line py-3.5 first:border-t-0 target:bg-daylight-wash">
+                <span className="num font-semibold">{labels[e.id]}</span>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-4">
                     <span className="text-muted">{EVIDENCE_KIND[e.kind] ?? e.kind}, {formatDate(e.date)}</span>
-                    {e.amount && <span className="num font-medium">{formatUsd(e.amount)}</span>}
+                    {e.amount && <span className="num font-semibold">{formatUsd(e.amount)}</span>}
                   </div>
                   <p className="mt-0.5 text-[15px]">{e.detail}</p>
                 </div>
               </li>
             ))}
           </ol>
-        </Section>
-        <Section title="Linked entities" description="People joined to the subject by a shared bank account, a shared device or an outside payer.">
-          <EntityGraph nodes={alert.graph.nodes} edges={alert.graph.edges} />
-        </Section>
-        <Section title="Case review">
-          {alert.ai_review ? <Review review={alert.ai_review} labels={labels} /> : (
-            <div className="flex flex-wrap items-center gap-3">
-              <Button variant="secondary" busy={busy === "review"} onClick={() => post("review", `/compliance/alerts/${alert.id}/review`, undefined, "The case review is unavailable right now.")}>
-                Ask Gemini Pro for a case review
-              </Button>
-              <span className="text-xs text-muted">It reads the alert, its evidence and the linked entities, then suggests. It takes about half a minute.</span>
-            </div>
-          )}
-        </Section>
-        <Section title="Decision">
-          {alert.state === "open" ? (
-            <div className="max-w-xl space-y-3">
-              <Field label="Your note" hint="The record of why. Escalating means filing a suspicious activity report.">
-                <textarea className={`${inputClass} min-h-24`} value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} />
-              </Field>
-              {error && <Notice tone="error">{error}</Notice>}
-              <div className="flex flex-wrap gap-2">
-                <Button variant="danger" busy={busy === "escalate"} disabled={!note.trim() || Boolean(busy)}
-                  onClick={() => post("escalate", `/compliance/alerts/${alert.id}/decide`, { decision: "escalate", note }, "Atrium could not record the decision.")}>Escalate</Button>
-                <Button variant="secondary" busy={busy === "close"} disabled={!note.trim() || Boolean(busy)}
-                  onClick={() => post("close", `/compliance/alerts/${alert.id}/decide`, { decision: "close", note }, "Atrium could not record the decision.")}>Close the alert</Button>
-              </div>
-            </div>
-          ) : (
-            <Notice tone={alert.state === "escalated" ? "caution" : "info"} title={`${STATE_LABEL[alert.state]} by ${alert.decided_by} on ${formatDate(alert.decided_at ?? alert.raised_at)}`}>
-              {alert.decision_note}
-            </Notice>
-          )}
         </Section>
       </div>
     </>

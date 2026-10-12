@@ -8,7 +8,7 @@ doing the scoring, explaining, guarding and reconciling at every step.
 
 ## Live demo
 
-https://atrium-web-1070337126396.us-central1.run.app (pick a demo persona; every person and number is synthetic).
+https://atrium-web-1070337126396.us-central1.run.app opens on Atrium's front door: what it is, the four stages, and eight people to choose from. Each person has a short guided story beside every page. Every person and number is synthetic.
 
 ## What you can try
 

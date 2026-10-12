@@ -3,82 +3,151 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AnimatePresence, LayoutGroup, motion } from "motion/react";
+import { LayoutGroup, motion } from "motion/react";
 import type { Me } from "@/lib/api";
-import { isActive, isPublic, workspacesFor, type Workspace } from "@/lib/nav";
+import { guideState, loadGuideHidden, saveGuideHidden } from "@/lib/journeys";
+import { routeKind, sectionFor, tabFor, workspaceFor, type NavSection, type Workspace } from "@/lib/nav";
+import { ACTS, actFor, initials } from "@/lib/personas";
 import { useSession } from "@/lib/session-context";
-import { Loading, Notice } from "@/components/ui";
+import { Icon } from "@/components/icons";
+import { JourneyGuide } from "@/components/journey-guide";
+import { ButtonLink, Loading, Notice } from "@/components/ui";
 
 const ROLE_LABEL: Record<string, string> = {
   investor: "Investor", advisor: "Advisor", ops: "Operations", compliance: "Compliance", admin: "Administrator",
 };
 
 /** The Atrium mark: a building seen from above, with daylight falling into its central well. */
-export function AtriumMark({ size = 20 }: { size?: number }) {
+export function AtriumMark({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" aria-hidden="true">
-      <rect x="1" y="1" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="1.25" />
-      <rect x="6.5" y="6.5" width="7" height="7" rx="0.5" fill="var(--color-daylight)" />
+      <rect x="1" y="1" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="6.5" y="6.5" width="7" height="7" rx="0.6" fill="var(--color-daylight)" />
     </svg>
   );
 }
 
-function Wordmark({ href }: { href: string }) {
+export function Wordmark({ href }: { href: string }) {
   return (
-    <Link href={href} className="wide flex items-center gap-2 text-[17px] font-semibold tracking-[-0.01em]">
+    <Link href={href} className="wide flex min-h-11 items-center gap-2.5 text-[19px] font-semibold tracking-[-0.01em]">
       <AtriumMark />
       Atrium
     </Link>
   );
 }
 
-function Footer() {
+export function Footer() {
   return (
-    <footer className="no-print mx-auto max-w-[1120px] px-4 pb-10 pt-6 text-xs text-muted sm:px-8">
-      Prototype with synthetic people and paper trading. Projections are simulations, not forecasts, and nothing here
-      is investment advice.
+    <footer className="no-print border-t border-line">
+      <div className="mx-auto flex max-w-[1240px] flex-wrap justify-between gap-3 px-4 py-6 text-[13px] text-muted sm:px-8">
+        <span>Atrium, by team Ctrl+Alt+Hiru for the AI Builder Cup 2026.</span>
+        <span>Synthetic people and paper trading. Projections are simulations, and nothing here is investment advice.</span>
+      </div>
     </footer>
   );
 }
 
-function WorkspaceNav({ spaces, path, group }: { spaces: Workspace[]; path: string; group: string }) {
+function Stages({ me }: { me: Me }) {
+  const current = actFor(me.email, me.roles);
   return (
-    <LayoutGroup id={group}>
-      <nav aria-label="Workspaces" className="space-y-6">
-        {spaces.map((w) => (
-          <div key={w.key}>
-            <p className="px-3 pb-1.5 text-xs font-medium text-muted">{w.label} workspace</p>
-            <ul>
-              {w.links.map((l) => {
-                const active = isActive(path, l.href);
-                return (
-                  <li key={l.href}>
-                    <Link href={l.href} aria-current={active ? "page" : undefined}
-                      className={`relative flex items-center rounded-control px-3 py-1.5 text-[14px] ${active ? "font-medium text-ink" : "text-ink-2 hover:text-ink"}`}>
-                      {active && <motion.span layoutId="nav-active" className="absolute inset-0 rounded-control bg-ground" />}
-                      {active && <motion.span layoutId="nav-active-bar" className="absolute bottom-1.5 left-0 top-1.5 w-[2px] rounded-full bg-ink" />}
-                      <span className="relative">{l.label}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+    <ol aria-label="Atrium's four stages" className="hidden items-center gap-5 md:flex">
+      {ACTS.map((a) => {
+        const on = a.key === current;
+        return (
+          <li key={a.key} aria-current={on ? "step" : undefined}
+            className={`flex items-center gap-1.5 text-[13px] ${on ? "font-semibold text-ink" : "text-muted"}`}>
+            <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-[2px] border ${on ? "border-daylight bg-daylight" : "border-[#8c979f]"}`} />
+            {a.label}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function PersonaChip({ me }: { me: Me }) {
+  const name = me.full_name ?? me.email;
+  return (
+    <Link href="/#journeys" aria-label={`${name}, ${ROLE_LABEL[me.roles[0]] ?? me.roles[0]}. Switch person`}
+      className="flex min-h-11 items-center gap-2.5 rounded-full border border-line py-1 pl-1 pr-1 hover:border-line-strong sm:pr-3.5">
+      <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-xs font-semibold text-white">{initials(name)}</span>
+      <span aria-hidden="true" className="hidden flex-col leading-tight sm:flex">
+        <span className="text-sm font-semibold">{name}</span>
+        <span className="text-xs text-muted">{ROLE_LABEL[me.roles[0]] ?? me.roles[0]}. Switch person</span>
+      </span>
+    </Link>
+  );
+}
+
+function TopBar({ me, space, guideHidden, onShowGuide }: { me: Me; space: Workspace; guideHidden: boolean; onShowGuide: () => void }) {
+  return (
+    <header className="no-print sticky top-0 z-30 border-b border-line bg-surface">
+      <div className="flex h-[68px] items-center justify-between gap-4 px-4 sm:px-6">
+        <Wordmark href={space.home} />
+        <Stages me={me} />
+        <div className="flex items-center gap-2.5">
+          {guideHidden && (
+            <button type="button" onClick={onShowGuide}
+              className="hidden min-h-11 text-sm text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink lg:inline">
+              Show your story
+            </button>
+          )}
+          {space.key === "investor" && (
+            <ButtonLink href="/investor/copilot" variant="secondary" size="sm">
+              <span aria-hidden="true" className="h-2 w-2 rounded-[1px] bg-daylight" />Ask Atrium
+            </ButtonLink>
+          )}
+          <PersonaChip me={me} />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function RailLink({ section, on, layout }: { section: NavSection; on: boolean; layout: "column" | "strip" }) {
+  return (
+    <Link href={section.href} aria-current={on ? "page" : undefined}
+      className={`relative flex min-h-11 items-center rounded-control px-3.5 text-[15px] ${layout === "strip" ? "whitespace-nowrap" : ""} ${on ? "text-white" : "text-ink-2 hover:bg-wash hover:text-ink"}`}>
+      {on && <motion.span layoutId={`rail-${layout}`} className="absolute inset-0 rounded-control bg-ink" />}
+      <span className="relative flex items-center gap-3"><Icon name={section.icon} />{section.label}</span>
+    </Link>
+  );
+}
+
+function Rail({ space, active, layout }: { space: Workspace; active: NavSection | null; layout: "column" | "strip" }) {
+  return (
+    <LayoutGroup id={`rail-${layout}`}>
+      <nav aria-label={`${space.label} workspace`}
+        className={layout === "strip" ? "no-print border-b border-line bg-surface lg:hidden" : "no-print hidden border-r border-line lg:block"}>
+        <ul className={layout === "strip" ? "flex gap-1 overflow-x-auto px-3 py-2" : "sticky top-[68px] space-y-1 px-3.5 py-5"}>
+          {space.sections.map((s) => (
+            <li key={s.key} className={layout === "strip" ? "shrink-0" : ""}>
+              <RailLink section={s} on={active?.key === s.key} layout={layout} />
+            </li>
+          ))}
+        </ul>
       </nav>
     </LayoutGroup>
   );
 }
 
-function Persona({ me }: { me: Me }) {
+function SectionTabs({ section, path }: { section: NavSection; path: string }) {
+  const current = tabFor(section, path);
   return (
-    <div className="border-t border-line px-5 py-4">
-      <p className="truncate text-sm font-medium">{me.full_name ?? me.email}</p>
-      <p className="text-xs text-muted">{ROLE_LABEL[me.roles[0]] ?? me.roles[0]}</p>
-      <Link href="/login" className="mt-2 inline-block text-xs text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink">
-        Switch persona
-      </Link>
-    </div>
+    <LayoutGroup id="tabs">
+      <nav aria-label={`${section.label} pages`} className="no-print mb-8 flex gap-1 overflow-x-auto border-b border-line">
+        {(section.tabs ?? []).map((t) => {
+          const on = current?.href === t.href;
+          return (
+            <Link key={t.href} href={t.href} aria-current={on ? "page" : undefined}
+              className={`relative flex min-h-11 items-center whitespace-nowrap px-3.5 text-[15px] ${on ? "font-semibold text-ink" : "text-ink-2 hover:text-ink"}`}>
+              {t.label}
+              {on && <motion.span layoutId="tab-underline" className="absolute inset-x-2 -bottom-px h-[2px] rounded-full bg-ink" />}
+            </Link>
+          );
+        })}
+      </nav>
+    </LayoutGroup>
   );
 }
 
@@ -86,33 +155,39 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const { me, status, error } = useSession();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const publicRoute = isPublic(path);
+  const [guideHidden, setGuideHidden] = useState(false);
+  const kind = routeKind(path);
 
   useEffect(() => {
-    if (status === "signed-out" && !publicRoute) router.replace("/login");
-  }, [status, publicRoute, router]);
+    if (me) setGuideHidden(loadGuideHidden(me.email));
+  }, [me]);
   useEffect(() => {
-    setMenuOpen(false);
-  }, [path]);
+    if (status === "signed-out" && kind === "app") router.replace("/");
+  }, [status, kind, router]);
 
-  const spaces = me ? workspacesFor(me.roles) : [];
+  function setGuide(hidden: boolean) {
+    setGuideHidden(hidden);
+    if (me) saveGuideHidden(me.email, hidden);
+  }
 
-  if (publicRoute || !me || spaces.length === 0) {
+  if (kind === "front") return <>{children}</>;
+  const space = me ? workspaceFor(me.roles) : null;
+
+  if (kind === "public" || !me || !space) {
     return (
-      <div className="min-h-screen">
+      <div className="flex min-h-screen flex-col">
         <header className="no-print border-b border-line bg-surface">
-          <div className="mx-auto flex max-w-[1120px] items-center justify-between px-4 py-3.5 sm:px-8">
-            <Wordmark href={spaces[0]?.home ?? "/login"} />
-            {me && spaces.length > 0 && (
-              <Link href={spaces[0].home} className="text-sm text-ink-2 hover:text-ink">Open your workspace</Link>
-            )}
+          <div className="mx-auto flex h-[68px] max-w-[1240px] items-center justify-between px-4 sm:px-8">
+            <Wordmark href="/" />
+            {me && space
+              ? <Link href={space.home} className="text-sm text-ink-2 hover:text-ink">Open your workspace</Link>
+              : <Link href="/#journeys" className="text-sm text-ink-2 hover:text-ink">Choose a person</Link>}
           </div>
         </header>
-        <main className="mx-auto max-w-[1120px] px-4 py-8 sm:px-8 lg:py-12">
-          {publicRoute ? children
+        <main className="mx-auto w-full max-w-[1240px] flex-1 px-4 py-10 sm:px-8 lg:py-14">
+          {kind === "public" ? children
             : status === "error" ? <Notice tone="error" title="Atrium is unavailable">{error}</Notice>
-            : me && spaces.length === 0 ? <Notice tone="caution" title="This persona has no workspace">Switch to another persona.</Notice>
+            : me && !space ? <Notice tone="caution" title="This person has no workspace">Choose another person on the front page.</Notice>
             : <Loading label="Opening your workspace" />}
         </main>
         <Footer />
@@ -120,34 +195,34 @@ export function Shell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const home = spaces[0].home;
+  const section = sectionFor(space, path);
+  const guide = guideState(me.email, guideHidden);
+  const showGuide = guide === "shown";
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
-      <aside className="no-print hidden border-r border-line bg-surface lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
-        <div className="px-5 py-5"><Wordmark href={home} /></div>
-        <div className="flex-1 overflow-y-auto px-2 pb-4"><WorkspaceNav spaces={spaces} path={path} group="rail" /></div>
-        <Persona me={me} />
-      </aside>
-      <div className="min-w-0">
-        <header className="no-print sticky top-0 z-30 flex items-center justify-between border-b border-line bg-surface px-4 py-3 lg:hidden">
-          <Wordmark href={home} />
-          <button type="button" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-controls="mobile-nav"
-            className="rounded-control border border-line-strong px-3 py-1.5 text-sm">
-            {menuOpen ? "Close" : "Menu"}
-          </button>
-        </header>
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.div id="mobile-nav" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-              className="no-print fixed inset-x-0 top-[57px] z-20 max-h-[calc(100vh-57px)] overflow-y-auto border-b border-line bg-surface pt-4 shadow-[0_16px_32px_-16px_rgba(23,32,42,0.3)] lg:hidden">
-              <div className="px-2 pb-2"><WorkspaceNav spaces={spaces} path={path} group="sheet" /></div>
-              <Persona me={me} />
-            </motion.div>
+    <div className="flex min-h-screen flex-col">
+      <TopBar me={me} space={space} guideHidden={guide === "hidden"} onShowGuide={() => setGuide(false)} />
+      <Rail space={space} active={section} layout="strip" />
+      <div className={`flex-1 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] ${showGuide ? "xl:grid-cols-[232px_minmax(0,1fr)_340px]" : ""}`}>
+        <Rail space={space} active={section} layout="column" />
+        <main className="min-w-0 px-4 py-8 sm:px-8 lg:px-10 lg:py-9">
+          {section?.tabs && <SectionTabs section={section} path={path} />}
+          {children}
+          {guide === "hidden" && (
+            <button type="button" onClick={() => setGuide(false)}
+              className="no-print mt-10 min-h-11 text-sm text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink lg:hidden">
+              Show your story
+            </button>
           )}
-        </AnimatePresence>
-        <main className="mx-auto max-w-[1120px] px-4 py-8 sm:px-8 lg:py-10">{children}</main>
-        <Footer />
+        </main>
+        {showGuide && (
+          <div className="no-print px-4 pb-12 sm:px-8 lg:col-start-2 lg:px-10 xl:col-start-3 xl:row-start-1 xl:px-0 xl:pr-6 xl:pt-9">
+            <div className="xl:sticky xl:top-[92px]">
+              <JourneyGuide email={me.email} path={path} onHide={() => setGuide(true)} />
+            </div>
+          </div>
+        )}
       </div>
+      <Footer />
     </div>
   );
 }
