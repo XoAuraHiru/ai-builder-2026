@@ -1,4 +1,5 @@
 import { getConfig } from "./config";
+import { detailMessage } from "./errors";
 import { authHeaders } from "./session";
 
 export class ApiError extends Error {
@@ -19,7 +20,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!res.ok) {
     let detail = res.statusText;
     try {
-      detail = (await res.json()).detail ?? detail;
+      detail = detailMessage((await res.json()).detail, detail);
     } catch {}
     throw new ApiError(res.status, detail);
   }
@@ -66,7 +67,7 @@ export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
   if (!res.ok) {
     let detail = res.statusText;
     try {
-      detail = (await res.json()).detail ?? detail;
+      detail = detailMessage((await res.json()).detail, detail);
     } catch {}
     throw new ApiError(res.status, detail);
   }

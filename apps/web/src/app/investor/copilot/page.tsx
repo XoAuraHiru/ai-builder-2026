@@ -9,7 +9,7 @@ import { WhyPanel } from "@/components/why-panel";
 import { Button, EmptyState, Notice, PageHeader } from "@/components/ui";
 
 type Trace = { tool: string; label: string };
-type Source = { id: string; title: string };
+type Source = { id: string; title: string; retriever: string };
 type Turn = { role: "user" | "assistant"; text: string; trace?: Trace[]; sources?: Source[] };
 
 const SUGGESTIONS = [
@@ -105,7 +105,7 @@ export default function CopilotPage() {
                   {(t.trace?.length || t.sources?.length) ? (
                     <WhyPanel title="what the copilot checked" model="Investor Copilot agent on Gemini (Vertex AI, ADK)"
                       evidence={[...(t.trace ?? []).map((x) => ({ label: x.label, detail: TOOL_DETAIL[x.tool] ?? x.tool })),
-                        ...(t.sources ?? []).map((s) => ({ label: "Fund document", detail: s.title }))]} />
+                        ...(t.sources ?? []).map((s) => ({ label: "Fund document", detail: `${s.title}, found by ${s.retriever === "vertex-ai-search" ? "Vertex AI Search" : s.retriever.includes("unavailable") ? "the local index (Vertex AI Search was unavailable)" : "the local index"}.` }))]} />
                   ) : null}
                 </div>
               )}

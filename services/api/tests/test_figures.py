@@ -34,3 +34,14 @@ def test_facts_are_presented_with_their_units_for_the_model():
     assert present(facts) == {"median_outcome_usd": "$354,245", "chance_of_goal_pct": "72.4%", "years": 15,
                               "worst_12_months_pct": "-33.7%",
                               "scenarios": [{"fees_cost_over_period_usd": "$9,918", "name": "Balanced"}], "goal_usd": None}
+
+
+def test_only_money_and_percentage_facts_can_vouch_for_a_figure():
+    from app.ai.figures import collect_figures
+
+    facts = {"simulated_paths": 10000, "years": 15, "reader_risk_band": 3, "median_outcome_usd": 354245,
+             "worst_month": {"month": "2008-10", "pct": -14.2}, "share_of_risk_pct": {"Atrium Growth": 66.8},
+             "warnings": ["NVIDIA Corp is 6.9% of your portfolio."], "history_window": "July 2007 to September 2026"}
+    pool = collect_figures(facts)
+    assert unsupported_figures("an invented $10,000 and 15%", pool) == ["$10,000", "15%"]
+    assert unsupported_figures("$354,245, a 14.2% fall, 66.8% of the risk and 6.9% in NVIDIA", pool) == []

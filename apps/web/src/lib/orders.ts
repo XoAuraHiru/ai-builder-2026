@@ -28,3 +28,9 @@ export function describe(i: Instruction): string {
   if (i.type === "redeem") return `Withdraw ${Number(i.units).toFixed(4)} units of ${i.fund_name}`;
   return `Switch ${Number(i.units).toFixed(4)} units from ${i.fund_name} to ${i.to_fund_name}`;
 }
+
+/** The switch target to use: the current one, unless it is the fund being switched out of. */
+export function nextTarget(codes: string[], from: string, current: string): string {
+  if (current !== from && codes.includes(current)) return current;
+  return codes.find((c) => c !== from) ?? current;
+}

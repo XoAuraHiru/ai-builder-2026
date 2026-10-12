@@ -169,7 +169,7 @@ export default function ProfilePage() {
                       {q.options.map((o) => {
                         const on = form[q.key] === o.value;
                         return (
-                          <label key={String(o.value)} className={`cursor-pointer rounded-control border px-3 py-1.5 text-sm ${on ? "border-ink bg-ink text-white" : "border-line-strong hover:border-ink"}`}>
+                          <label key={String(o.value)} className={`cursor-pointer rounded-control border px-3 py-1.5 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${on ? "border-ink bg-ink text-white" : "border-line-strong hover:border-ink"}`}>
                             <input type="radio" className="sr-only" name={q.key} checked={on} onChange={() => setForm({ ...form, [q.key]: o.value })} />
                             {o.label}
                           </label>

@@ -209,7 +209,7 @@ def build_copilot(snap: dict, search, model, trace: list, sources: list, usage: 
         known = {s["id"] for s in sources}
         for p in hits.passages:
             if p.id not in known:
-                sources.append({"id": p.id, "title": p.title})
+                sources.append({"id": p.id, "title": p.title, "retriever": hits.retriever})
                 known.add(p.id)
         return {"passages": [{"id": p.id, "title": p.title, "text": p.text[:900]} for p in hits.passages],
                 "retriever": hits.retriever}

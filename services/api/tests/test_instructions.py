@@ -112,3 +112,10 @@ def test_monthly_plans_can_be_created_and_cancelled(client, holder):
     assert above.status_code == 409
     assert client.delete(f"/accounts/{holder.id}/recurring/{plan['id']}", headers=HDR).json()["status"] == "cancelled"
     assert [p["status"] for p in client.get(f"/accounts/{holder.id}/recurring", headers=HDR).json()] == ["cancelled"]
+
+
+def test_units_already_committed_to_an_accepted_instruction_cannot_be_redeemed_again(client, holder):
+    first = post(client, holder, {"type": "redeem", "fund_code": "ATR-BAL", "units": "100"})
+    assert first.status_code == 201, first.text
+    second = post(client, holder, {"type": "switch", "fund_code": "ATR-BAL", "to_fund_code": "ATR-CASH", "units": "10"})
+    assert second.status_code == 409 and "already committed" in second.json()["detail"]

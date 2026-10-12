@@ -98,6 +98,28 @@ def open_lots(db: Session, account_id: str, fund_code: str) -> list[LotView]:
     return [LotView(r.acquired_on, r.units_remaining, r.cost_per_unit) for r in rows]
 
 
+PENDING_STATES = ("received", "accepted", "priced")
+
+
+def committed_units(db: Session, account_id: str, fund_code: str) -> Decimal:
+    """Units already promised to redemptions and switches that the day-end job has not dealt yet."""
+    rows = db.scalars(select(Instruction.units).where(
+        Instruction.account_id == account_id, Instruction.fund_code == fund_code,
+        Instruction.type.in_(("redeem", "switch")), Instruction.state.in_(PENDING_STATES))).all()
+    return q_units(sum((u for u in rows if u is not None), Decimal("0")))
+
+
+def free_lots(lots: list[LotView], reserved: Decimal) -> list[LotView]:
+    """The lots left once committed units are taken first in, first out, as the day-end job will take them."""
+    out, remaining = [], reserved
+    for lot in lots:
+        take = min(lot.units, remaining)
+        remaining -= take
+        if lot.units - take > 0:
+            out.append(LotView(lot.acquired_on, lot.units - take, lot.cost_per_unit))
+    return out
+
+
 def _suitability(plan: InstructionPlan, target: Fund, band: int | None) -> None:
     if band is None:
         return
@@ -134,12 +156,18 @@ def plan_instruction(db: Session, account: Account, person: Person, kind: str, f
     if price is None:
         plan.checks.append(Check("PRICE", False, f"{fund.name} has no published price yet."))
         return plan
+    lots = open_lots(db, account.id, fund.code)
+    reserved = committed_units(db, account.id, fund.code)
     try:
-        plan.redemption = preview_redemption(fund.code, open_lots(db, account.id, fund.code), price.nav, price.as_of,
+        plan.redemption = preview_redemption(fund.code, free_lots(lots, reserved), price.nav, price.as_of,
                                              amount=amount, units=units)
         plan.checks.append(Check("HOLDING", True, f"You hold enough {fund.name} units."))
     except InsufficientUnits as e:
-        plan.checks.append(Check("HOLDING", False, str(e)))
+        held = q_units(sum((lot.units for lot in lots), Decimal("0")))
+        message = str(e) if reserved <= 0 else (
+            f"You hold {held} units of {fund.name}, but {reserved} are already committed to an instruction awaiting "
+            f"pricing, so {q_units(max(held - reserved, Decimal('0')))} are free.")
+        plan.checks.append(Check("HOLDING", False, message))
     if kind == "switch" and target is not None:
         if plan.redemption is not None:
             plan.checks.append(_minimum(target, plan.redemption.value))

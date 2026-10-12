@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.ai.decisions import record_decision
-from app.ai.figures import collect_numbers, unsupported_figures
+from app.ai.figures import collect_figures, unsupported_figures
 from app.ai.llm import LLM, LLMError
 from app.models import Account, Fund, Person
 from app.schemas.knowledge import CitationOut, FitDraft, FitOut, FitPoint, SuitabilityOut
@@ -60,7 +60,7 @@ def fund_fit(db: Session, llm: LLM, search, fund: Fund, person: Person) -> FitOu
     order = list(retrieved)
     used = sorted({c for pt in points for c in pt.citations}, key=order.index)
     text = " ".join([draft.headline, *(pt.text for pt in points), draft.caution])
-    allowed = collect_numbers(facts) | collect_numbers([p.text for p in hits.passages]) | {float(fund.risk_band)}
+    allowed = collect_figures(facts) | collect_figures([p.text for p in hits.passages])
     bad = unsupported_figures(text, allowed)
     band = person.risk_band
     verdict = "no_profile" if band is None else ("above" if fund.risk_band > band else "within")

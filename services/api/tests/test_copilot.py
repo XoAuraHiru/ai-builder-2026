@@ -104,6 +104,7 @@ def test_fund_search_results_become_sources(client, invested):
                                       say("The Atrium fee is 0.35% a year.")])
     body = ask(client, invested, scripted).json()
     assert "ATR-BAL#fees" in [s["id"] for s in body["sources"]]
+    assert all(s["retriever"] == "local-index" for s in body["sources"])
 
 
 def test_history_is_fenced_as_conversation(client, invested):

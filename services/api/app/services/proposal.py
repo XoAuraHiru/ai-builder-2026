@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.ai.decisions import record_decision
-from app.ai.figures import collect_numbers, unsupported_figures
+from app.ai.figures import collect_figures, unsupported_figures
 from app.ai.llm import LLM
 from app.events import emit
 from app.knowledge.search import Passage
@@ -141,8 +141,8 @@ def build_proposal(db: Session, lead: Lead, llm: LLM, search, staff_email: str) 
         citations = [c for c in s.citations if c in allowed]
         sections.append({**s.model_dump(), "citations": citations, "grounded": bool(citations)})
     text = "\n\n".join(f"{s['heading']}\n{s['body']}" for s in sections)
-    bad = unsupported_figures(text, collect_numbers(facts) | collect_numbers(present(facts))
-                              | collect_numbers([p.text for p in passages]))
+    bad = unsupported_figures(text, collect_figures(facts) | collect_figures(present(facts))
+                              | collect_figures([p.text for p in passages]))
     compliance = check_compliance(text, llm, db=db, subject_id=lead.id)
     row = Proposal(lead_id=lead.id, created_by=staff_email, band=band, allocation=mix,
                    content={"sections": sections, "projection": projection, "band_reasons": reasons,

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, type Portfolio } from "@/lib/api";
 import { formatDate, formatSignedUsd, formatUsd } from "@/lib/format";
 import type { Fund } from "@/lib/invest";
-import { describe, stepStatus, type Instruction } from "@/lib/orders";
+import { describe, nextTarget, stepStatus, type Instruction } from "@/lib/orders";
 import { useMe } from "@/lib/session-context";
 import { Badge, Button, EmptyState, Field, inputClass, Loading, MoneyInput, Notice, PageHeader, Panel, RiskBand, Section, Segmented } from "@/components/ui";
 
@@ -99,6 +99,11 @@ export default function OrdersPage() {
   useEffect(() => {
     if (kind !== "subscribe" && !(fund in held) && Object.keys(held).length) setFund(Object.keys(held)[0]);
   }, [kind, fund, held]);
+
+  useEffect(() => {
+    const target = nextTarget(funds.map((f) => f.code), fund, toFund);
+    if (target !== toFund) setToFund(target);
+  }, [funds, fund, toFund]);
 
   if (!account) return <EmptyState title="No investment account yet">Choose an investor persona to place instructions.</EmptyState>;
   if (!history) return error ? <Notice tone="error">{error}</Notice> : <Loading label="Loading your instructions" />;

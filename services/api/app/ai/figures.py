@@ -60,6 +60,37 @@ def collect_numbers(facts) -> set[float]:
     return out
 
 
+def _is_figure_key(key) -> bool:
+    k = str(key).lower()
+    return k in ("usd", "pct") or k.endswith(("_usd", "_pct")) or k.startswith("pct_") or "_usd_" in k or "_pct_" in k
+
+
+def collect_figures(facts) -> set[float]:
+    """The numbers that may vouch for a $ or % figure in prose: values under money or percentage keys ("_usd",
+    "_pct") and $ or % figures written inside strings. Counts such as years or simulated paths cannot vouch for one."""
+    out: set[float] = set()
+    stack = [(facts, False)]
+    while stack:
+        item, figure = stack.pop()
+        if item is None or isinstance(item, bool):
+            continue
+        if isinstance(item, (int, float, Decimal)):
+            if figure:
+                out.add(abs(float(item)))
+        elif isinstance(item, str):
+            out.update(value for _, value, _ in figures_in(item))
+            if figure:
+                try:
+                    out.add(abs(float(item.replace(",", "").replace("$", "").rstrip("%"))))
+                except ValueError:
+                    pass
+        elif isinstance(item, dict):
+            stack.extend((value, figure or _is_figure_key(key)) for key, value in item.items())
+        elif isinstance(item, (list, tuple, set)):
+            stack.extend((value, figure) for value in item)
+    return out
+
+
 def unsupported_figures(text: str, allowed: Iterable[float]) -> list[str]:
     pool = set(allowed) | ALWAYS_ALLOWED
     bad = []

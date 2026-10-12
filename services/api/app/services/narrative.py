@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.ai.decisions import record_decision
-from app.ai.figures import collect_numbers, unsupported_figures
+from app.ai.figures import collect_figures, unsupported_figures
 from app.ai.llm import LLM
 
 
@@ -60,5 +60,5 @@ def write_narrative(db: Session, llm: LLM, *, purpose: str, agent: str, task: st
     record_decision(db, agent=agent, purpose=purpose, result=result, subject_type=subject_type,
                     subject_id=subject_id, input_text=prompt)
     text = " ".join([narrative.headline, *narrative.paragraphs, *narrative.cautions])
-    bad = unsupported_figures(text, collect_numbers(facts) | collect_numbers(shown))
+    bad = unsupported_figures(text, collect_figures(facts) | collect_figures(shown))
     return NarrativeOut(**narrative.model_dump(), unsupported_figures=bad, verified=not bad, model=result.model)

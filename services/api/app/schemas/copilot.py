@@ -21,6 +21,7 @@ class TraceOut(BaseModel):
 class SourceOut(BaseModel):
     id: str
     title: str
+    retriever: str
 
 
 class CopilotOut(BaseModel):
