@@ -94,3 +94,18 @@ class AskIn(BaseModel):
 
 class ConvertIn(BaseModel):
     override_reason: str | None = Field(default=None, max_length=500)
+
+
+class ProposalOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    created_at: datetime
+    lead_id: str
+    created_by: str
+    band: int
+    allocation: dict[str, float]
+    content: dict
+    compliance: dict
+    unsupported_figures: list[str]
+    verified: bool
+    model: str
