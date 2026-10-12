@@ -21,7 +21,12 @@ describe("filterRows", () => {
 
 describe("priceSource", () => {
   it("says when a delayed price was read, in New York time", () => {
-    expect(priceSource("live", "2026-10-12T14:32:00Z")).toBe("Delayed price from Yahoo Finance, read at 10:32 am New York time.");
+    expect(priceSource("live", "2026-10-12T14:32:00Z", new Date("2026-10-12T16:00:00Z")))
+      .toBe("Delayed price from Yahoo Finance, read at 10:32 am New York time.");
+  });
+  it("adds the date when a delayed price was not read today", () => {
+    expect(priceSource("live", "2026-10-09T19:55:00Z", new Date("2026-10-12T14:00:00Z")))
+      .toBe("Delayed price from Yahoo Finance, read at 3:55 pm New York time on Oct 9.");
   });
   it("says plainly when it is only the last close", () => {
     expect(priceSource("close", "2026-10-09T20:00:00Z")).toBe("Last close, Oct 9, 2026. Live prices are unavailable right now.");

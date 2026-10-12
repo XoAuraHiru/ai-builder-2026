@@ -138,8 +138,9 @@ class CommittedQuotes:
 def yahoo_closes(symbols: list[str], period: str) -> pd.DataFrame:
     import yfinance as yf
 
+    # threads=True downloads the symbols in parallel: the whole universe in about a second instead of five.
     raw = yf.download(symbols, period=period, interval="1d", auto_adjust=True, progress=False, group_by="column",
-                      threads=False)
+                      threads=True)
     if raw is None or raw.empty:
         raise RuntimeError(f"Yahoo Finance returned no prices for {len(symbols)} symbols over {period}")
     close = raw["Close"]
@@ -155,15 +156,18 @@ class LiveQuotes(CommittedQuotes):
     closes per symbol cached for `history_ttl` seconds. Falls back to the committed closes whenever Yahoo fails.
 
     The batched download takes several seconds, so once there is a frame, an expired one is still served at once while
-    a fresh one loads in the background (`background=True`); only the very first load is waited for."""
+    a fresh one loads in the background (`background=True`); only the very first load is waited for. A frame older than
+    `max_age` seconds (Yahoo down for a while) is no longer passed off as live: quotes fall back to the committed close,
+    which says so."""
 
     def __init__(self, fetch: Fetch = yahoo_closes, ttl: float = 60.0, history_ttl: float = 900.0,
                  clock: Callable[[], float] = time.monotonic,
                  now: Callable[[], datetime] = lambda: datetime.now(timezone.utc), daily: pd.DataFrame | None = None,
-                 background: bool = True):
+                 background: bool = True, max_age: float = 900.0):
         super().__init__(daily)
         self._fetch, self._ttl, self._history_ttl, self._clock, self._now = fetch, ttl, history_ttl, clock, now
-        self._background = background
+        self._background, self._max_age = background, max_age
+        self._loaded_at: float | None = None
         self._lock = threading.Lock()
         self._frame: pd.DataFrame | None = None
         self._observed: datetime | None = None
@@ -179,21 +183,26 @@ class LiveQuotes(CommittedQuotes):
             frame = observed = None
         with self._lock:
             if frame is not None:
-                self._frame, self._observed = frame, observed
+                self._frame, self._observed, self._loaded_at = frame, observed, self._clock()
             self._loading = False
+
+    def _fresh(self, frame: pd.DataFrame | None) -> pd.DataFrame | None:
+        if frame is None or self._loaded_at is None or self._clock() - self._loaded_at > self._max_age:
+            return None
+        return frame
 
     def _live(self) -> pd.DataFrame | None:
         with self._lock:
             due = self._checked is None or self._clock() - self._checked >= self._ttl
             if not due or self._loading:
-                return self._frame
+                return self._fresh(self._frame)
             self._checked, self._loading = self._clock(), True
             stale = self._frame
         if stale is not None and self._background:
             threading.Thread(target=self._load, daemon=True).start()
-            return stale
+            return self._fresh(stale)
         self._load()
-        return self._frame
+        return self._fresh(self._frame)
 
     def quote(self, symbol: str) -> Quote | None:
         frame = self._live()

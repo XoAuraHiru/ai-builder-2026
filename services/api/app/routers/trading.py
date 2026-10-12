@@ -57,6 +57,12 @@ def _account(db: Session, account_id: str, user: CurrentUser, *, holder_only: st
     return account
 
 
+def _holder(account: Account, user: CurrentUser) -> bool:
+    """Only the account holder's browser is recorded as one of the account's devices; staff looking at a client's
+    order must not make their own browser "known" on the client's account."""
+    return account.person_id == user.person_id
+
+
 def _request(body: OrderIn) -> OrderRequest:
     return OrderRequest(body.symbol.strip().upper(), body.side, body.order_type, body.quantity,
                         body.limit_price if body.order_type == "limit" else None)
@@ -82,7 +88,7 @@ def preview(account_id: str, body: OrderIn, request: Request, db: Session = Depe
     account = _account(db, account_id, user)
     hashed, label = _device(request)
     report = _guarded(lambda: preview_order(db, account, _request(body), device_hash=hashed, device_label=label,
-                                            quotes=quotes))
+                                            quotes=quotes, record_device=_holder(account, user)))
     db.commit()  # the device sighting
     return report_json(report)
 
@@ -94,7 +100,8 @@ def explain(account_id: str, body: OrderIn, request: Request, db: Session = Depe
     account = _account(db, account_id, user)
     hashed, label = _device(request)
     report = report_json(_guarded(lambda: preview_order(db, account, _request(body), device_hash=hashed,
-                                                        device_label=label, quotes=quotes)))
+                                                        device_label=label, quotes=quotes,
+                                                        record_device=_holder(account, user))))
     try:
         narrative = explain_order(db, llm, account, report)
     except LLMError as e:

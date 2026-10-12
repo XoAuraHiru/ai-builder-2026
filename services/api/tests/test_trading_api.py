@@ -95,3 +95,13 @@ def test_only_the_holder_places_orders_and_bad_orders_get_a_reason(api, account)
     assert blocked.status_code == 422 and "needs about" in blocked.json()["detail"]
     warned = api.post(orders(account), headers=HOLDER, json={"symbol": "TSLA", "side": "buy", "quantity": 1})
     assert warned.status_code == 422 and "confirm them" in warned.json()["detail"]
+
+
+def test_a_staff_preview_does_not_record_the_advisors_browser_on_the_client(api, db, account):
+    from sqlalchemy import func
+
+    for path in ("preview", "explain"):
+        r = api.post(f"{orders(account)}/{path}", headers={**ADVISOR, "X-Device-Id": "advisor-browser"},
+                     json={"symbol": "KO", "side": "buy", "quantity": 1})
+        assert r.status_code == 200, r.text
+    assert db.scalar(select(func.count()).select_from(AccountDevice)) == 0

@@ -138,3 +138,51 @@ def test_selling_returns_paper_cash(db, investor):
     sale = place(db, investor, OrderRequest("KO", "sell", "market", 5), acknowledge=True)
     assert sale.state == "filled" and balance(db, investor.id, "KO") == Decimal("0")
     assert balance(db, investor.id, CASH) == Decimal("9999.88")  # 10,000 - 305.06 + 304.94
+
+
+def test_order_work_takes_a_postgres_advisory_lock_per_account():
+    from types import SimpleNamespace
+
+    from app.services.orders import lock_account
+
+    executed = []
+
+    class FakeDb:
+        def get_bind(self):
+            return SimpleNamespace(dialect=SimpleNamespace(name="postgresql"))
+
+        def execute(self, statement, params=None):
+            executed.append((str(statement), params))
+
+    lock_account(FakeDb(), "acc-1")
+    assert executed == [("SELECT pg_advisory_xact_lock(hashtext(:key))", {"key": "account:acc-1"})]
+
+
+def test_every_order_action_locks_the_account_first(db, investor, advisor, monkeypatch):
+    import app.services.orders as orders
+
+    seen = []
+    monkeypatch.setattr(orders, "lock_account", lambda session, account_id: seen.append(account_id))
+    resting = place(db, investor, buy("KO", 10, "limit", "55"))
+    refresh_orders(db, investor.id, now=NOW, quotes=BOOK, broker=PaperBroker())
+    cancel_order(db, resting, now=NOW, broker=PaperBroker())
+    db.get(Person, investor.person_id).risk_band = 2
+    held = place(db, investor, buy("TSLA", 3))
+    reject_order(db, held, advisor, now=NOW)
+    again = place(db, investor, buy("TSLA", 3))
+    release_order(db, again, advisor, now=NOW, quotes=BOOK, broker=PaperBroker())
+    assert seen == [investor.id] * 7
+
+
+def test_release_rereads_the_order_after_taking_the_lock(db, investor, advisor):
+    from sqlalchemy import update
+
+    from app.models import TradeOrder
+
+    db.get(Person, investor.person_id).risk_band = 2
+    order = place(db, investor, buy("TSLA", 3))
+    # Another request rejected it after this one loaded the order.
+    db.execute(update(TradeOrder).where(TradeOrder.id == order.id).values(state="rejected")
+               .execution_options(synchronize_session=False))
+    with pytest.raises(OrderError, match="Only an order waiting"):
+        release_order(db, order, advisor, now=NOW, quotes=BOOK, broker=PaperBroker())

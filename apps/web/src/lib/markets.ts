@@ -25,12 +25,16 @@ export function filterRows(rows: MarketRow[], query: string, filter: MarketFilte
 const NY_TIME = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" });
 const NY_DAY = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", year: "numeric" });
 
-/** Where a price came from, in words: a delayed live price, or the last close when live prices are unavailable. */
-export function priceSource(source: PriceSource, asOf: string | null): string {
+const NY_MONTH_DAY = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric" });
+
+/** Where a price came from, in words: a delayed live price (with its date when it was not read today), or the last
+ *  close when live prices are unavailable. */
+export function priceSource(source: PriceSource, asOf: string | null, now: Date = new Date()): string {
   if (!asOf) return "";
   const when = new Date(asOf);
   if (source === "live") {
-    return `Delayed price from Yahoo Finance, read at ${NY_TIME.format(when).replace(/\s+/g, " ").toLowerCase()} New York time.`;
+    const day = NY_DAY.format(when) === NY_DAY.format(now) ? "" : ` on ${NY_MONTH_DAY.format(when)}`;
+    return `Delayed price from Yahoo Finance, read at ${NY_TIME.format(when).replace(/\s+/g, " ").toLowerCase()} New York time${day}.`;
   }
   return `Last close, ${NY_DAY.format(when)}. Live prices are unavailable right now.`;
 }

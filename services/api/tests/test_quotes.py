@@ -117,3 +117,42 @@ def test_market_session_follows_new_york_hours_and_holidays():
 def test_a_market_order_expects_half_the_spread():
     assert with_spread("buy", "stock", Decimal("100")) == Decimal("100.0200")
     assert with_spread("sell", "etf", Decimal("100")) == Decimal("99.9900")
+
+
+def test_a_live_frame_past_its_age_limit_is_not_passed_off_as_live():
+    live = pd.DataFrame({"AAPL": [101.0, 104.5]}, index=pd.to_datetime(["2026-10-09", "2026-10-12"]))
+    frames = [live]
+
+    def fetch(symbols, period):
+        if frames:
+            return frames.pop(0)
+        raise RuntimeError("Yahoo is down")
+
+    t = [0.0]
+    book = LiveQuotes(fetch=fetch, ttl=60, max_age=900, clock=lambda: t[0], daily=DAILY, background=False)
+    assert book.quote("AAPL").source == "live"
+    t[0] = 600.0
+    assert book.quote("AAPL").source == "live"  # the refresh failed, but ten minutes old is still a fair quote
+    t[0] = 901.0
+    q = book.quote("AAPL")
+    assert (q.source, q.price) == ("close", Decimal("101.0000"))
+
+
+def test_the_universe_downloads_in_parallel(monkeypatch):
+    import yfinance
+
+    from app.markets.quotes import yahoo_closes
+
+    seen = {}
+
+    def download(symbols, **kwargs):
+        seen.update(kwargs)
+        frame = pd.DataFrame({("Close", "AAPL"): [100.0, 101.0], ("Close", "KO"): [60.0, 61.0]},
+                             index=pd.to_datetime(["2026-10-08", "2026-10-09"]))
+        frame.columns = pd.MultiIndex.from_tuples(frame.columns)
+        return frame
+
+    monkeypatch.setattr(yfinance, "download", download)
+    closes = yahoo_closes(["AAPL", "KO"], "5d")
+    assert seen["threads"] is True and seen["period"] == "5d"
+    assert list(closes["KO"]) == [60.0, 61.0]

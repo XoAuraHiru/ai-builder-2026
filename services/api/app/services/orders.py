@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.events import emit
@@ -29,6 +29,14 @@ VERDICT_WORDS = {"proceed": "proceed", "warn": "proceed with care", "hold": "hol
 
 class OrderError(Exception):
     """The order cannot go ahead; the message says why, in words the person can act on."""
+
+
+def lock_account(db: Session, account_id: str) -> None:
+    """Serialise order work on one account. On Postgres this is a transaction-scoped advisory lock keyed on the account,
+    so two requests (two tabs, two instances, two advisors) cannot both spend the same cash or consume the same lots;
+    it is released at commit or rollback. SQLite (tests, local runs) has a single writer anyway."""
+    if db.get_bind().dialect.name == "postgresql":
+        db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:key))"), {"key": f"account:{account_id}"})
 
 
 def describe(o: TradeOrder) -> str:
@@ -70,6 +78,7 @@ def place_order(db: Session, account: Account, req: OrderRequest, *, acknowledge
                 quotes: CommittedQuotes | None = None, broker: Broker | None = None) -> TradeOrder:
     now = now or utcnow()
     broker = broker or get_broker()
+    lock_account(db, account.id)
     report = preview_order(db, account, req, device_hash=device_hash, device_label=device_label, now=now,
                            quotes=quotes)
     verdict = report.verdict
@@ -145,6 +154,9 @@ def _fill(db: Session, order: TradeOrder, price: Decimal, now: datetime, note: s
 def release_order(db: Session, order: TradeOrder, advisor: Person, note: str = "", *, now: datetime | None = None,
                   quotes: CommittedQuotes | None = None, broker: Broker | None = None) -> TradeOrder:
     now = now or utcnow()
+    lock_account(db, order.account_id)
+    db.flush()
+    db.refresh(order)  # another request may have decided it while this one waited for the lock
     if order.state != "held":
         raise OrderError("Only an order waiting for an advisor can be released.")
     account = db.get(Account, order.account_id)
@@ -163,6 +175,9 @@ def release_order(db: Session, order: TradeOrder, advisor: Person, note: str = "
 def reject_order(db: Session, order: TradeOrder, advisor: Person, note: str = "", *,
                  now: datetime | None = None) -> TradeOrder:
     now = now or utcnow()
+    lock_account(db, order.account_id)
+    db.flush()
+    db.refresh(order)
     if order.state != "held":
         raise OrderError("Only an order waiting for an advisor can be rejected.")
     order.state = "rejected"
@@ -175,6 +190,9 @@ def reject_order(db: Session, order: TradeOrder, advisor: Person, note: str = ""
 def cancel_order(db: Session, order: TradeOrder, *, now: datetime | None = None,
                  broker: Broker | None = None) -> TradeOrder:
     now = now or utcnow()
+    lock_account(db, order.account_id)
+    db.flush()
+    db.refresh(order)
     if order.state not in PENDING:
         raise OrderError("Only an order that is still waiting can be cancelled.")
     if order.state == "open" and order.broker_order_id:
@@ -191,6 +209,7 @@ def refresh_orders(db: Session, account_id: str, *, now: datetime | None = None,
     now = now or utcnow()
     quotes = quotes or get_quotes()
     broker = broker or get_broker()
+    lock_account(db, account_id)
     filled = 0
     rows = db.scalars(select(TradeOrder).where(TradeOrder.account_id == account_id, TradeOrder.state == "open",
                                                TradeOrder.broker == broker.name)).all()
