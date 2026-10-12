@@ -14,11 +14,15 @@ https://atrium-web-1070337126396.us-central1.run.app (pick a demo persona; every
 
 | Persona | What to open |
 |---|---|
-| Priya Raman (investor) | Overview, What-if Studio (10,000 simulated futures over real history since 2007), Portfolio X-ray (companies under the funds), Risk (the mix has drifted above the risk profile), fund pages with a cited "is it right for you?" reading, the risk-profile conversation, Orders with suitability checks, and the Copilot agent |
-| Lucas Moreau (investor) | The X-ray: about a tenth of the portfolio sits in one company, held through six ETFs |
-| Daniel Okafor (advisor) | The lead pipeline with three fraud stories, identity checks, AI replies, and personalised proposals written by Gemini Pro with a printable view |
+| Priya Raman (investor) | Overview, What-if Studio (10,000 simulated futures over real history since 2007), Portfolio X-ray, Risk (the mix has drifted above the risk profile), fund pages with a cited reading, the risk-profile conversation, Fund orders, the Copilot agent, and Markets: checking 60 NVIDIA shares shows the Pre-trade Guardian holding the order for an advisor |
+| Lucas Moreau (investor) | The X-ray (about a tenth of the portfolio is one company, through six ETFs), then buying more NVIDIA: the Guardian counts the shares held through his funds |
+| Tom Becker (investor) | Selling all 120 Tesla shares from your browser: Atrium has never seen it, so the Guardian holds the sale as a possible account takeover |
+| Hana Sato (investor) | Buying back PepsiCo, sold at a loss less than three weeks ago: the wash-sale warning |
+| Daniel Okafor (advisor) | The lead pipeline with three fraud stories, identity checks, AI replies, proposals by Gemini Pro, and Held orders: a Gemini Pro review note, then release or reject |
 
 Every AI paragraph is set in a serif face beside a gold rule and says which model wrote it. Every dollar and percentage figure it writes is checked against the engine that produced it, and claims about funds cite the fact-sheet section they come from.
+
+Trading uses paper money at real prices. By default, Atrium's own paper broker fills orders. Setting `ALPACA_API_KEY` and `ALPACA_SECRET_KEY` (an Alpaca paper-trading account) sends them to Alpaca's paper API instead. The Pre-trade Guardian's verdict always comes from fixed rules; Gemini explains it and never changes it.
 
 ## Documents
 
@@ -51,8 +55,8 @@ Open the web app and pick a demo persona (dev auth mode). Every person and trans
 Tests:
 
 ```bash
-cd services/api && uv run pytest     # API: ledger, leads, trust, what-if, risk, X-ray, fund search, instructions, agents
-cd apps/web && pnpm test             # web: formatting, chart scales, navigation, invest and order helpers
+cd services/api && uv run pytest     # API: ledger, leads, trust, what-if, risk, X-ray, fund search, instructions, Guardian, orders, agents
+cd apps/web && pnpm test             # web: formatting, chart scales, navigation, invest, order, market and trading helpers
 ```
 
 ## Deploy to Google Cloud
@@ -70,6 +74,8 @@ If Yahoo Finance is unreachable from Cloud Run, seeding falls back to the commit
 
 The Invest features read committed data, so production never calls Yahoo for them: month-end prices since June 2007 (`app/seed/history_monthly.csv`) and ETF look-through profiles (`app/seed/etf_profiles.json`). Refresh both with `uv run python -m app.seed.history`, then rebuild the fund fact sheets with `uv run python -m app.knowledge.build` and rerun `infra/setup_gcp.sh` so Vertex AI Search re-indexes them.
 
+The Trade features read committed market files too: thirty large US companies and seventeen ETFs, with their profiles (`app/seed/market_profiles.json`), daily closes since October 2024 (`app/seed/market_daily.csv`) and monthly closes since 2007 (`app/seed/market_monthly.csv`). Live quotes come from Yahoo Finance, cached for a minute. When Yahoo is unreachable, Atrium shows the last committed close and says so. Refresh the files with `uv run python -m app.markets.refresh`.
+
 ## Running cost
 
 Both Cloud Run services scale to zero, so compute is billed only while requests are served and normally stays inside Cloud Run's free tier. The one always-on piece is Cloud SQL (db-f1-micro, 10 GB SSD, daily backups): about $9.40 a month. A budget alert emails the billing admins at 50, 90 and 100 percent of $15 a month.
@@ -86,9 +92,11 @@ AI is pay-per-use. Measured on the live system (Gemini 3.8 Flash on the global e
 | Fund "is it right for you?" reading (Gemini + one Vertex AI Search query) | $0.006 |
 | Risk-profile conversation turn | $0.0007 |
 | Investor Copilot question (ADK agent with tools) | $0.003, plus $0.004 per fund-document search |
+| Order explanation before you confirm (Gemini Flash, figures checked) | $0.002 |
+| Review note on a held order (Gemini Pro, figures checked) | $0.019, about 16 seconds |
 | Personalised proposal (Gemini Pro + compliance review + searches), about 30 seconds | $0.045 |
 
-Vertex AI Search (the fund documents) is billed per query at the Enterprise list price of $4 per 1,000; its index is a few kilobytes, inside the free storage tier. At demo volumes (100 leads, 30 drafts, 30 questions and 20 identity checks, plus 150 Invest explanations and readings, 80 Copilot questions and 20 proposals a month) AI adds about $4.50, so the whole system runs at roughly $14 a month. Every call is listed with its cost under `GET /ai/usage` and on each lead's AI activity panel, and lands in BigQuery (`atrium.events`).
+Vertex AI Search (the fund documents) is billed per query at the Enterprise list price of $4 per 1,000; its index is a few kilobytes, inside the free storage tier. At demo volumes (100 leads, 30 drafts, 30 questions and 20 identity checks, plus 150 Invest explanations and readings, 80 Copilot questions and 20 proposals a month, plus 100 order explanations and 10 held-order review notes) AI adds about $4.90, so the whole system runs at roughly $14.50 a month. Live quotes come from Yahoo Finance at no charge. Every call is listed with its cost under `GET /ai/usage` and on each lead's AI activity panel, and lands in BigQuery (`atrium.events`).
 
 Cold start after idle time: about 6 seconds for the API and 2 to 4 seconds for the web app. For the judging window, keep both warm (about $23 a month extra):
 
