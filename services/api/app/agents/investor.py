@@ -20,7 +20,12 @@ from app.config import get_settings
 from app.models import Account, Fund, Instruction, Lot, Price
 from app.services.instructions import LotView, preview_redemption
 from app.services.ledger import InsufficientUnits
+from app.markets.quotes import get_quotes, market_session
+from app.markets.universe import instrument
+from app.models.base import utcnow
+from app.services.account_snapshot import account_snapshot
 from app.services.analytics import portfolio_risk, portfolio_xray, universe
+from app.services.guardian import OrderRequest, assess, report_facts, report_json
 from app.services.portfolio import PriceUnavailable, valuation
 from app.services.risk_profile import BAND_LABEL, latest_profile
 from app.services.whatif import Plan, WhatIfError, simulate
@@ -29,8 +34,10 @@ COPILOT = f"""You are Atrium's Investor Copilot, talking with the holder of one 
 Answer questions about their own portfolio, transactions, risk, fees and Atrium's house funds. Always use a tool for
 facts and never guess a number: get_portfolio for holdings and values, get_recent_performance for why the portfolio
 moved, get_transactions for history, get_risk_report and get_xray for risk, concentration and fees, get_profile for
-their risk profile, run_what_if for projections, preview_withdrawal for withdrawals, and search_fund_documents for fund
-facts, fees and risks. Quote figures exactly as the tools return them. When you use fund documents, name the fund and
+their risk profile, run_what_if for projections, preview_withdrawal for withdrawals, search_fund_documents for fund
+facts, fees and risks, get_quote for a share or ETF's price and risk band, and preview_trade to show what the
+Pre-trade Guardian would say about buying or selling shares (a preview places nothing; orders are placed on the
+symbol's page in Markets). Quote figures exactly as the tools return them. When you use fund documents, name the fund and
 the section. You explain; you do not tell them to buy or sell, and you never promise returns. Projections are
 simulations, not forecasts. Answer in plain English, addressed to "you", in under 170 words, as short paragraphs of
 plain sentences: no markdown, no asterisks, no bullet symbols and no headings.
@@ -41,7 +48,7 @@ def _money(x) -> float:
     return round(float(x), 2)
 
 
-def snapshot_for(db: Session, account: Account) -> dict:
+def snapshot_for(db: Session, account: Account, device_hash: str | None = None) -> dict:
     house = {f.code: f for f in db.scalars(select(Fund)).all()}
     everything = universe(db)
     person = account.person
@@ -82,7 +89,13 @@ def snapshot_for(db: Session, account: Account) -> dict:
     instructions = db.scalars(select(Instruction).where(Instruction.account_id == account.id)
                               .order_by(Instruction.requested_at.desc()).limit(12)).all()
     profile = latest_profile(db, person.id)
+    quotes = get_quotes()
+    try:
+        trading = account_snapshot(db, account, device_hash=device_hash, quotes=quotes)
+    except PriceUnavailable:
+        trading = None
     return {
+        "trading": trading, "quotes": quotes,
         "account": account.number, "valued_at": view.as_of.isoformat() if view else None,
         "portfolio": {"total_value_usd": total, "invested_usd": _money(view.total_cost) if view else 0.0,
                       "gain_usd": _money(view.pnl) if view else 0.0, "holdings": holdings},
@@ -215,15 +228,48 @@ def build_copilot(snap: dict, search, model, trace: list, sources: list, usage: 
         return {"passages": [{"id": p.id, "title": p.title, "text": p.text[:900]} for p in hits.passages],
                 "retriever": hits.retriever}
 
+    def get_quote(symbol: str) -> dict:
+        """Return the latest price of a US share or ETF that Atrium trades, its change today, its risk band (1 to 5),
+        its five-year volatility and its sector."""
+        inst = instrument(str(symbol))
+        if inst is None:
+            return {"error": f"{str(symbol).upper()} is not in Atrium's trading list."}
+        note("get_quote", f"Read the price of {inst.symbol}")
+        q = snap["quotes"].quote(inst.symbol)
+        if q is None:
+            return {"error": f"There is no price for {inst.symbol} right now."}
+        return {"symbol": inst.symbol, "name": inst.name, "price_usd": float(q.price),
+                "previous_close_usd": float(q.previous_close), "change_pct": q.change_pct,
+                "price_source": "delayed live price" if q.source == "live" else "last close",
+                "risk_band": inst.risk_band, "five_year_volatility_pct": inst.volatility_pct,
+                "sector": inst.sector_label}
+
+    def preview_trade(symbol: str, side: str, quantity: int) -> dict:
+        """Ask the Pre-trade Guardian about buying or selling `quantity` shares of a share or ETF at market; side is
+        "buy" or "sell". It places nothing: it returns the verdict (proceed, warn, hold or block), each concern and
+        the estimated cost."""
+        inst = instrument(str(symbol))
+        side = str(side).lower()
+        if inst is None or side not in ("buy", "sell") or int(quantity) < 1:
+            return {"error": "Name a symbol Atrium trades, buy or sell, and a whole number of shares."}
+        note("preview_trade", f"Asked the Guardian about: {side} {int(quantity)} {inst.symbol}")
+        q = snap["quotes"].quote(inst.symbol)
+        if snap["trading"] is None or q is None:
+            return {"error": "The Guardian cannot check orders right now."}
+        report = assess(snap["trading"], OrderRequest(inst.symbol, side, "market", int(quantity)), inst, q,
+                        market_session(utcnow()))
+        return {**report_facts(report_json(report)),
+                "where_to_place": f"The order ticket on the {inst.symbol} page in Markets. This preview placed nothing."}
+
     return Agent(name="investor_copilot", model=model, instruction=COPILOT, generate_content_config=fast_config(),
                  after_model_callback=usage_tracker(usage),
                  tools=[get_portfolio, get_recent_performance, get_transactions, get_risk_report, get_xray, get_profile,
-                        run_what_if, preview_withdrawal, search_fund_documents])
+                        run_what_if, preview_withdrawal, search_fund_documents, get_quote, preview_trade])
 
 
 def answer_question(db: Session, account: Account, question: str, history: list[tuple[str, str]], search,
-                    model) -> dict:
-    snap = snapshot_for(db, account)
+                    model, device_hash: str | None = None) -> dict:
+    snap = snapshot_for(db, account, device_hash)
     trace: list[dict] = []
     sources: list[dict] = []
     usage = {"in": 0, "out": 0}
