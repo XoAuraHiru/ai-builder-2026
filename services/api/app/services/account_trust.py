@@ -16,8 +16,9 @@ NEW_DEVICE = timedelta(hours=24)
 DORMANT = timedelta(days=90)
 RAPID_WINDOW = timedelta(minutes=10)
 RAPID_ORDERS = 3
-TAKEOVER_SHARE_OF_TRADED = Decimal("0.5")    # of the shares and ETFs held directly
-TAKEOVER_SHARE_OF_ACCOUNT = Decimal("0.25")  # of the whole account
+TAKEOVER_SHARE_OF_TRADED = Decimal("0.5")    # of the shares and ETFs held directly...
+TAKEOVER_MATERIAL = Decimal("0.10")          # ...when that is also at least this share of the account
+TAKEOVER_SHARE_OF_ACCOUNT = Decimal("0.25")  # or this share of the whole account on its own
 
 
 @dataclass(frozen=True)
@@ -61,7 +62,8 @@ def assess_account(t: TrustInputs, *, side: str, order_value: Decimal, traded_va
     if side == "sell" and new_device:
         of_traded = order_value / traded_value if traded_value > 0 else Decimal("0")
         of_account = order_value / account_value if account_value > 0 else Decimal("0")
-        if of_traded >= TAKEOVER_SHARE_OF_TRADED or of_account >= TAKEOVER_SHARE_OF_ACCOUNT:
+        if (of_traded >= TAKEOVER_SHARE_OF_TRADED and of_account >= TAKEOVER_MATERIAL) \
+                or of_account >= TAKEOVER_SHARE_OF_ACCOUNT:
             takeover = True
             signals.append(TrustSignal(
                 "T23", "Large sale from a new device", -40,

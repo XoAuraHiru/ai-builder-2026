@@ -46,6 +46,13 @@ def test_a_large_sale_from_a_new_device_is_a_possible_takeover():
     assert not familiar
 
 
+def test_selling_all_of_a_small_position_is_not_a_takeover():
+    _, takeover = assess(inputs(device_first_seen=None), side="sell", value="305", traded="305", account="10000")
+    assert not takeover  # every share held directly, but 3% of the account
+    _, large = assess(inputs(device_first_seen=None), side="sell", value="3000", traded="3000", account="10000")
+    assert large
+
+
 def test_dormancy_rapid_orders_and_the_lead_baseline():
     report, _ = assess(inputs(baseline=70, last_activity=NOW - timedelta(days=120), recent_orders=3))
     assert [s.code for s in report.signals] == ["T21", "T22"]
