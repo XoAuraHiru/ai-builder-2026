@@ -11,9 +11,11 @@ from app.models.person import PERSON_KINDS, Person
 from app.models.price import PRICE_STATUSES, Price
 from app.models.proposal import Proposal
 from app.models.risk_profile import RiskProfile
+from app.models.trading import ORDER_SIDES, ORDER_STATES, ORDER_TYPES, VERDICTS, AccountDevice, TradeOrder, WatchItem
 
 __all__ = [
     "AIDecision", "Account", "Fund", "FundConstituent", "FUND_CATEGORIES", "Instruction", "INSTRUCTION_STATES",
     "INSTRUCTION_TYPES", "InstructionStep", "RecurringPlan", "STEP_STATES", "IdentityCheck", "Lead", "LeadConversion", "LEAD_SOURCES", "LEAD_STAGES", "Lot", "Posting",
     "POSTING_TYPES", "INSTRUMENT_TYPES", "Person", "PERSON_KINDS", "Price", "PRICE_STATUSES", "Proposal", "RiskProfile",
+    "AccountDevice", "ORDER_SIDES", "ORDER_STATES", "ORDER_TYPES", "TradeOrder", "VERDICTS", "WatchItem",
 ]
