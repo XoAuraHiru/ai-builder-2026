@@ -1,0 +1,38 @@
+[project]
+name = "atrium-api"
+version = "0.1.0"
+description = "Atrium core API: people, accounts, house funds, prices, ledger"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "sqlalchemy>=2.0.30",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  "pandas>=2.2",
+  "numpy>=1.26",
+  "yfinance>=0.2.50",
+  "alpaca-py>=0.30",
+  "firebase-admin>=6.5",
+  "google-cloud-pubsub>=2.21",
+  "pg8000>=1.31",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.2",
+  "httpx>=0.27",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["network: tests that call real market-data providers (skipped unless ATRIUM_NETWORK_TESTS=1)"]
+filterwarnings = ["ignore:Dialect sqlite", "ignore:Using `httpx` with `starlette.testclient`"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+# Local databases and caches
+*.db
+*.db-journal
+**/data/cache/
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+# Environment
+.env
+.env.*
+!.env.example
+infra/.forbidden-words
+# Agent workspaces
+.superpowers/
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+# Build artefacts
+dist/
+build/
