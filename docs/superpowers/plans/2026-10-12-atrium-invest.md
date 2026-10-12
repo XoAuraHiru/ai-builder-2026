@@ -1702,7 +1702,7 @@ BODY = {"initial_usd": 10000, "monthly_usd": 500, "years": 10, "goal_usd": 12000
 
 
 def facts_of(prompt):
-    return json.loads(prompt.split("<facts>")[1].split("</facts>")[0])
+    return json.loads(prompt.split("<facts>")[-1].split("</facts>")[0])
 
 
 def test_what_if_simulates_real_history(client, db, people):
