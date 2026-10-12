@@ -74,7 +74,12 @@ class ApprovalDecisionIn(NoteIn):
 
 
 class SampleIn(BaseModel):
-    fmt: Literal["pdf", "csv"] = "pdf"
+    fmt: Literal["pdf", "csv"] | None = None  # None: the configured sample format
+
+
+def sample_format(reader) -> str:
+    """The sample statement's format: CSV unless settings ask for PDF and Document AI is here to read it."""
+    return get_settings().sample_statement_format if reader is not None else "csv"
 
 
 def guarded(action: Callable[[], T]) -> T:
@@ -235,7 +240,7 @@ def download_sample(fmt: Literal["pdf", "csv"] = "pdf", db: Session = Depends(ge
 @router.post("/statements/sample", status_code=201)
 def read_sample(body: SampleIn, db: Session = Depends(get_db), llm: LLM = Depends(get_llm),
                 reader=Depends(statement_reader), user: CurrentUser = Depends(ops)):
-    data, filename, mime = sample_statement(db, utcnow().astimezone(NEW_YORK).date(), body.fmt)
+    data, filename, mime = sample_statement(db, utcnow().astimezone(NEW_YORK).date(), body.fmt or sample_format(reader))
     statement = guarded(lambda: ingest_statement(db, data=data, filename=filename, mime_type=mime,
                                                  uploaded_by=me(db, user), llm=llm, reader=reader))
     db.commit()
@@ -268,7 +273,8 @@ def reconciliation(db: Session = Depends(get_db), reader=Depends(statement_reade
     recent = db.scalars(select(ReconMatch).where(ReconMatch.state.in_(("accepted", "rejected")))
                         .order_by(ReconMatch.decided_at.desc()).limit(10)).all()
     busy = busy_instruction_ids(db)
-    return {"reads_pdf": reader is not None, "demo": get_settings().auth_mode == "dev",
+    return {"reads_pdf": reader is not None, "sample_format": sample_format(reader),
+            "demo": get_settings().auth_mode == "dev",
             "statements": [statement_out(db, s) for s in statements],
             "unmatched": [line_out(x) for x in unmatched_deposits(db)],
             "receipts": [{"instruction_id": r.instruction_id, "reference": r.reference,

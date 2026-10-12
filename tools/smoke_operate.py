@@ -1,10 +1,10 @@
 """Live smoke test of the Operate release against a deployed API, with the AI cost of the run.
 
-Usage: python tools/smoke_operate.py [API_URL]
+Usage: python tools/smoke_operate.py [API_URL] [--pdf]
 
 Persona sign-in only (the demo authenticator gives Sam's code). It does what a visitor would:
-- Mei adds demo payments if fewer than three are waiting, reads the sample statement (a PDF through Document AI when
-  the processor is configured), finds matches, and accepts the exact-reference ones.
+- Mei adds demo payments if fewer than three are waiting, reads the sample statement (CSV by default; --pdf sends it
+  through Document AI for $0.75), finds matches, and accepts the exact-reference ones.
 - Mei runs the day-end and asks for any draft prices to be published; Sam approves with a one-time code.
 - Omar opens the structuring alert and asks Gemini Pro for a case review. Nothing is decided, so the alerts stay open
   for visitors.
@@ -15,7 +15,8 @@ import time
 import urllib.error
 import urllib.request
 
-API = sys.argv[1] if len(sys.argv) > 1 else "https://atrium-api-tvflgkcdoa-uc.a.run.app"
+ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
+API = ARGS[0] if ARGS else "https://atrium-api-tvflgkcdoa-uc.a.run.app"
 MEI, SAM, OMAR = "mei@atrium.demo", "sam@atrium.demo", "omar@atrium.demo"
 
 
@@ -44,7 +45,8 @@ def main():
                 lambda b: f"{len(b['receipts'])} waiting, {len(b['unmatched'])} unmatched, PDF: {b['reads_pdf']}")
     if view and len([r for r in view["receipts"] if not r["in_proposal"]]) < 3:
         show("add demo payments", call("POST", "/ops/demo/payments"), lambda b: f"{b['added']} added")
-    fmt = "pdf" if view and view["reads_pdf"] else "csv"
+    # The sample reads in the API's configured format (CSV by default); --pdf pays $0.75 for a Document AI read.
+    fmt = "pdf" if "--pdf" in sys.argv else (view["sample_format"] if view else "csv")
     show(f"read the sample statement ({fmt})", call("POST", "/ops/statements/sample", {"fmt": fmt}),
          lambda b: f"{b['source']}: {b['counts']}; {' '.join(b['notes'])[:80]}")
     show("find matches", call("POST", "/ops/reconcile"),

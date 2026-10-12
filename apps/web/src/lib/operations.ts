@@ -46,7 +46,7 @@ export type Statement = {
   counts: Record<Line["state"], number>; lines?: Line[];
 };
 export type Reconciliation = {
-  reads_pdf: boolean; demo: boolean; statements: Statement[]; unmatched: Line[]; receipts: Receipt[]; proposals: Match[]; recent: Match[];
+  reads_pdf: boolean; sample_format: "csv" | "pdf"; demo: boolean; statements: Statement[]; unmatched: Line[]; receipts: Receipt[]; proposals: Match[]; recent: Match[];
 };
 export type ReconcileResult = { rules: number; agent: number; scorer: number; summary: string; used_agent: boolean };
 export type Step = { state: string; note: string; at: string };

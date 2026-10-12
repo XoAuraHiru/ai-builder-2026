@@ -109,6 +109,17 @@ def test_the_sample_statement_downloads_and_reads_straight_in(api):
     assert read.json()["counts"]["unmatched"] >= 2 and read.json()["lines"]
 
 
+def test_the_sample_statement_is_read_as_csv_unless_settings_ask_for_pdf(api, monkeypatch):
+    view = api.get("/ops/reconciliation", headers=MEI).json()
+    assert view["sample_format"] == "csv"  # a PDF read costs $0.75 of Document AI, so the sample is CSV by default
+    read = api.post("/ops/statements/sample", headers=MEI, json={})
+    assert read.status_code == 201, read.text
+    assert read.json()["source"] == "csv"
+    monkeypatch.setattr(get_settings(), "sample_statement_format", "pdf")
+    view = api.get("/ops/reconciliation", headers=MEI).json()
+    assert view["sample_format"] == "csv"  # asked for PDF, but no Document AI here to read it
+
+
 def test_a_manual_match_and_the_blotter(api, db):
     data = b"Date,Description,Amount\n2026-10-09,CHECK DEPOSIT 4471,1500.00\n"
     statement = api.post("/ops/statements", headers=MEI, files={"file": ("check.csv", data, "text/csv")}).json()

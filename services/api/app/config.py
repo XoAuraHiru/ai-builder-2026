@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -26,6 +27,7 @@ class Settings(BaseSettings):
     docai_location: str = "us"
     docai_proofing_processor: str = ""      # Document AI ID Proofing processor id; empty disables fraud signals
     docai_statement_processor: str = ""     # Document AI Bank Statement Parser id; empty means CSV statements only
+    sample_statement_format: Literal["csv", "pdf"] = "csv"  # "pdf" reads the sample through Document AI, $0.75 a read
     blind_index_key: str = "atrium-local-blind-index-key"  # HMAC key for blind indexes; Secret Manager in production
     fund_search_engine: str = ""            # Vertex AI Search app id for fund documents; empty uses the local index
     fund_search_location: str = "global"

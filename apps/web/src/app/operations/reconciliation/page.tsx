@@ -167,7 +167,7 @@ export default function ReconciliationPage() {
     }
   }
 
-  const fmt = data?.reads_pdf ? "pdf" : "csv";
+  const fmt = data?.sample_format ?? "csv";
   const readSample = () => act("sample", "Atrium could not read the sample statement. Try again.", async () => {
     setRead(await api<Statement>("/ops/statements/sample", { method: "POST", body: JSON.stringify({ fmt }) }));
     setFound(null);
@@ -256,7 +256,9 @@ export default function ReconciliationPage() {
       {header}
       <p className="-mt-4 mb-8 max-w-[70ch] text-sm text-muted">
         The sample statement is written for the payments Atrium is waiting for, with the imperfections real statements have
-        {data.reads_pdf ? ", and as a PDF it is read by Document AI" : "; Document AI is not configured here, so it is read as a CSV"}.
+        {data.sample_format === "pdf" ? ", and as a PDF it is read by Document AI"
+          : data.reads_pdf ? ". It is read as a CSV; upload the PDF to have Document AI read it"
+          : "; Document AI is not configured here, so it is read as a CSV"}.
         Download it as a <button type="button" className="underline underline-offset-4" onClick={() => download("pdf")}>PDF</button> or
         a <button type="button" className="underline underline-offset-4" onClick={() => download("csv")}>CSV</button>.
       </p>
