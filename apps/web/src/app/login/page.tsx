@@ -7,13 +7,19 @@ import { getConfig, type RuntimeConfig } from "@/lib/config";
 import { firebaseAuth } from "@/lib/firebase";
 import { setDevUser } from "@/lib/session";
 import { useSession } from "@/lib/session-context";
+import { Button, Field, inputClass, Loading, Notice } from "@/components/ui";
 
 const PERSONAS = [
-  { email: "priya@atrium.demo", label: "Priya Raman", role: "Investor", home: "/investor" },
-  { email: "lucas@atrium.demo", label: "Lucas Moreau", role: "Investor", home: "/investor" },
-  { email: "daniel@atrium.demo", label: "Daniel Okafor", role: "Advisor", home: "/advisor" },
-  { email: "mei@atrium.demo", label: "Mei Tanaka", role: "Operations", home: "/operations" },
-  { email: "omar@atrium.demo", label: "Omar Haddad", role: "Compliance", home: "/compliance" },
+  { group: "Investors", email: "priya@atrium.demo", name: "Priya Raman", role: "Investor", home: "/investor",
+    sees: "A balanced portfolio, the What-if Studio, the X-ray and the Copilot." },
+  { group: "Investors", email: "lucas@atrium.demo", name: "Lucas Moreau", role: "Investor", home: "/investor",
+    sees: "A growth and technology portfolio. Open the X-ray to see what sits underneath." },
+  { group: "Atrium staff", email: "daniel@atrium.demo", name: "Daniel Okafor", role: "Advisor", home: "/advisor",
+    sees: "The lead pipeline with three fraud stories, AI replies and personalised proposals." },
+  { group: "Atrium staff", email: "mei@atrium.demo", name: "Mei Tanaka", role: "Operations", home: "/operations",
+    sees: "Reconciliation and approvals, arriving in the Operate release." },
+  { group: "Atrium staff", email: "omar@atrium.demo", name: "Omar Haddad", role: "Compliance", home: "/compliance",
+    sees: "Anti-money-laundering alerts and cases, arriving in the Operate release." },
 ];
 
 export default function LoginPage() {
@@ -23,35 +29,17 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [choosing, setChoosing] = useState("");
 
   useEffect(() => {
     getConfig().then(setCfg);
   }, []);
 
-  if (!cfg) return <p>Loading…</p>;
-
-  if (cfg.authMode === "dev") {
-    return (
-      <div className="mx-auto max-w-md space-y-3">
-        <h1 className="text-xl font-semibold">Choose a demo persona</h1>
-        <p className="text-sm text-slate-600">Every persona and number here is synthetic.</p>
-        {PERSONAS.map((p) => (
-          <button
-            key={p.email}
-            type="button"
-            onClick={async () => {
-              setDevUser(p.email);
-              await refresh();
-              router.push(p.home);
-            }}
-            className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 text-left hover:border-[#0b5fff]"
-          >
-            <span className="font-medium">{p.label}</span>
-            <span className="text-sm text-slate-500">{p.role}</span>
-          </button>
-        ))}
-      </div>
-    );
+  async function choose(p: (typeof PERSONAS)[number]) {
+    setChoosing(p.email);
+    setDevUser(p.email);
+    await refresh();
+    router.push(p.home);
   }
 
   async function submit(e: React.FormEvent) {
@@ -67,32 +55,55 @@ export default function LoginPage() {
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto max-w-md space-y-3">
-      <h1 className="text-xl font-semibold">Sign in</h1>
-      <label className="block text-sm">
-        Email
-        <input
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </label>
-      <label className="block text-sm">
-        Password
-        <input
-          className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </label>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button type="submit" className="rounded bg-[#0b5fff] px-4 py-2 text-white">
-        Sign in
-      </button>
-    </form>
+    <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16">
+      <div className="max-w-xl">
+        <h1 className="wide text-[38px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-[46px]">
+          One platform for every client relationship, with every number explained.
+        </h1>
+        <p className="mt-5 text-[17px] leading-relaxed text-ink-2">
+          Atrium acquires, serves and protects investors in one place. Leads are scored for fit and fraud from the first
+          form, portfolios are simulated over real market history, and every answer the AI writes shows where it came from.
+        </p>
+        <ul className="mt-8 space-y-3 border-t border-line pt-6 text-sm text-ink-2">
+          <li><span className="font-medium text-ink">Grounded AI.</span> Gemini writes the words; Atrium&apos;s engines own every figure, and each figure is checked.</li>
+          <li><span className="font-medium text-ink">People decide.</span> Profiles, proposals and risky instructions wait for a person to confirm.</li>
+          <li><span className="font-medium text-ink">Synthetic by design.</span> Every person, account and trade here is invented, and trading is on paper.</li>
+        </ul>
+      </div>
+      <div>
+        {!cfg ? <Loading label="Loading" /> : cfg.authMode === "dev" ? (
+          <div className="space-y-8">
+            {["Investors", "Atrium staff"].map((group) => (
+              <section key={group}>
+                <h2 className="text-sm font-medium text-muted">{group}</h2>
+                <ul className="mt-2 divide-y divide-line border-y border-line">
+                  {PERSONAS.filter((p) => p.group === group).map((p) => (
+                    <li key={p.email}>
+                      <button type="button" onClick={() => choose(p)} disabled={Boolean(choosing)}
+                        className="group grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3.5 text-left disabled:opacity-60">
+                        <span className="min-w-0">
+                          <span className="font-medium group-hover:underline">{p.name}</span>
+                          <span className="block text-sm text-ink-2">{p.sees}</span>
+                        </span>
+                        <span className="text-sm text-muted">{choosing === p.email ? "Opening…" : p.role}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+            <p className="text-xs text-muted">This demo uses persona sign-in. Choosing a persona signs you in as them.</p>
+          </div>
+        ) : (
+          <form onSubmit={submit} className="max-w-sm space-y-4">
+            <h2 className="text-lg font-semibold">Sign in</h2>
+            <Field label="Email"><input className={inputClass} type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
+            <Field label="Password"><input className={inputClass} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
+            {error && <Notice tone="error">{error}</Notice>}
+            <Button type="submit">Sign in</Button>
+          </form>
+        )}
+      </div>
+    </div>
   );
 }

@@ -9289,6 +9289,8 @@ import { ProposalBadges, ProposalSections, type Proposal } from "@/components/pr
 import { AtriumMark } from "@/components/shell";
 import { Button, EmptyState, Loading, Notice } from "@/components/ui";
 
+type ProjectionScenario = NonNullable<Proposal["content"]["projection"]>["scenarios"][number];
+
 export default function PrintableProposal() {
   const { id } = useParams<{ id: string }>();
   const [lead, setLead] = useState<Lead | null>(null);
@@ -9334,7 +9336,7 @@ export default function PrintableProposal() {
             <tbody>
               {([["Middle outcome", (s) => formatUsd(s.median_usd, 0)], ["1 in 10 ends below", (s) => formatUsd(s.lower_10pct_usd, 0)],
                 ["1 in 10 ends above", (s) => formatUsd(s.upper_10pct_usd, 0)], ["Chance of ending below what you paid in", (s) => formatPct(s.chance_below_paid_in_pct)],
-                ["Fees over the period", (s) => formatUsd(s.fees_cost_usd, 0)]] as [string, (s: (typeof projection.scenarios)[number]) => string][]).map(([label, value]) => (
+                ["Fees over the period", (s) => formatUsd(s.fees_cost_usd, 0)]] as [string, (s: ProjectionScenario) => string][]).map(([label, value]) => (
                 <tr key={label} className="border-b border-line last:border-b-0">
                   <td className="py-2 text-ink-2">{label}</td>
                   {projection.scenarios.map((s) => <td key={s.label} className="num py-2 text-right">{value(s)}</td>)}
