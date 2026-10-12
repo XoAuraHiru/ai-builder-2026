@@ -84,3 +84,11 @@ export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
   }
   return (await res.json()) as T;
 }
+
+/** A file from the API (the sample statement), fetched with the same sign-in headers as every other call. */
+export async function apiDownload(path: string): Promise<Blob> {
+  const cfg = await getConfig();
+  const res = await fetch(`${cfg.apiUrl}${path}`, { headers: { ...deviceHeader(), ...(await authHeaders()) } });
+  if (!res.ok) throw new ApiError(res.status, res.statusText || "The file could not be fetched.");
+  return res.blob();
+}
