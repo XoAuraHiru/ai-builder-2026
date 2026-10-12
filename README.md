@@ -100,8 +100,13 @@ AI is pay-per-use. Measured on the live system (Gemini 3.8 Flash on the global e
 | Order explanation before you confirm (Gemini Flash, figures checked) | $0.002 |
 | Review note on a held order (Gemini Pro, figures checked) | $0.019, about 16 seconds |
 | Personalised proposal (Gemini Pro + compliance review + searches), about 30 seconds | $0.045 |
+| Read a bank statement PDF (Document AI Bank Statement Parser + Gemini Flash reading the narrations) | $0.75 Document AI list price per statement, plus $0.002 |
+| Read a bank statement CSV (Gemini Flash reading the narrations) | $0.002 |
+| Find matches (ADK reconciliation agent, Gemini Flash) | $0.004 to $0.014, about 10 to 20 seconds |
+| AML case review (Gemini Pro, citations and figures checked) | $0.018 to $0.024, about 16 to 21 seconds |
+| Day-end run with its morning brief (Cloud Run job + Gemini Flash) | $0.0008; the job's few seconds of compute and the one Cloud Scheduler job are inside the free tiers |
 
-Vertex AI Search (the fund documents) is billed per query at the Enterprise list price of $4 per 1,000; its index is a few kilobytes, inside the free storage tier. At demo volumes (100 leads, 30 drafts, 30 questions and 20 identity checks, plus 150 Invest explanations and readings, 80 Copilot questions and 20 proposals a month, plus 100 order explanations and 10 held-order review notes) AI adds about $4.90, so the whole system runs at roughly $14.50 a month. Live quotes come from Yahoo Finance at no charge. Every call is listed with its cost under `GET /ai/usage` and on each lead's AI activity panel, and lands in BigQuery (`atrium.events`).
+Vertex AI Search (the fund documents) is billed per query at the Enterprise list price of $4 per 1,000; its index is a few kilobytes, inside the free storage tier. At demo volumes (100 leads, 30 drafts, 30 questions and 20 identity checks, plus 150 Invest explanations and readings, 80 Copilot questions and 20 proposals a month, plus 100 order explanations and 10 held-order review notes) AI adds about $4.90, so the system ran at roughly $14.50 a month before the Operate release. Operate adds about $23.30 at demo volumes (30 statement PDFs, 30 reconciliations, 20 case reviews and 22 day-end runs a month), almost all of it Document AI's $0.75 per statement, for roughly $37.80 a month in all. Reading statements as CSV instead costs $0.002 each and brings the total back to about $15. Live quotes come from Yahoo Finance at no charge. Every call is listed with its cost under `GET /ai/usage` and on each lead's AI activity panel, and lands in BigQuery (`atrium.events`).
 
 Cold start after idle time: about 6 seconds for the API and 2 to 4 seconds for the web app. For the judging window, keep both warm (about $23 a month extra):
 
