@@ -84,7 +84,7 @@ export default function BlotterPage() {
                           <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                             <div>
                               <p className="text-sm font-medium">Timeline</p>
-                              {r.steps.length === 0 ? <p className="mt-1 text-sm text-muted">No steps recorded yet.</p> : (
+                              {r.steps.length === 0 ? <p className="mt-1 text-sm text-muted">No timeline was recorded for this instruction.</p> : (
                                 <ol className="mt-2 space-y-2 border-l border-line pl-4 text-sm">
                                   {r.steps.map((s, i) => (
                                     <li key={i}>

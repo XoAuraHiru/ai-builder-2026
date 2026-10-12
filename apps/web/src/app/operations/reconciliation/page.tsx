@@ -172,7 +172,7 @@ export default function ReconciliationPage() {
           </div>
         )}
         <Section title="Find matches"
-          description={`${data.unmatched.length} deposit${data.unmatched.length === 1 ? "" : "s"} wait to be matched with ${data.receipts.length} subscription${data.receipts.length === 1 ? "" : "s"} waiting for money.`}
+          description={`${data.unmatched.length} deposit${data.unmatched.length === 1 ? " waits" : "s wait"} to be matched with ${data.receipts.length} subscription${data.receipts.length === 1 ? "" : "s"} waiting for money.`}
           actions={<Button busy={busy === "find"} disabled={Boolean(busy) || data.unmatched.length === 0 || data.receipts.length === 0} onClick={findMatches}>Find matches</Button>}>
           {found ? (
             <div className="space-y-3">

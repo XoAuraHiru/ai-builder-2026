@@ -36,6 +36,11 @@ describe("isActive", () => {
     expect(isActive("/operations/approvals", "/operations")).toBe(false);
     expect(isActive("/operations/approvals", "/operations/approvals")).toBe(true);
   });
+  it("knows the compliance pages", () => {
+    expect(WORKSPACES.compliance.links.map((l) => l.label)).toEqual(["Alerts", "Decision log"]);
+    expect(isActive("/compliance/alerts/abc", "/compliance")).toBe(true);
+    expect(isActive("/compliance/log", "/compliance")).toBe(false);
+  });
 });
 
 describe("isPublic", () => {
