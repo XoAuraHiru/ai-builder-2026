@@ -26,6 +26,7 @@ export type WhatIf = {
 export type ScenarioIn = { label?: string; allocation: Record<string, number> };
 
 export type RiskReport = {
+  names?: Record<string, string>;
   window_start: string; window_end: string; months: number; weights: Record<string, number>; value_usd: number;
   annual_volatility_pct: number; beta: number; max_drawdown_pct: number; drawdown_peak: string; drawdown_trough: string;
   var95_1m_pct: number; var95_1m_usd: number; sharpe: number; worst_month: { month: string; pct: number };

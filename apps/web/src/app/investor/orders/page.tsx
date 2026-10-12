@@ -162,7 +162,7 @@ export default function OrdersPage() {
   const monthlyAbove = band !== null && (byCode[monthly.fund]?.risk_band ?? 0) > band;
   return (
     <>
-      <PageHeader title="Orders" description="Invest, withdraw or switch between funds. Atrium checks every instruction against your holdings and your risk profile before it is accepted, and shows you the checks first." />
+      <PageHeader title="Fund orders" description="Invest, withdraw or switch between funds. Atrium checks every instruction against your holdings and your risk profile before it is accepted, and shows you the checks first." />
       <div className="space-y-12">
         <div className="grid gap-8 lg:grid-cols-[340px_minmax(0,1fr)]">
           <Panel className="h-fit space-y-5 p-5">

@@ -17,6 +17,7 @@ const SUGGESTIONS = [
   "What happens if I withdraw $10,000?",
   "Which of my funds costs the most in fees?",
   "How risky is my portfolio compared with my profile?",
+  "What would the Guardian say if I bought 10 shares of NVIDIA?",
 ];
 const TOOL_DETAIL: Record<string, string> = {
   get_portfolio: "Your holdings, values and gains.",
@@ -28,6 +29,8 @@ const TOOL_DETAIL: Record<string, string> = {
   run_what_if: "Atrium's simulation engine: a simulation, not a forecast.",
   preview_withdrawal: "Your purchase lots, first in, first out, at the latest prices.",
   search_fund_documents: "Atrium's fund documents.",
+  get_quote: "The latest delayed price, its risk band and sector.",
+  preview_trade: "The Pre-trade Guardian's checks on a possible order. Nothing was placed.",
 };
 
 function Thinking() {
