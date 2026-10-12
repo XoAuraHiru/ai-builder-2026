@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { codeDigits, confidenceWords, describeInstruction, matchTotals, proposerLabel, resultWords } from "./operations";
+import { balanceNote, codeDigits, confidenceWords, describeInstruction, diffMarks, matchTotals, meterCells, proposerLabel, resultWords, splitProposals, statementFlow } from "./operations";
 
 describe("codeDigits", () => {
   it("keeps six digits from whatever is typed or pasted", () => {
@@ -37,5 +37,29 @@ describe("words", () => {
     expect(resultWords({ action: "manual_match", state: "approved", result: { settled: ["i1"] } }))
       .toBe("Matched, and the subscription settled.");
     expect(resultWords({ action: "reverse_posting", state: "rejected", result: null })).toBe("Rejected: nothing changed.");
+  });
+});
+
+describe("reconciliation views", () => {
+  it("marks the characters where two references differ", () => {
+    expect(diffMarks("ATR-97B3905C", "ATR-97B39D5C").filter((m) => m.diff).map((m) => m.ch)).toEqual(["0"]);
+    expect(diffMarks("ATR-1", "ATR-12").map((m) => m.diff)).toEqual([false, false, false, false, false]);
+  });
+  it("keeps the rules' exact matches apart from the agent's proposals", () => {
+    const m = (id: string, by: string, state = "proposed") => ({ id, proposed_by: by, state }) as never;
+    const split = splitProposals([m("a", "rules"), m("b", "agent"), m("c", "scorer"), m("d", "mei@atrium.demo", "awaiting_approval")]);
+    expect(split.rules.map((x: { id: string }) => x.id)).toEqual(["a"]);
+    expect(split.others.map((x: { id: string }) => x.id)).toEqual(["b", "c", "d"]);
+  });
+  it("counts a statement's lines and reads its balance check", () => {
+    const s = { counts: { unmatched: 1, proposed: 2, matched: 5, ignored: 2 },
+      notes: ["Read 10.", "The transactions add up to the change in balance, $16,778.42."] } as never;
+    expect(statementFlow(s)).toEqual({ read: 10, matched: 5, waiting: 2, left: 1, ignored: 2 });
+    expect(balanceNote(s)).toEqual({ ok: true, text: "The transactions add up to the change in balance, $16,778.42." });
+    expect(balanceNote({ counts: {}, notes: ["They do not add up, so check the statement."] } as never)?.ok).toBe(false);
+    expect(balanceNote({ counts: {}, notes: ["Read from CSV."] } as never)).toBeNull();
+  });
+  it("fills a five-cell meter from a confidence", () => {
+    expect([meterCells(0.99), meterCells(0.85), meterCells(0.5), meterCells(0)]).toEqual([5, 4, 3, 0]);
   });
 });

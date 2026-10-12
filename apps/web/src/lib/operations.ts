@@ -120,3 +120,31 @@ export function resultWords(a: Pick<Approval, "action" | "state" | "result">): s
   }
   return "Reversed: the units and their cash came back out of the account.";
 }
+
+/** Each character of `a`, marked where it differs from `b` at the same place: a mistyped reference, highlighted. */
+export function diffMarks(a: string, b: string): { ch: string; diff: boolean }[] {
+  return [...a].map((ch, i) => ({ ch, diff: b[i] !== undefined && b[i] !== ch }));
+}
+
+export function splitProposals(proposals: Match[]): { rules: Match[]; others: Match[] } {
+  return {
+    rules: proposals.filter((m) => m.proposed_by === "rules" && m.state === "proposed"),
+    others: proposals.filter((m) => !(m.proposed_by === "rules" && m.state === "proposed")),
+  };
+}
+
+export function statementFlow(s: Pick<Statement, "counts">): { read: number; matched: number; waiting: number; left: number; ignored: number } {
+  const c = s.counts;
+  const n = (k: keyof Statement["counts"]) => c[k] ?? 0;
+  return { read: n("unmatched") + n("proposed") + n("matched") + n("ignored"), matched: n("matched"), waiting: n("proposed"),
+    left: n("unmatched"), ignored: n("ignored") };
+}
+
+export function balanceNote(s: Pick<Statement, "notes">): { ok: boolean; text: string } | null {
+  const note = s.notes.find((n) => /add up/i.test(n));
+  return note ? { ok: !/do not add up/i.test(note), text: note } : null;
+}
+
+export function meterCells(confidence: number): number {
+  return Math.max(0, Math.min(5, Math.round(confidence * 5)));
+}
