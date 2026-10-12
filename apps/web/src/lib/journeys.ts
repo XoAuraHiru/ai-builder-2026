@@ -92,3 +92,28 @@ export function saveVisits(email: string, visits: string[]): void {
     // Storage blocked: the guide still works for this page view.
   }
 }
+
+const hiddenKey = (email: string) => `atrium.guide.hidden.${email.trim().toLowerCase()}`;
+
+/** Whether this person hid their guide. Each person has their own choice; blocked storage means shown. */
+export function loadGuideHidden(email: string): boolean {
+  try {
+    return localStorage.getItem(hiddenKey(email)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function saveGuideHidden(email: string, hidden: boolean): void {
+  try {
+    localStorage.setItem(hiddenKey(email), hidden ? "1" : "0");
+  } catch {
+    // Storage blocked: the choice lasts for this page view.
+  }
+}
+
+/** What the shell does with the guide: show it, offer to bring it back, or leave no trace (no journey). */
+export function guideState(email: string, hidden: boolean): "shown" | "hidden" | "none" {
+  if (journeyFor(email) === null) return "none";
+  return hidden ? "hidden" : "shown";
+}

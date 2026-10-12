@@ -82,3 +82,10 @@ export function routeKind(path: string): "front" | "public" | "app" {
   if (path === "/") return "front";
   return PUBLIC_PATHS.some((p) => under(path, p)) ? "public" : "app";
 }
+
+/** Where the front door's buttons go: a signed-in person goes home; with real sign-in, anyone else signs in first.
+ *  Null means persona sign-in proceeds. */
+export function entryRoute(authMode: "dev" | "firebase", signedInHome: string | null): string | null {
+  if (authMode === "dev") return null;
+  return signedInHome ?? "/login";
+}

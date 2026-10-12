@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LayoutGroup, motion } from "motion/react";
 import type { Me } from "@/lib/api";
+import { guideState, loadGuideHidden, saveGuideHidden } from "@/lib/journeys";
 import { routeKind, sectionFor, tabFor, workspaceFor, type NavSection, type Workspace } from "@/lib/nav";
 import { ACTS, actFor, initials } from "@/lib/personas";
 import { useSession } from "@/lib/session-context";
@@ -15,7 +16,6 @@ import { ButtonLink, Loading, Notice } from "@/components/ui";
 const ROLE_LABEL: Record<string, string> = {
   investor: "Investor", advisor: "Advisor", ops: "Operations", compliance: "Compliance", admin: "Administrator",
 };
-const GUIDE_KEY = "atrium.guide.hidden";
 
 /** The Atrium mark: a building seen from above, with daylight falling into its central well. */
 export function AtriumMark({ size = 22 }: { size?: number }) {
@@ -159,23 +159,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const kind = routeKind(path);
 
   useEffect(() => {
-    try {
-      setGuideHidden(localStorage.getItem(GUIDE_KEY) === "1");
-    } catch {
-      // Storage blocked: the guide shows.
-    }
-  }, []);
+    if (me) setGuideHidden(loadGuideHidden(me.email));
+  }, [me]);
   useEffect(() => {
     if (status === "signed-out" && kind === "app") router.replace("/");
   }, [status, kind, router]);
 
   function setGuide(hidden: boolean) {
     setGuideHidden(hidden);
-    try {
-      localStorage.setItem(GUIDE_KEY, hidden ? "1" : "0");
-    } catch {
-      // Storage blocked: the choice lasts for this page view.
-    }
+    if (me) saveGuideHidden(me.email, hidden);
   }
 
   if (kind === "front") return <>{children}</>;
@@ -204,17 +196,25 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }
 
   const section = sectionFor(space, path);
+  const guide = guideState(me.email, guideHidden);
+  const showGuide = guide === "shown";
   return (
     <div className="flex min-h-screen flex-col">
-      <TopBar me={me} space={space} guideHidden={guideHidden} onShowGuide={() => setGuide(false)} />
+      <TopBar me={me} space={space} guideHidden={guide === "hidden"} onShowGuide={() => setGuide(false)} />
       <Rail space={space} active={section} layout="strip" />
-      <div className="flex-1 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] xl:grid-cols-[232px_minmax(0,1fr)_340px]">
+      <div className={`flex-1 lg:grid lg:grid-cols-[232px_minmax(0,1fr)] ${showGuide ? "xl:grid-cols-[232px_minmax(0,1fr)_340px]" : ""}`}>
         <Rail space={space} active={section} layout="column" />
         <main className="min-w-0 px-4 py-8 sm:px-8 lg:px-10 lg:py-9">
           {section?.tabs && <SectionTabs section={section} path={path} />}
           {children}
+          {guide === "hidden" && (
+            <button type="button" onClick={() => setGuide(false)}
+              className="no-print mt-10 min-h-11 text-sm text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink lg:hidden">
+              Show your story
+            </button>
+          )}
         </main>
-        {!guideHidden && (
+        {showGuide && (
           <div className="no-print px-4 pb-12 sm:px-8 lg:col-start-2 lg:px-10 xl:col-start-3 xl:row-start-1 xl:px-0 xl:pr-6 xl:pt-9">
             <div className="xl:sticky xl:top-[92px]">
               <JourneyGuide email={me.email} path={path} onHide={() => setGuide(true)} />

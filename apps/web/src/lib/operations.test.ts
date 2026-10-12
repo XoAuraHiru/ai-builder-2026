@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { balanceNote, codeDigits, confidenceWords, describeInstruction, diffMarks, matchTotals, meterCells, proposerLabel, resultWords, splitProposals, statementFlow } from "./operations";
+import { acceptMany, balanceNote, codeDigits, confidenceWords, describeInstruction, diffMarks, matchTotals, meterCells, proposerLabel, resultWords, splitProposals, statementFlow } from "./operations";
 
 describe("codeDigits", () => {
   it("keeps six digits from whatever is typed or pasted", () => {
@@ -61,5 +61,20 @@ describe("reconciliation views", () => {
   });
   it("fills a five-cell meter from a confidence", () => {
     expect([meterCells(0.99), meterCells(0.85), meterCells(0.5), meterCells(0)]).toEqual([5, 4, 3, 0]);
+  });
+});
+
+describe("acceptMany", () => {
+  it("accepts what it can and names what it could not", async () => {
+    const seen: string[] = [];
+    const accept = async (id: string) => {
+      seen.push(id);
+      if (id === "b") throw new Error("This proposal has already been decided.");
+    };
+    expect(await acceptMany(["a", "b", "c"], accept)).toEqual({
+      accepted: ["a", "c"], failed: [{ id: "b", message: "This proposal has already been decided." }],
+    });
+    expect(seen).toEqual(["a", "b", "c"]);
+    expect(await acceptMany([], accept)).toEqual({ accepted: [], failed: [] });
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { routeKind, sectionFor, tabFor, WORKSPACES, workspaceFor } from "./nav";
+import { entryRoute, routeKind, sectionFor, tabFor, WORKSPACES, workspaceFor } from "./nav";
 
 const investor = WORKSPACES.investor;
 
@@ -50,5 +50,14 @@ describe("routeKind", () => {
     expect(routeKind("/login")).toBe("public");
     expect(routeKind("/apply")).toBe("public");
     expect(routeKind("/investor")).toBe("app");
+  });
+});
+
+describe("entryRoute", () => {
+  it("sends a signed-in person home, asks for real sign-in when needed, and lets persona sign-in proceed", () => {
+    expect(entryRoute("firebase", "/compliance")).toBe("/compliance");
+    expect(entryRoute("firebase", null)).toBe("/login");
+    expect(entryRoute("dev", "/investor")).toBeNull();
+    expect(entryRoute("dev", null)).toBeNull();
   });
 });

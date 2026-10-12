@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { WORKSPACES, workspaceFor, sectionFor } from "./nav";
 import { PERSONAS } from "./personas";
-import { addVisit, JOURNEYS, journeyFor, loadVisits, progress, saveVisits, stepMatches } from "./journeys";
+import { addVisit, guideState, JOURNEYS, journeyFor, loadGuideHidden, loadVisits, progress, saveGuideHidden, saveVisits, stepMatches } from "./journeys";
 
 describe("journeys", () => {
   it("gives every persona a story of two to four steps", () => {
@@ -60,5 +60,30 @@ describe("journeys", () => {
     // @ts-expect-error tidy up the stand-in
     delete globalThis.localStorage;
     expect(JOURNEYS).toHaveLength(8);
+  });
+});
+
+describe("the guide's hidden flag", () => {
+  it("is kept per person and falls back to shown", () => {
+    expect(loadGuideHidden("priya@atrium.demo")).toBe(false);   // no localStorage in the test environment
+    expect(() => saveGuideHidden("priya@atrium.demo", true)).not.toThrow();
+    const store: Record<string, string> = {};
+    globalThis.localStorage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; } } as Storage;
+    saveGuideHidden("PRIYA@atrium.demo", true);
+    expect(loadGuideHidden("priya@atrium.demo")).toBe(true);
+    expect(loadGuideHidden("omar@atrium.demo")).toBe(false);
+    saveGuideHidden("priya@atrium.demo", false);
+    expect(loadGuideHidden("priya@atrium.demo")).toBe(false);
+    // @ts-expect-error tidy up the stand-in
+    delete globalThis.localStorage;
+  });
+});
+
+describe("guideState", () => {
+  it("shows the guide only for a person with a journey who has not hidden it", () => {
+    expect(guideState("priya@atrium.demo", false)).toBe("shown");
+    expect(guideState("priya@atrium.demo", true)).toBe("hidden");
+    expect(guideState("someone@else.example", false)).toBe("none");   // no journey: no column, no "Show your story"
+    expect(guideState("someone@else.example", true)).toBe("none");
   });
 });

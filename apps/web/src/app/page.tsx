@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getConfig, type RuntimeConfig } from "@/lib/config";
-import { workspaceFor } from "@/lib/nav";
+import { entryRoute, workspaceFor } from "@/lib/nav";
 import { initials, PERSONAS, personaFor, personasByAct, type Persona } from "@/lib/personas";
 import { setDevUser } from "@/lib/session";
 import { useSession } from "@/lib/session-context";
@@ -67,8 +67,9 @@ export default function FrontDoor() {
 
   async function enter(person: Persona) {
     if (!cfg) return;
-    if (cfg.authMode !== "dev") {
-      router.push("/login");
+    const target = entryRoute(cfg.authMode, space?.home ?? null);
+    if (target) {
+      router.push(target);
       return;
     }
     setOpening(person.email);
@@ -87,8 +88,8 @@ export default function FrontDoor() {
             <a href="#how" className="hidden min-h-11 items-center text-[15px] text-ink-2 hover:text-ink sm:flex">How it works</a>
             <a href="#journeys" className="flex min-h-11 items-center text-[15px] text-ink-2 hover:text-ink">Journeys</a>
             {me && space
-              ? <Link href={space.home} className={`${PRIMARY} hidden sm:inline-flex`}>Continue as {(me.full_name ?? me.email).split(" ")[0]}</Link>
-              : <button type="button" disabled={busy} onClick={() => enter(start)} className={`${PRIMARY} hidden sm:inline-flex`}>Start as {start.name.split(" ")[0]}</button>}
+              ? <Link href={space.home} className={PRIMARY}>Continue as {(me.full_name ?? me.email).split(" ")[0]}</Link>
+              : <button type="button" disabled={busy} onClick={() => enter(start)} className={PRIMARY}>Start as {start.name.split(" ")[0]}</button>}
           </nav>
         </div>
       </header>
@@ -105,9 +106,13 @@ export default function FrontDoor() {
                 every step, checked against the numbers it explains.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                <button type="button" disabled={busy} onClick={() => enter(start)} className={PRIMARY}>
-                  {opening === start.email ? "Opening…" : `Start as ${start.name.split(" ")[0]}, an investor`}
-                </button>
+                {me && space
+                  ? <Link href={space.home} className={PRIMARY}>Continue as {(me.full_name ?? me.email).split(" ")[0]}</Link>
+                  : (
+                    <button type="button" disabled={busy} onClick={() => enter(start)} className={PRIMARY}>
+                      {opening === start.email ? "Opening…" : `Start as ${start.name.split(" ")[0]}, an investor`}
+                    </button>
+                  )}
                 <a href="#journeys" className={SECONDARY}>Choose another person</a>
               </div>
               <p className="text-sm text-muted">Every person, account and trade here is synthetic. Trading uses paper money at real US market prices.</p>

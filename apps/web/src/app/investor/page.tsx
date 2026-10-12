@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, ApiError, type Holding, type Portfolio } from "@/lib/api";
 import { formatDate, formatPct, formatSignedUsd, formatUsd } from "@/lib/format";
-import { BAND_COLOR, CATEGORY, verdictText, type RiskReport, type XRay } from "@/lib/invest";
+import { BAND_COLOR, CATEGORY, riskState, verdictText, type RiskReport, type XRay } from "@/lib/invest";
 import { useMe } from "@/lib/session-context";
 import { AllocationBar, type Slice } from "@/components/allocation-bar";
 import { RiskScale } from "@/components/risk-scale";
@@ -52,6 +52,7 @@ export default function InvestorHome() {
   const account = me.accounts[0];
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [risk, setRisk] = useState<RiskReport | null>(null);
+  const [riskError, setRiskError] = useState("");
   const [xray, setXray] = useState<XRay | null>(null);
   const [error, setError] = useState("");
 
@@ -65,7 +66,9 @@ export default function InvestorHome() {
         return;
       }
       const [r, x] = await Promise.allSettled([api<RiskReport>(`/accounts/${account.id}/risk`), api<XRay>(`/accounts/${account.id}/xray`)]);
-      if (r.status === "fulfilled") setRisk(r.value);
+      const state = riskState(r);
+      if ("report" in state) setRisk(state.report);
+      else setRiskError(state.error);
       if (x.status === "fulfilled") setXray(x.value);
     })();
   }, [account]);
@@ -98,7 +101,12 @@ export default function InvestorHome() {
         </div>
       </div>
 
-      {risk ? <RiskMoment risk={risk} /> : <Loading label="Checking your mix against your risk profile" />}
+      {risk ? <RiskMoment risk={risk} /> : riskError ? (
+        <KeyMoment tone="info" label="Could not check your mix" title="Atrium could not compare your mix with your risk profile just now."
+          actions={<ButtonLink href="/investor/risk" variant="secondary">Open your risk report</ButtonLink>}>
+          <p className="text-[15px] text-ink-2">{riskError}</p>
+        </KeyMoment>
+      ) : <Loading label="Checking your mix against your risk profile" />}
 
       {warnings.length > 0 && (
         <Notice tone="caution" title={`The Portfolio X-ray found ${warnings.length} thing${warnings.length > 1 ? "s" : ""} to look at`}

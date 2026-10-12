@@ -87,3 +87,9 @@ export function parseMoney(text: string): number {
   const n = Number(text.replace(/[^\d.]/g, ""));
   return Number.isFinite(n) ? n : 0;
 }
+
+/** The risk check as the home page needs it: a report, or the reason there is none. Never neither. */
+export function riskState(result: PromiseSettledResult<RiskReport>): { report: RiskReport } | { error: string } {
+  if (result.status === "fulfilled") return { report: result.value };
+  return { error: result.reason instanceof Error && result.reason.message ? result.reason.message : "Atrium could not check your mix right now." };
+}

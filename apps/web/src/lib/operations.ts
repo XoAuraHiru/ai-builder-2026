@@ -148,3 +148,19 @@ export function balanceNote(s: Pick<Statement, "notes">): { ok: boolean; text: s
 export function meterCells(confidence: number): number {
   return Math.max(0, Math.min(5, Math.round(confidence * 5)));
 }
+
+/** Accept each proposal in turn; one failure does not stop the rest, and the result says what happened. */
+export async function acceptMany(ids: string[], accept: (id: string) => Promise<unknown>):
+  Promise<{ accepted: string[]; failed: { id: string; message: string }[] }> {
+  const accepted: string[] = [];
+  const failed: { id: string; message: string }[] = [];
+  for (const id of ids) {
+    try {
+      await accept(id);
+      accepted.push(id);
+    } catch (e) {
+      failed.push({ id, message: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  return { accepted, failed };
+}

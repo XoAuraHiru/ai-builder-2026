@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { getConfig, type RuntimeConfig } from "@/lib/config";
+import { workspaceFor } from "@/lib/nav";
 import { firebaseAuth } from "@/lib/firebase";
 import { useSession } from "@/lib/session-context";
 import { Button, Field, inputClass, Loading, Notice } from "@/components/ui";
@@ -12,7 +13,8 @@ import { Button, Field, inputClass, Loading, Notice } from "@/components/ui";
 /** Email sign-in for deployments with real accounts. With persona sign-in, people are chosen on the front door. */
 export default function LoginPage() {
   const router = useRouter();
-  const { refresh } = useSession();
+  const { me, refresh } = useSession();
+  const home = me ? workspaceFor(me.roles)?.home ?? null : null;
   const [cfg, setCfg] = useState<RuntimeConfig | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,9 +23,10 @@ export default function LoginPage() {
   useEffect(() => {
     getConfig().then((c) => {
       if (c.authMode === "dev") router.replace("/#journeys");
+      else if (home) router.replace(home);  // already signed in: go to your workspace
       else setCfg(c);
     });
-  }, [router]);
+  }, [router, home]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

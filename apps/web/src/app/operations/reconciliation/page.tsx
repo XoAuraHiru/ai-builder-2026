@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, ApiError, apiDownload, apiUpload } from "@/lib/api";
 import { formatDate, formatUsd } from "@/lib/format";
 import {
-  balanceNote, confidenceWords, diffMarks, matchTotals, meterCells, proposerLabel, splitProposals, statementFlow, TIER_COPY,
+  acceptMany, balanceNote, confidenceWords, diffMarks, matchTotals, meterCells, proposerLabel, splitProposals, statementFlow, TIER_COPY,
   type Approval, type Match, type ReconcileResult, type Reconciliation, type Statement,
 } from "@/lib/operations";
 import { AiProse } from "@/components/ai-prose";
@@ -188,9 +188,22 @@ export default function ReconciliationPage() {
   const decide = (id: string, action: "accept" | "reject") => act(`${action}:${id}`, "Atrium could not record the decision. Try again.", async () => {
     await api<Match>(`/ops/matches/${id}/${action}`, { method: "POST", body: JSON.stringify({}) });
   });
-  const acceptAll = (ids: string[]) => act("accept-all", "Atrium could not accept every match. Try again.", async () => {
-    for (const id of ids) await api<Match>(`/ops/matches/${id}/accept`, { method: "POST", body: JSON.stringify({}) });
-  });
+  async function acceptAll(ids: string[]) {
+    setBusy("accept-all");
+    setError("");
+    const { accepted, failed } = await acceptMany(ids, (id) =>
+      api<Match>(`/ops/matches/${id}/accept`, { method: "POST", body: JSON.stringify({}) }));
+    if (failed.length > 0) {
+      setError(`Accepted ${accepted.length} of ${ids.length}. Could not accept ${failed.length}: ${failed[0].message}`);
+    }
+    try {
+      await load();  // whatever happened, show the server's state
+    } catch (e) {
+      setError(msg(e, "Atrium could not reload reconciliation. Try again."));
+    } finally {
+      setBusy("");
+    }
+  }
   const download = (kind: "pdf" | "csv") => act(`download:${kind}`, "Atrium could not write the sample statement.", async () => {
     saveBlob(await apiDownload(`/ops/statements/sample?fmt=${kind}`), `atrium-sample-statement.${kind}`);
   });
