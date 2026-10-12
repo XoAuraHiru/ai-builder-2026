@@ -1,0 +1,147 @@
+"use client";
+
+import Link from "next/link";
+import { useRef, useState } from "react";
+import { api, ApiError } from "@/lib/api";
+import { formatUsd } from "@/lib/format";
+import { actionLabel, canPlace, estimateCost, orderBody, type Draft, type GuardianReport, type TradeOrder } from "@/lib/trading";
+import { NarrativeView, type Narrative } from "@/components/ai-prose";
+import { GuardianPanel } from "@/components/guardian-panel";
+import { Button, Field, inputClass, Notice, Panel, Segmented } from "@/components/ui";
+
+const message = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
+
+function Placed({ order }: { order: TradeOrder }) {
+  const last = order.timeline[order.timeline.length - 1]?.note ?? "";
+  const view = order.state === "filled" ? { tone: "success" as const, title: `Filled at ${formatUsd(order.fill_price ?? 0)} a share`, text: last }
+    : order.state === "held" ? { tone: "caution" as const, title: "Sent to an advisor",
+      text: "Nothing is bought or sold until an advisor decides. They see every check the Guardian made." }
+    : order.state === "open" ? { tone: "info" as const, title: "Waiting to fill", text: last }
+    : { tone: "error" as const, title: "Not placed", text: last };
+  return (
+    <Notice tone={view.tone} title={view.title}
+      action={<Link href="/investor/trades" className="text-sm font-medium underline decoration-line-strong underline-offset-4 hover:decoration-ink">See it in Trades</Link>}>
+      {view.text}
+    </Notice>
+  );
+}
+
+export function OrderTicket({ accountId, symbol, price, held, onPlaced }:
+  { accountId: string; symbol: string; price: string; held: number; onPlaced: () => void }) {
+  const [draft, setDraft] = useState<Draft>({ symbol, side: "buy", order_type: "market", quantity: "1", limit_price: "" });
+  const [report, setReport] = useState<GuardianReport | null>(null);
+  const [narrative, setNarrative] = useState<Narrative | null>(null);
+  const [explainError, setExplainError] = useState("");
+  const [ack, setAck] = useState(false);
+  const [busy, setBusy] = useState<"" | "check" | "place">("");
+  const [error, setError] = useState("");
+  const [placed, setPlaced] = useState<TradeOrder | null>(null);
+  const run = useRef(0);
+
+  function reset() {
+    run.current += 1;
+    setReport(null);
+    setNarrative(null);
+    setExplainError("");
+    setAck(false);
+    setError("");
+    setBusy("");
+  }
+
+  function change(patch: Partial<Draft>) {
+    reset();
+    setPlaced(null);
+    setDraft((d) => ({ ...d, ...patch }));
+  }
+
+  async function check(e: React.FormEvent) {
+    e.preventDefault();
+    const built = orderBody(draft);
+    if ("error" in built) {
+      setError(built.error);
+      return;
+    }
+    reset();
+    setPlaced(null);
+    const id = run.current;
+    setBusy("check");
+    try {
+      const r = await api<GuardianReport>(`/accounts/${accountId}/orders/preview`, { method: "POST", body: JSON.stringify(built.body) });
+      if (id !== run.current) return;
+      setReport(r);
+      api<{ narrative: Narrative }>(`/accounts/${accountId}/orders/explain`, { method: "POST", body: JSON.stringify(built.body) })
+        .then((x) => { if (id === run.current) setNarrative(x.narrative); })
+        .catch((err) => { if (id === run.current) setExplainError(message(err, "The explanation is unavailable right now.")); });
+    } catch (err) {
+      if (id === run.current) setError(message(err, "The Guardian could not check this order. Try again."));
+    } finally {
+      if (id === run.current) setBusy("");
+    }
+  }
+
+  async function place() {
+    const built = orderBody(draft, ack);
+    if ("error" in built) {
+      setError(built.error);
+      return;
+    }
+    setBusy("place");
+    setError("");
+    try {
+      const order = await api<TradeOrder>(`/accounts/${accountId}/orders`, { method: "POST", body: JSON.stringify(built.body) });
+      reset();
+      setPlaced(order);
+      onPlaced();
+    } catch (err) {
+      setError(message(err, "Atrium could not place this order. Try again."));
+      setBusy("");
+    }
+  }
+
+  const limit = draft.limit_price.replace(/[$,\s]/g, "");
+  const estimate = estimateCost(draft.order_type === "limit" && limit ? limit : price, draft.quantity);
+  return (
+    <div className="space-y-5">
+      <Panel className="p-5">
+        <form onSubmit={check} className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Segmented label="Buy or sell" value={draft.side} onChange={(v) => change({ side: v })}
+              options={[{ value: "buy", label: "Buy" }, { value: "sell", label: "Sell" }]} />
+            <Segmented label="Order type" value={draft.order_type} onChange={(v) => change({ order_type: v })}
+              options={[{ value: "market", label: "Market" }, { value: "limit", label: "Limit" }]} />
+          </div>
+          <Field label="Shares" hint={draft.side === "sell" ? `You hold ${held} ${held === 1 ? "share" : "shares"}` : "Whole shares only"}>
+            <input inputMode="numeric" className={`${inputClass} num`} value={draft.quantity}
+              onChange={(e) => change({ quantity: e.target.value.replace(/[^\d]/g, "") })} />
+          </Field>
+          {draft.order_type === "limit" && (
+            <Field label={draft.side === "buy" ? "The most you'll pay a share" : "The least you'll accept a share"}>
+              <input inputMode="decimal" className={`${inputClass} num`} value={draft.limit_price} placeholder={Number(price).toFixed(2)}
+                onChange={(e) => change({ limit_price: e.target.value })} />
+            </Field>
+          )}
+          <p className="text-sm text-ink-2">{estimate !== null ? `About ${formatUsd(estimate)}, before the spread.` : "Enter how many shares."}</p>
+          <Button type="submit" variant="secondary" busy={busy === "check"} className="w-full">Check order</Button>
+        </form>
+      </Panel>
+      {error && <Notice tone="error">{error}</Notice>}
+      {placed && <Placed order={placed} />}
+      {report && (
+        <GuardianPanel report={report}>
+          {narrative ? <NarrativeView narrative={narrative} />
+            : explainError ? <p className="text-sm text-muted">{explainError}</p>
+            : <p role="status" className="border-l-2 border-daylight pl-5 text-sm text-daylight-ink">Gemini is writing an explanation of this verdict…</p>}
+          {report.verdict === "warn" && (
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-1 accent-[var(--color-ink)]" checked={ack} onChange={(e) => setAck(e.target.checked)} />
+              I have read the warnings and want to go ahead.
+            </label>
+          )}
+          <Button className="w-full" busy={busy === "place"} disabled={!canPlace(report.verdict, ack)} onClick={place}>
+            {actionLabel(report.verdict)}
+          </Button>
+        </GuardianPanel>
+      )}
+    </div>
+  );
+}

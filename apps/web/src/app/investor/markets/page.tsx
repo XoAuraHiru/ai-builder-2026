@@ -54,7 +54,7 @@ export default function MarketsPage() {
           <div className="flex flex-wrap items-center gap-3">
             <label className="w-56">
               <span className="sr-only">Search by symbol or name</span>
-              <input className={inputClass} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search, e.g. NVDA or Coca-Cola" />
+              <input className={inputClass} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Symbol or company" />
             </label>
             <Segmented label="Show" value={filter} onChange={setFilter} options={FILTERS} />
           </div>
