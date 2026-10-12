@@ -26,8 +26,22 @@ export const WORKSPACES: Record<WorkspaceKey, Workspace> = {
       { href: "/apply", label: "Prospect form" },
     ],
   },
-  operations: { key: "operations", label: "Operations", home: "/operations", links: [{ href: "/operations", label: "Day-end and approvals" }] },
-  compliance: { key: "compliance", label: "Compliance", home: "/compliance", links: [{ href: "/compliance", label: "Alerts and cases" }] },
+  operations: {
+    key: "operations", label: "Operations", home: "/operations",
+    links: [
+      { href: "/operations", label: "Day-end" },
+      { href: "/operations/reconciliation", label: "Reconciliation" },
+      { href: "/operations/approvals", label: "Approvals" },
+      { href: "/operations/blotter", label: "Blotter" },
+    ],
+  },
+  compliance: {
+    key: "compliance", label: "Compliance", home: "/compliance",
+    links: [
+      { href: "/compliance", label: "Alerts" },
+      { href: "/compliance/log", label: "Decision log" },
+    ],
+  },
 };
 
 const STAFF_HOME: Record<string, WorkspaceKey> = { advisor: "advisor", admin: "advisor", ops: "operations", compliance: "compliance" };
@@ -45,7 +59,8 @@ export function workspacesFor(roles: string[]): Workspace[] {
 
 export function isActive(path: string, href: string): boolean {
   if (href === "/advisor") return path === href || path.startsWith("/advisor/leads");
-  if (href === "/investor") return path === href;
+  if (href === "/compliance") return path === href || path.startsWith("/compliance/alerts");
+  if (href === "/investor" || href === "/operations") return path === href;
   return path === href || path.startsWith(`${href}/`);
 }
 

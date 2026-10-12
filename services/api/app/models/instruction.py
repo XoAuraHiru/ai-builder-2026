@@ -8,8 +8,8 @@ from app.db import Base
 from app.models.base import IdMixin, utcnow
 
 INSTRUCTION_TYPES = ("subscribe", "redeem", "switch")
-INSTRUCTION_STATES = ("received", "accepted", "priced", "allocated", "settled", "rejected")
-STEP_STATES = ("received", "checked", "accepted", "priced", "allocated", "settled", "rejected")
+INSTRUCTION_STATES = ("received", "accepted", "priced", "allocated", "settled", "rejected", "reversed")
+STEP_STATES = ("received", "checked", "accepted", "funded", "priced", "allocated", "settled", "rejected", "reversed")
 
 
 class Instruction(IdMixin, Base):

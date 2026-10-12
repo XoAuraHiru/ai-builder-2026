@@ -17,6 +17,7 @@ class Account(IdMixin, Base):
     base_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
     bank_last4: Mapped[str | None] = mapped_column(String(4), nullable=True)
     bank_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    bank_index: Mapped[str | None] = mapped_column(String(64), nullable=True)  # HMAC of the full bank account number
     opened_on: Mapped[date] = mapped_column(Date, nullable=False)
 
     person = relationship("Person", lazy="joined")

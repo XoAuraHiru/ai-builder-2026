@@ -26,7 +26,7 @@ fi
 step "APIs"
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com \
   sqladmin.googleapis.com secretmanager.googleapis.com pubsub.googleapis.com aiplatform.googleapis.com \
-  documentai.googleapis.com discoveryengine.googleapis.com bigquery.googleapis.com \
+  documentai.googleapis.com discoveryengine.googleapis.com bigquery.googleapis.com cloudscheduler.googleapis.com \
   firebase.googleapis.com identitytoolkit.googleapis.com iam.googleapis.com billingbudgets.googleapis.com
 
 step "Cloud SQL"
@@ -65,7 +65,7 @@ SA="atrium-api@${PROJECT_ID}.iam.gserviceaccount.com"
 gcloud iam service-accounts describe "$SA" >/dev/null 2>&1 || gcloud iam service-accounts create atrium-api --display-name="Atrium API"
 for ROLE in roles/cloudsql.client roles/secretmanager.secretAccessor roles/pubsub.publisher roles/aiplatform.user \
             roles/documentai.apiUser roles/discoveryengine.viewer roles/bigquery.dataEditor roles/bigquery.jobUser \
-            roles/logging.logWriter; do
+            roles/logging.logWriter roles/run.invoker; do
   gcloud projects add-iam-policy-binding "$PROJECT_ID" --member="serviceAccount:$SA" --role="$ROLE" \
     --condition=None --quiet >/dev/null
 done
@@ -88,26 +88,46 @@ gcloud pubsub subscriptions describe atrium-events-bq >/dev/null 2>&1 \
   || gcloud pubsub subscriptions create atrium-events-bq --topic=atrium-events \
        --bigquery-table="$PROJECT_ID:atrium.events" --write-metadata >/dev/null
 
-step "Document AI identity proofing"
+step "Document AI processors and the blind-index key"
 # There is no gcloud command group for Document AI processors, so this uses the REST API.
 DOCAI="https://us-documentai.googleapis.com/v1/projects/${PROJECT_ID}/locations/us/processors"
 TOKEN="$(gcloud auth print-access-token)"
 PY="$(command -v python3 || command -v python)"
-PROCESSOR_ID="$(curl -s -H "Authorization: Bearer ${TOKEN}" "$DOCAI" | "$PY" -c 'import json, sys
+
+# docai_processor TYPE DISPLAY_NAME SECRET: find or create the processor and keep its id in Secret Manager.
+docai_processor() {
+  local type="$1" name="$2" secret="$3" id stored
+  id="$(curl -s -H "Authorization: Bearer ${TOKEN}" "$DOCAI" | NAME="$name" "$PY" -c 'import json, os, sys
 d = json.load(sys.stdin)
-print(next((p["name"].rsplit("/", 1)[-1] for p in d.get("processors", []) if p.get("displayName") == "atrium-id-proofing"), ""))')"
-if [ -z "$PROCESSOR_ID" ]; then
-  PROCESSOR_ID="$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
-    -d '{"type": "ID_PROOFING_PROCESSOR", "displayName": "atrium-id-proofing"}' "$DOCAI" \
-    | "$PY" -c 'import json, sys; print(json.load(sys.stdin)["name"].rsplit("/", 1)[-1])')"
+print(next((p["name"].rsplit("/", 1)[-1] for p in d.get("processors", []) if p.get("displayName") == os.environ["NAME"]), ""))')"
+  if [ -z "$id" ]; then
+    id="$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
+      -d "{\"type\": \"${type}\", \"displayName\": \"${name}\"}" "$DOCAI" \
+      | "$PY" -c 'import json, sys; print(json.load(sys.stdin).get("name", "").rsplit("/", 1)[-1])')"
+  fi
+  [ -n "$id" ] || { echo "could not create the $name processor" >&2; return 1; }
+  gcloud secrets describe "$secret" >/dev/null 2>&1 || gcloud secrets create "$secret" --replication-policy=automatic >/dev/null
+  stored="$(gcloud secrets versions access latest --secret="$secret" 2>/dev/null || true)"
+  if [ "$stored" != "$id" ]; then
+    printf '%s' "$id" | gcloud secrets versions add "$secret" --data-file=- >/dev/null
+  fi
+  echo "$name processor: $id"
+}
+docai_processor ID_PROOFING_PROCESSOR atrium-id-proofing atrium-docai-proofing-processor
+# Bank statements of the client money account (Plan 5). Without it, operations upload statements as CSV.
+docai_processor BANK_STATEMENT_PROCESSOR atrium-bank-statements atrium-docai-statement-processor \
+  || echo "bank statement parser unavailable: statements can still be uploaded as CSV"
+
+# The HMAC key for blind indexes of bank account numbers (blueprint §9). Created once and never printed: changing it
+# would unlink accounts that share a bank account.
+gcloud secrets describe atrium-blind-index-key >/dev/null 2>&1 \
+  || gcloud secrets create atrium-blind-index-key --replication-policy=automatic >/dev/null
+HAS_KEY="$(gcloud secrets versions list atrium-blind-index-key --filter='state=ENABLED' --limit=1 --format='value(name)' 2>/dev/null || true)"
+if [ -z "$HAS_KEY" ]; then
+  "$PY" -c 'import secrets; print(secrets.token_hex(32), end="")' \
+    | gcloud secrets versions add atrium-blind-index-key --data-file=- >/dev/null
+  echo "blind-index key created"
 fi
-gcloud secrets describe atrium-docai-proofing-processor >/dev/null 2>&1 \
-  || gcloud secrets create atrium-docai-proofing-processor --replication-policy=automatic >/dev/null
-STORED="$(gcloud secrets versions access latest --secret=atrium-docai-proofing-processor 2>/dev/null || true)"
-if [ "$STORED" != "$PROCESSOR_ID" ]; then
-  printf '%s' "$PROCESSOR_ID" | gcloud secrets versions add atrium-docai-proofing-processor --data-file=- >/dev/null
-fi
-echo "ID proofing processor: $PROCESSOR_ID"
 
 step "Vertex AI Search fund documents"
 # The fund fact sheets (HTML built by `python -m app.knowledge.build`) are indexed with layout-aware chunking; the API

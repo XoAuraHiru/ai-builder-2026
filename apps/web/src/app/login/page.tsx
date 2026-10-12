@@ -11,15 +11,21 @@ import { Button, Field, inputClass, Loading, Notice } from "@/components/ui";
 
 const PERSONAS = [
   { group: "Investors", email: "priya@atrium.demo", name: "Priya Raman", role: "Investor", home: "/investor",
-    sees: "A balanced portfolio, the What-if Studio, the X-ray and the Copilot." },
+    sees: "A balanced portfolio, the What-if Studio, the X-ray and the Copilot. Try buying 60 NVIDIA shares in Markets." },
   { group: "Investors", email: "lucas@atrium.demo", name: "Lucas Moreau", role: "Investor", home: "/investor",
-    sees: "A growth and technology portfolio. Open the X-ray to see what sits underneath." },
+    sees: "A growth and technology portfolio. Open the X-ray, then try buying more NVIDIA." },
+  { group: "Investors", email: "tom@atrium.demo", name: "Tom Becker", role: "Investor", home: "/investor/trades",
+    sees: "A large Tesla position. Selling it all from a new browser is held as a possible account takeover." },
+  { group: "Investors", email: "hana@atrium.demo", name: "Hana Sato", role: "Investor", home: "/investor/trades",
+    sees: "Sold PepsiCo at a loss recently. Buying it back raises the wash-sale warning." },
   { group: "Atrium staff", email: "daniel@atrium.demo", name: "Daniel Okafor", role: "Advisor", home: "/advisor",
     sees: "The lead pipeline with three fraud stories, AI replies and personalised proposals." },
-  { group: "Atrium staff", email: "mei@atrium.demo", name: "Mei Tanaka", role: "Operations", home: "/operations",
-    sees: "Reconciliation and approvals, arriving in the Operate release." },
+  { group: "Atrium staff", email: "mei@atrium.demo", name: "Mei Tanaka", role: "Operations", home: "/operations/reconciliation",
+    sees: "Reads the sample bank statement, lets the agent find matches, and asks for prices to be published." },
+  { group: "Atrium staff", email: "sam@atrium.demo", name: "Sam Ortiz", role: "Operations", home: "/operations/approvals",
+    sees: "The second pair of eyes: approves Mei's requests with a one-time code from the demo authenticator." },
   { group: "Atrium staff", email: "omar@atrium.demo", name: "Omar Haddad", role: "Compliance", home: "/compliance",
-    sees: "Anti-money-laundering alerts and cases, arriving in the Operate release." },
+    sees: "Anti-money-laundering alerts with their evidence, a linked-entity graph and Gemini Pro case reviews." },
 ];
 
 export default function LoginPage() {

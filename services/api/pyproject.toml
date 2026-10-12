@@ -21,6 +21,8 @@ dependencies = [
   "google-cloud-documentai>=3.16",
   "google-cloud-bigquery>=3.46",
   "python-multipart>=0.0.9",
+  "pyotp>=2.10",
+  "fpdf2>=2.8",
 ]
 
 [dependency-groups]

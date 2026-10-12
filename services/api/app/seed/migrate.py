@@ -11,6 +11,8 @@ POSTGRES_MIGRATIONS: list[tuple[str, str, str]] = [
      "ALTER TABLE instruction ADD COLUMN IF NOT EXISTS to_fund_code VARCHAR(16) REFERENCES fund(code)"),
     ("instruction", "acknowledged_risk",
      "ALTER TABLE instruction ADD COLUMN IF NOT EXISTS acknowledged_risk BOOLEAN NOT NULL DEFAULT FALSE"),
+    ("person", "totp_secret", "ALTER TABLE person ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(32)"),
+    ("account", "bank_index", "ALTER TABLE account ADD COLUMN IF NOT EXISTS bank_index VARCHAR(64)"),
 ]
 
 

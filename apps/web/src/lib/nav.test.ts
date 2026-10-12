@@ -30,6 +30,17 @@ describe("isActive", () => {
     expect(isActive("/investor/markets/NVDA", "/investor/markets")).toBe(true);
     expect(isActive("/advisor/held", "/advisor")).toBe(false);
   });
+  it("knows the operations pages", () => {
+    expect(WORKSPACES.operations.links.map((l) => l.label)).toEqual(["Day-end", "Reconciliation", "Approvals", "Blotter"]);
+    expect(isActive("/operations", "/operations")).toBe(true);
+    expect(isActive("/operations/approvals", "/operations")).toBe(false);
+    expect(isActive("/operations/approvals", "/operations/approvals")).toBe(true);
+  });
+  it("knows the compliance pages", () => {
+    expect(WORKSPACES.compliance.links.map((l) => l.label)).toEqual(["Alerts", "Decision log"]);
+    expect(isActive("/compliance/alerts/abc", "/compliance")).toBe(true);
+    expect(isActive("/compliance/log", "/compliance")).toBe(false);
+  });
 });
 
 describe("isPublic", () => {

@@ -70,6 +70,7 @@ class InstructionOut(BaseModel):
     acknowledged_risk: bool
     requested_at: datetime
     steps: list[StepOut]
+    payment_reference: str | None = None
 
 
 class RecurringIn(BaseModel):
