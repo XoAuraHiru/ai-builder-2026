@@ -11,7 +11,8 @@ from collections.abc import Iterable
 from decimal import Decimal
 
 FIGURE = re.compile(
-    r"(?P<usd>(?:US)?\$\s?(?P<amount>\d[\d,]*(?:\.\d+)?)(?:\s?(?P<unit>thousand|million|billion|[kKmMbB])\b)?)"
+    r"(?P<usd>(?:US\$|\$|USD\s?)(?P<amount>\d[\d,]*(?:\.\d+)?)(?:\s?(?P<unit>thousand|million|billion|[kKmMbB])\b)?)"
+    r"|(?P<usd_after>(?P<amount2>\d[\d,]*(?:\.\d+)?)\s?(?P<unit2>thousand|million|billion)?\s?(?:USD|dollars)\b)"
     r"|(?P<pct>(?P<percent>\d+(?:\.\d+)?)\s?(?:%|percent\b))")
 UNITS = {"k": 1e3, "thousand": 1e3, "m": 1e6, "million": 1e6, "b": 1e9, "billion": 1e9}
 ALWAYS_ALLOWED = {0.0, 100.0}
@@ -25,9 +26,9 @@ def figures_in(text: str) -> list[tuple[str, float, float]]:
     """Each money or percentage figure as (as written, value, half the precision it was written to)."""
     found = []
     for m in FIGURE.finditer(text):
-        if m.group("usd"):
-            digits = m.group("amount").replace(",", "")
-            unit = UNITS.get((m.group("unit") or "").lower(), 1.0)
+        if m.group("usd") or m.group("usd_after"):
+            digits = (m.group("amount") or m.group("amount2")).replace(",", "")
+            unit = UNITS.get((m.group("unit") or m.group("unit2") or "").lower(), 1.0)
             value, half = float(digits) * unit, 0.5 * 10 ** -_decimals(digits) * unit
         else:
             digits = m.group("percent")

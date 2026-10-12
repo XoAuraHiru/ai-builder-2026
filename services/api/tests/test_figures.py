@@ -18,3 +18,19 @@ def test_currency_prefixes_and_percent_words():
 def test_numbers_are_collected_from_nested_facts():
     facts = {"a": [1, {"b": "2,500"}], "c": "worst month -8.1%", "d": True, "e": None}
     assert collect_numbers(facts) == {1.0, 2500.0, 8.1}
+
+
+def test_amounts_written_with_usd_are_checked_too():
+    allowed = {118_605.0, 354_245.0}
+    text = "You pay in 118605 USD and the middle outcome is USD 354,245, but 999,999 dollars is not in the facts."
+    assert unsupported_figures(text, allowed) == ["999,999 dollars"]
+
+
+def test_facts_are_presented_with_their_units_for_the_model():
+    from app.services.narrative import present
+
+    facts = {"median_outcome_usd": 354245, "chance_of_goal_pct": 72.4, "years": 15, "worst_12_months_pct": -33.7,
+             "scenarios": [{"fees_cost_over_period_usd": 9918.4, "name": "Balanced"}], "goal_usd": None}
+    assert present(facts) == {"median_outcome_usd": "$354,245", "chance_of_goal_pct": "72.4%", "years": 15,
+                              "worst_12_months_pct": "-33.7%",
+                              "scenarios": [{"fees_cost_over_period_usd": "$9,918", "name": "Balanced"}], "goal_usd": None}

@@ -1736,8 +1736,8 @@ def test_explanation_figures_are_checked_against_the_engine(client, db, people):
 
     def honest(prompt):
         s = facts_of(prompt)["scenarios"][0]
-        return {"headline": f"Your middle outcome is ${s['median_outcome_usd']:,}.",
-                "paragraphs": [f"There is a {s['chance_of_goal_pct']}% chance of reaching your goal."], "cautions": []}
+        return {"headline": f"Your middle outcome is {s['median_outcome_usd']}.",  # facts arrive as "$354,245"
+                "paragraphs": [f"There is a {s['chance_of_goal_pct']} chance of reaching your goal."], "cautions": []}
 
     client.app.dependency_overrides[get_llm] = lambda: FakeLLM({"whatif_narrative": honest})
     body = client.post("/invest/what-if/explain", json=BODY, headers=HDR).json()
