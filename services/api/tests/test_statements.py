@@ -21,9 +21,12 @@ CSV = (b"Date,Description,Amount\n"
        b"10/12/2026,INTEREST PAID,3.42\n")
 
 
-def entity(type_, text, money=None, day=None, properties=()):
+def entity(type_, text, money=None, day=None, properties=(), y=None):
     normalized = SimpleNamespace(money_value=money, date_value=day)
-    return SimpleNamespace(type_=type_, mention_text=text, normalized_value=normalized, properties=list(properties))
+    anchor = None if y is None else SimpleNamespace(page_refs=[SimpleNamespace(
+        page=0, bounding_poly=SimpleNamespace(normalized_vertices=[SimpleNamespace(x=0.05, y=y)]))])
+    return SimpleNamespace(type_=type_, mention_text=text, normalized_value=normalized, properties=list(properties),
+                           page_anchor=anchor)
 
 
 def test_csv_statements_with_one_amount_column_or_two():
@@ -56,6 +59,27 @@ def test_document_ai_table_items_become_lines():
     assert result.account_last4 == "7781" and result.period_start == date(2026, 10, 6)
     assert [(x.amount, x.description) for x in result.lines] == [
         (Decimal("1500"), "ACH CREDIT PRIYA RAMAN REF ATR-1A2B3C4D"), (Decimal("-25.00"), "MONTHLY SERVICE FEE")]
+
+
+def test_mixed_labels_resolve_by_the_narration_rows_keep_page_order_and_balances_are_checked():
+    """The parser sometimes labels one cell of a row as a deposit and another as a withdrawal."""
+    document = SimpleNamespace(entities=[
+        entity("starting_balance", "$250,000.00"),
+        entity("ending_balance", "$250,437.50"),
+        entity("table_item", "", y=0.30, properties=[
+            entity("table_item/transaction_deposit_date", "10/12/2026"),
+            entity("table_item/transaction_withdrawal_description", "MONTHLY SERVICE FEE"),
+            entity("table_item/transaction_deposit", "25.00")]),
+        entity("table_item", "", y=0.20, properties=[
+            entity("table_item/transaction_deposit_date", "10/12/2026"),
+            entity("table_item/transaction_deposit_description", "ACH CREDIT SOFIA ROSSI PART 2 OF 2"),
+            entity("table_item/transaction_withdrawal", "462.50")])])
+    result = extraction_from_document(document)
+    assert [(x.amount, x.description) for x in result.lines] == [
+        (Decimal("462.50"), "ACH CREDIT SOFIA ROSSI PART 2 OF 2"), (Decimal("-25.00"), "MONTHLY SERVICE FEE")]
+    assert any("add up to the change in balance" in n for n in result.notes)
+    document.entities[1] = entity("ending_balance", "$250,000.00")
+    assert any("do not add up" in n for n in extraction_from_document(document).notes)
 
 
 def test_rules_read_payer_reference_and_channel():
@@ -121,3 +145,22 @@ def test_the_sample_statement_has_the_imperfections_of_a_real_one(db, account, s
     assert pdf.startswith(b"%PDF") and name.endswith(".pdf") and mime == "application/pdf"
     data, _, _ = sample_statement(db, date(2026, 10, 12), "csv")
     assert [x.amount for x in parse_csv(data).lines] == [x.amount for x in lines]
+
+
+def test_the_sample_leaves_out_payments_already_in_a_proposal(db, account, staff):
+    from app.models import ReconMatch
+
+    seed_funds(db)
+    rows = []
+    for minute, amount in enumerate(("1500", "2500")):
+        row = Instruction(account_id=account.id, fund_code="ATR-BAL", type="subscribe", amount=Decimal(amount),
+                          state="accepted", requested_at=datetime(2026, 10, 12, 13, minute, tzinfo=timezone.utc))
+        db.add(row)
+        db.flush()
+        rows.append(row)
+    db.add(ReconMatch(line_ids=["l1"], instruction_ids=[rows[0].id], tier="fuzzy", confidence=0.8, evidence=[],
+                      proposed_by="agent", state="proposed"))
+    db.flush()
+    data, _, _ = sample_statement(db, date(2026, 10, 12), "csv")
+    payments = [x for x in parse_csv(data).lines if x.amount > 100 and "KESTREL" not in x.description]
+    assert [x.amount for x in payments] == [Decimal("2500.00")]

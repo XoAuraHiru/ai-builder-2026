@@ -42,7 +42,7 @@ def main():
     before = call("GET", "/ai/usage", user=OMAR)[1]
     view = show("reconciliation", call("GET", "/ops/reconciliation"),
                 lambda b: f"{len(b['receipts'])} waiting, {len(b['unmatched'])} unmatched, PDF: {b['reads_pdf']}")
-    if view and len(view["receipts"]) < 3:
+    if view and len([r for r in view["receipts"] if not r["in_proposal"]]) < 3:
         show("add demo payments", call("POST", "/ops/demo/payments"), lambda b: f"{b['added']} added")
     fmt = "pdf" if view and view["reads_pdf"] else "csv"
     show(f"read the sample statement ({fmt})", call("POST", "/ops/statements/sample", {"fmt": fmt}),

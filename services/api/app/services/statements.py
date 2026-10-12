@@ -141,36 +141,74 @@ def _day(entity) -> date | None:
         return None
 
 
+CREDIT_WORDS = re.compile(r"\b(CREDIT|DEPOSIT|WIRE IN|TRANSFER FROM|INTEREST|REFUND)\b")
+DEBIT_WORDS = re.compile(r"\b(FEE|DEBIT|WITHDRAWAL|WIRE OUT|TRANSFER TO|CHARGE)\b")
+
+
+def _first(props: dict, *names: str):
+    return next((props[n] for n in names if n in props), None)
+
+
+def _side(props: dict, description: str) -> str:
+    """Whether a row is money in or out. The parser sometimes labels one cell of a row a deposit and another a
+    withdrawal, so the narration decides when it says plainly; otherwise the labels vote."""
+    upper = description.upper()
+    credit, debit = bool(CREDIT_WORDS.search(upper)), bool(DEBIT_WORDS.search(upper))
+    if credit != debit:
+        return "deposit" if credit else "withdrawal"
+    votes = sum(1 if name.startswith("transaction_deposit") else -1 for name in props
+                if name.startswith(("transaction_deposit", "transaction_withdrawal")))
+    return "deposit" if votes >= 0 else "withdrawal"
+
+
+def _position(entity, n: int) -> tuple:
+    """Where a row sits on the statement (page, then height on the page), so lines keep the statement's order."""
+    try:
+        ref = entity.page_anchor.page_refs[0]
+        return int(getattr(ref, "page", 0) or 0), float(ref.bounding_poly.normalized_vertices[0].y), n
+    except (AttributeError, IndexError, TypeError):
+        return 0, 0.0, n
+
+
 def extraction_from_document(document) -> Extraction:
-    """Map the Bank Statement Parser's entities: top-level ones (bank_name, account_number, statement dates) and one
-    `table_item` per transaction, whose properties hold the deposit or withdrawal, its date and its description."""
+    """Map the Bank Statement Parser's entities: top-level ones (bank_name, account_number, statement dates and
+    balances) and one `table_item` per transaction, whose properties hold the amount, its date and its description.
+    The lines are checked against the opening and closing balances, and the result is noted."""
     top: dict = {}
-    lines: list[RawLine] = []
-    for e in document.entities:
+    rows = []
+    for n, e in enumerate(document.entities):
         if e.type_ != "table_item":
             top.setdefault(e.type_, e)
             continue
         props = {p.type_.split("/")[-1]: p for p in e.properties}
-        if "transaction_deposit" in props:
-            amount, side = _money(props["transaction_deposit"]), "deposit"
-        elif "transaction_withdrawal" in props:
-            amount, side = -_money(props["transaction_withdrawal"]), "withdrawal"
-        else:
+        amount_cell = _first(props, "transaction_deposit", "transaction_withdrawal")
+        day = _day(_first(props, "transaction_deposit_date", "transaction_withdrawal_date"))
+        if amount_cell is None or day is None:
             continue
-        day = _day(props.get(f"transaction_{side}_date"))
-        if day is None:
-            continue
-        description = props.get(f"transaction_{side}_description")
+        description = _first(props, "transaction_deposit_description", "transaction_withdrawal_description")
         text = " ".join((description.mention_text if description else "").split())
-        lines.append(RawLine(day, text, amount))
+        amount = _money(amount_cell)
+        rows.append((_position(e, n), RawLine(day, text, amount if _side(props, text) == "deposit" else -amount)))
+    lines = [line for _, line in sorted(rows, key=lambda r: r[0])]
+    notes = [f"Document AI's Bank Statement Parser read {len(lines)} transactions."]
+    opening, closing = top.get("starting_balance"), top.get("ending_balance")
+    if opening is not None and closing is not None:
+        try:
+            change = parse_amount(closing.mention_text) - parse_amount(opening.mention_text)
+        except StatementError:
+            change = None
+        if change is not None:
+            total = sum((x.amount for x in lines), Decimal("0"))
+            notes.append(f"The transactions add up to the change in balance, ${change:,.2f}." if total == change
+                         else f"The transactions total ${total:,.2f} but the balance changed by ${change:,.2f}: they "
+                              "do not add up, so check the statement for a line that was missed.")
     account = top.get("account_number")
     digits = re.sub(r"\D", "", account.mention_text) if account else ""
     bank = top.get("bank_name")
     return Extraction(lines=lines, source="documentai",
                       bank_name=" ".join(bank.mention_text.split()) if bank else None,
                       account_last4=digits[-4:] or None, period_start=_day(top.get("statement_start_date")),
-                      period_end=_day(top.get("statement_end_date")),
-                      notes=[f"Document AI's Bank Statement Parser read {len(lines)} transactions."])
+                      period_end=_day(top.get("statement_end_date")), notes=notes)
 
 
 class StatementReader(Protocol):
@@ -401,9 +439,10 @@ def sample_statement_csv(lines: list[SampleLine]) -> bytes:
 
 
 def sample_statement(db: Session, today: date, fmt: str) -> tuple[bytes, str, str]:
-    from app.services.reconciliation import open_receipts
+    from app.services.reconciliation import busy_instruction_ids, open_receipts
 
-    lines = sample_lines(open_receipts(db), today)
+    busy = busy_instruction_ids(db)  # payments already in a proposal are not written again
+    lines = sample_lines([r for r in open_receipts(db) if r.instruction_id not in busy], today)
     stem = f"atrium-client-money-{today:%Y-%m-%d}"
     if fmt == "csv":
         return sample_statement_csv(lines), f"{stem}.csv", "text/csv"
