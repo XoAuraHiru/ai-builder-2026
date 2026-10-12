@@ -7,8 +7,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db import Base
 from app.models.base import IdMixin
 
-POSTING_TYPES = ("subscription", "redemption", "buy", "sell", "reversal", "adjustment")
-INSTRUMENT_TYPES = ("fund", "equity")
+POSTING_TYPES = ("subscription", "redemption", "buy", "sell", "deposit", "reversal", "adjustment")
+INSTRUMENT_TYPES = ("fund", "equity", "cash")
 
 
 class Posting(IdMixin, Base):

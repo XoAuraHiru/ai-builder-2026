@@ -91,3 +91,33 @@ def client(db):
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture()
+def paper(db):
+    """Paper-trading ledger helpers: a cash deposit, and a filled share trade posted the way the order service posts it
+    (the shares with their cash leg, then the paper cash that paid for them)."""
+    from datetime import date
+    from decimal import Decimal
+
+    from app.services.ledger import apply_posting
+
+    class Paper:
+        @staticmethod
+        def deposit(account, amount, day=date(2026, 10, 1)):
+            apply_posting(db, account_id=account.id, instrument="USD", instrument_type="cash", posting_type="deposit",
+                          units=Decimal(amount), cash=Decimal(amount), price=Decimal("1"), value_date=day,
+                          reference="PAPER-CASH")
+
+        @staticmethod
+        def trade(account, side, symbol, qty, price, day=date(2026, 10, 2)):
+            sign = 1 if side == "buy" else -1
+            gross = Decimal(str(qty)) * Decimal(str(price))
+            ref = f"T-{side}-{symbol}-{day}"
+            apply_posting(db, account_id=account.id, instrument=symbol, instrument_type="equity", posting_type=side,
+                          units=Decimal(sign * int(qty)), cash=-sign * gross, price=Decimal(str(price)),
+                          value_date=day, reference=ref)
+            apply_posting(db, account_id=account.id, instrument="USD", instrument_type="cash", posting_type=side,
+                          units=-sign * gross, cash=Decimal("0"), price=Decimal("1"), value_date=day, reference=ref)
+
+    return Paper()

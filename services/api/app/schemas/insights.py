@@ -24,6 +24,7 @@ class RiskOut(BaseModel):
     correlations: dict[str, dict[str, float]]
     risk_contributions_pct: dict[str, float]
     portfolio_band: int
+    names: dict[str, str] = {}
     profile_band: int | None
     verdict: Literal["above", "within", "below", "no_profile"]
 

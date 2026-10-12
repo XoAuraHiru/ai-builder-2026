@@ -126,7 +126,8 @@ def fund_company_weights(fund: Fund, profiles: dict) -> dict[str, float]:
     return out
 
 
-def xray(holdings: dict[str, float], funds: dict[str, Fund], profiles: dict, profiles_as_of: str = "") -> XRay:
+def xray(holdings: dict[str, float], funds: dict[str, Fund], profiles: dict, profiles_as_of: str = "",
+         direct: frozenset[str] = frozenset()) -> XRay:
     total = sum(holdings.values())
     etf_value: dict[str, float] = defaultdict(float)
     etf_class: dict[str, str] = {}
@@ -169,10 +170,10 @@ def xray(holdings: dict[str, float], funds: dict[str, Fund], profiles: dict, pro
                                    pct=round(v / total * 100, 1),
                                    expense_ratio_pct=(None if profiles.get(t, {}).get("expense_ratio") is None
                                                       else round(profiles[t]["expense_ratio"] * 100, 2)))
-                       for t, v in etf_value.items()), key=lambda e: -e.value_usd)
+                       for t, v in etf_value.items() if t not in direct), key=lambda e: -e.value_usd)
 
     overlaps: list[Overlap] = []
-    for a, b in combinations(sorted(holdings), 2):
+    for a, b in combinations(sorted(c for c in holdings if c not in direct), 2):
         wa = {c.ticker: float(c.weight) for c in funds[a].constituents}
         wb = {c.ticker: float(c.weight) for c in funds[b].constituents}
         shared_etfs = sum(min(wa[t], wb[t]) for t in wa.keys() & wb.keys())
@@ -196,11 +197,12 @@ def xray(holdings: dict[str, float], funds: dict[str, Fund], profiles: dict, pro
                 regions=_ranked(region, total, REGION_LABEL), asset_classes=_ranked(asset, total, ASSET_LABEL),
                 companies=company_rows, coverage_pct=round(covered / equity * 100, 1) if equity else 0.0,
                 overlaps=overlaps, fees=fees,
-                warnings=_warnings(holdings, funds, total, company_rows, sector_rows, region, overlaps),
+                warnings=_warnings(holdings, funds, total, company_rows, sector_rows, region, overlaps, direct),
                 profiles_as_of=profiles_as_of)
 
 
-def _warnings(holdings, funds, total, companies, sectors, region, overlaps) -> list[XRayWarning]:
+def _warnings(holdings, funds, total, companies, sectors, region, overlaps,
+              direct: frozenset[str] = frozenset()) -> list[XRayWarning]:
     out: list[XRayWarning] = []
     for c in companies:
         if c.pct > COMPANY_LIMIT_PCT:
@@ -210,13 +212,14 @@ def _warnings(holdings, funds, total, companies, sectors, region, overlaps) -> l
         if s.name not in NON_EQUITY.values() and s.pct > SECTOR_LIMIT_PCT:
             out.append(XRayWarning("CONC_SECTOR", "caution", "Concentrated in one sector",
                                    f"{s.name} is {s.pct:.1f}% of your portfolio."))
-    if len(holdings) == 1:
-        name = funds[next(iter(holdings))].name
+    only = next(iter(holdings)) if len(holdings) == 1 else None
+    if only is not None and only not in direct:
         out.append(XRayWarning("ONE_FUND", "info", "All of your money is in one fund",
-                               f"Everything is in {name}. That keeps things simple, but one fund means one strategy's risks."))
-    else:
+                               f"Everything is in {funds[only].name}. That keeps things simple, but one fund means one "
+                               "strategy's risks."))
+    elif only is None:
         for code, v in holdings.items():
-            if v / total * 100 > FUND_LIMIT_PCT:
+            if code not in direct and v / total * 100 > FUND_LIMIT_PCT:
                 out.append(XRayWarning("CONC_FUND", "caution", "Most of your money is in one fund",
                                        f"{funds[code].name} is {v / total * 100:.1f}% of your portfolio."))
     us = region.get("US", 0.0) / total * 100

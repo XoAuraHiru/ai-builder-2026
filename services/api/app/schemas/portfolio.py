@@ -14,6 +14,8 @@ class HoldingOut(BaseModel):
     cost_basis: Decimal
     pnl: Decimal
     pnl_pct: Decimal
+    kind: str = "fund"
+    risk_band: int | None = None
 
 
 class PortfolioOut(BaseModel):
@@ -27,3 +29,5 @@ class PortfolioOut(BaseModel):
     by_fund: dict[str, Decimal]
     by_asset_class: dict[str, Decimal]
     by_region: dict[str, Decimal]
+    by_instrument: dict[str, Decimal] = {}
+    cash: Decimal = Decimal("0")

@@ -18,14 +18,12 @@ from app.ai.decisions import record_decision
 from app.ai.llm import LLMResult, price_usd
 from app.config import get_settings
 from app.models import Account, Fund, Instruction, Lot, Price
-from app.seed.history import load_etf_document
 from app.services.instructions import LotView, preview_redemption
 from app.services.ledger import InsufficientUnits
+from app.services.analytics import portfolio_risk, portfolio_xray, universe
 from app.services.portfolio import PriceUnavailable, valuation
-from app.services.risk_metrics import risk_report
 from app.services.risk_profile import BAND_LABEL, latest_profile
 from app.services.whatif import Plan, WhatIfError, simulate
-from app.services.xray import xray
 
 COPILOT = f"""You are Atrium's Investor Copilot, talking with the holder of one investment account. {DATA_RULE}
 Answer questions about their own portfolio, transactions, risk, fees and Atrium's house funds. Always use a tool for
@@ -44,7 +42,8 @@ def _money(x) -> float:
 
 
 def snapshot_for(db: Session, account: Account) -> dict:
-    funds = {f.code: f for f in db.scalars(select(Fund)).all()}
+    house = {f.code: f for f in db.scalars(select(Fund)).all()}
+    everything = universe(db)
     person = account.person
     try:
         view = valuation(db, account.id, date.today())
@@ -53,28 +52,29 @@ def snapshot_for(db: Session, account: Account) -> dict:
     total = float(view.total_value) if view else 0.0
     holdings, navs, lots = [], {}, {}
     for h in (view.holdings if view else []):
-        holdings.append({"fund_code": h.instrument, "fund": h.name, "units": str(h.units), "price": str(h.price),
-                         "price_date": h.price_as_of.isoformat(), "value_usd": _money(h.value),
+        holdings.append({"code": h.instrument, "name": h.name, "kind": h.kind, "units": str(h.units),
+                         "price": str(h.price), "price_date": h.price_as_of.isoformat(), "value_usd": _money(h.value),
                          "invested_usd": _money(h.cost_basis), "gain_usd": _money(h.pnl), "gain_pct": float(h.pnl_pct),
                          "share_pct": round(float(h.value) / total * 100, 1) if total else 0.0})
+        if h.kind != "fund":
+            continue
         rows = db.scalars(select(Price).where(Price.fund_code == h.instrument, Price.status == "published")
                           .order_by(Price.as_of.desc()).limit(61)).all()
         navs[h.instrument] = [(p.as_of.isoformat(), float(p.nav)) for p in reversed(rows)]
         lot_rows = db.scalars(select(Lot).where(Lot.account_id == account.id, Lot.instrument == h.instrument,
                                                 Lot.units_remaining > 0).order_by(Lot.acquired_on, Lot.created_at)).all()
         lots[h.instrument] = [LotView(r.acquired_on, r.units_remaining, r.cost_per_unit) for r in lot_rows]
-    weights = {h["fund_code"]: h["value_usd"] for h in holdings}
+    weights = {h["code"]: h["value_usd"] for h in holdings if h["kind"] == "fund"}
     risk = look = None
-    if total > 0:
-        r = risk_report(funds, weights, total)
+    if view is not None and total > 0:
+        r = portfolio_risk(everything, view)
         risk = {"volatility_pct": r.annual_volatility_pct, "worst_fall_pct": r.max_drawdown_pct,
                 "worst_fall_from": r.drawdown_peak, "worst_fall_to": r.drawdown_trough,
                 "bad_month_loss_pct": r.var95_1m_pct, "bad_month_loss_usd": r.var95_1m_usd, "beta_to_sp500": r.beta,
                 "sharpe_ratio": r.sharpe, "portfolio_band": r.portfolio_band,
-                "share_of_risk_pct": {funds[c].name: v for c, v in r.risk_contributions_pct.items()},
+                "share_of_risk_pct": {everything[c].name: v for c, v in r.risk_contributions_pct.items()},
                 "history": f"{r.window_start} to {r.window_end}"}
-        document = load_etf_document()
-        x = xray(weights, funds, document["etfs"], document["as_of"])
+        x = portfolio_xray(everything, view)
         look = {"largest_companies": [{"name": c.name, "pct": c.pct, "through": c.via} for c in x.companies[:5]],
                 "sectors": [{"name": s.name, "pct": s.pct} for s in x.sectors[:5]],
                 "warnings": [w.message for w in x.warnings], "fees_per_year_usd": x.fees.total_annual_usd,
@@ -86,9 +86,9 @@ def snapshot_for(db: Session, account: Account) -> dict:
         "account": account.number, "valued_at": view.as_of.isoformat() if view else None,
         "portfolio": {"total_value_usd": total, "invested_usd": _money(view.total_cost) if view else 0.0,
                       "gain_usd": _money(view.pnl) if view else 0.0, "holdings": holdings},
-        "navs": navs, "lots": lots, "weights": weights, "risk": risk, "xray": look, "funds": funds,
+        "navs": navs, "lots": lots, "weights": weights, "risk": risk, "xray": look, "funds": house,
         "transactions": [{"date": i.requested_at.date().isoformat(), "type": i.type,
-                          "fund": funds[i.fund_code].name if i.fund_code in funds else i.fund_code,
+                          "fund": house[i.fund_code].name if i.fund_code in house else i.fund_code,
                           "amount_usd": _money(i.amount) if i.amount is not None else None,
                           "units": str(i.units) if i.units is not None else None, "status": i.state}
                          for i in instructions],
@@ -117,7 +117,7 @@ def build_copilot(snap: dict, search, model, trace: list, sources: list, usage: 
         note("get_recent_performance", f"Compared prices over the last {days} trading days")
         rows, start_total, change_total = [], 0.0, 0.0
         for h in snap["portfolio"]["holdings"]:
-            series = snap["navs"].get(h["fund_code"], [])
+            series = snap["navs"].get(h["code"], [])
             if len(series) < 2:
                 continue
             start_date, start = series[max(0, len(series) - 1 - days)]
@@ -126,7 +126,7 @@ def build_copilot(snap: dict, search, model, trace: list, sources: list, usage: 
             change = units * (end - start)
             start_total += units * start
             change_total += change
-            rows.append({"fund": h["fund"], "from": start_date, "to": end_date,
+            rows.append({"fund": h["name"], "from": start_date, "to": end_date,
                          "price_change_pct": round((end / start - 1) * 100, 2), "value_change_usd": round(change, 2)})
         return {"funds": rows, "portfolio_change_usd": round(change_total, 2),
                 "portfolio_change_pct": round(change_total / start_total * 100, 2) if start_total else 0.0}
@@ -181,22 +181,23 @@ def build_copilot(snap: dict, search, model, trace: list, sources: list, usage: 
         """Preview taking `amount_usd` out, sold in proportion across holdings: units sold, estimated realised gain and value left."""
         amount = Decimal(str(round(float(amount_usd), 2)))
         note("preview_withdrawal", f"Previewed a ${amount:,.0f} withdrawal")
-        total = Decimal(str(snap["portfolio"]["total_value_usd"]))
+        held = [h for h in snap["portfolio"]["holdings"] if h["kind"] == "fund"]
+        total = Decimal(str(round(sum(h["value_usd"] for h in held), 2)))
         if amount <= 0 or total <= 0 or amount > total:
             return {"error": f"Choose an amount between $1 and ${total:,.2f}."}
         rows, gain = [], Decimal("0")
-        for h in snap["portfolio"]["holdings"]:
+        for h in held:
             part = (amount * Decimal(str(h["value_usd"])) / total).quantize(Decimal("0.01"))
             if part <= 0:
                 continue
-            nav_date, nav = snap["navs"][h["fund_code"]][-1]
+            nav_date, nav = snap["navs"][h["code"]][-1]
             try:
-                p = preview_redemption(h["fund_code"], snap["lots"][h["fund_code"]], Decimal(str(nav)),
+                p = preview_redemption(h["code"], snap["lots"][h["code"]], Decimal(str(nav)),
                                        date.fromisoformat(nav_date), amount=part)
             except InsufficientUnits:
                 continue
             gain += p.realised_gain
-            rows.append({"fund": h["fund"], "sell_usd": float(p.value), "units": str(p.units),
+            rows.append({"fund": h["name"], "sell_usd": float(p.value), "units": str(p.units),
                          "realised_gain_usd": float(p.realised_gain)})
         return {"withdrawal_usd": float(amount), "sales": rows, "estimated_realised_gain_usd": float(gain),
                 "value_left_usd": round(float(total - amount), 2),
