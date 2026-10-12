@@ -6,6 +6,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { getConfig, type RuntimeConfig } from "@/lib/config";
 import { firebaseAuth } from "@/lib/firebase";
 import { setDevUser } from "@/lib/session";
+import { useSession } from "@/lib/session-context";
 
 const PERSONAS = [
   { email: "priya@atrium.demo", label: "Priya Raman", role: "Investor", home: "/investor" },
@@ -17,6 +18,7 @@ const PERSONAS = [
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refresh } = useSession();
   const [cfg, setCfg] = useState<RuntimeConfig | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,8 +39,9 @@ export default function LoginPage() {
           <button
             key={p.email}
             type="button"
-            onClick={() => {
+            onClick={async () => {
               setDevUser(p.email);
+              await refresh();
               router.push(p.home);
             }}
             className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 text-left hover:border-[#0b5fff]"
@@ -56,6 +59,7 @@ export default function LoginPage() {
     setError("");
     try {
       await signInWithEmailAndPassword(firebaseAuth(cfg!), email, password);
+      await refresh();
       router.push("/investor");
     } catch (err) {
       setError((err as Error).message);

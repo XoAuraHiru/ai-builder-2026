@@ -29,6 +29,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 export type Me = {
   uid: string;
   email: string;
+  full_name: string | null;
   roles: string[];
   person_id: string | null;
   accounts: { id: string; number: string }[];
