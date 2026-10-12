@@ -124,6 +124,8 @@ check "API scales to zero by default" 'echo "$API_DEPLOY" | grep -q -- "--min-in
 check "web scales to zero by default" 'echo "$WEB_DEPLOY" | grep -q -- "--min-instances 0"'
 check "both services use startup CPU boost" 'echo "$API_DEPLOY" | grep -q -- "--cpu-boost" && echo "$WEB_DEPLOY" | grep -q -- "--cpu-boost"'
 
+check "API source upload leaves out the local virtualenv and tests" 'grep -qx ".venv/" services/api/.gcloudignore && grep -qx "tests/" services/api/.gcloudignore'
+
 echo "deploy.sh with warm instances for the judging window"
 : > "$FAKE_LOG"; rm -f "$FAKE_LOG.web" "$FAKE_LOG.datastore"
 FAKE_WEB_EXISTS=1 API_MIN_INSTANCES=1 WEB_MIN_INSTANCES=1 bash infra/deploy.sh > "$WORK/deploy-warm.out" 2>&1
