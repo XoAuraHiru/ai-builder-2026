@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     gemini_pro_output_usd_per_m: float = 12.0
     docai_location: str = "us"
     docai_proofing_processor: str = ""      # Document AI ID Proofing processor id; empty disables fraud signals
+    docai_statement_processor: str = ""     # Document AI Bank Statement Parser id; empty means CSV statements only
     fund_search_engine: str = ""            # Vertex AI Search app id for fund documents; empty uses the local index
     fund_search_location: str = "global"
     lead_capture_limit_per_hour: int = 20   # per device and per IP hash, checked before any AI call
