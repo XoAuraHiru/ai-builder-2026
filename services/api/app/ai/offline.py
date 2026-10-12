@@ -75,6 +75,13 @@ def _proposal(prompt: str) -> dict:
     return {"sections": [{"key": k, "heading": h, "body": OFFLINE, "citations": c} for k, h, c in keys]}
 
 
+def _review(prompt: str) -> dict:
+    return {"summary": "Offline mode: connect Gemini Pro for a review note on this held order.",
+            "considerations": ["Every check and figure on this page comes from the Guardian's fixed rules."],
+            "questions_for_client": ["Did you place this order yourself, and what is the money for?"],
+            "suggestion": "call_client", "suggestion_reason": "Offline mode cannot weigh the evidence for you."}
+
+
 def offline_llm() -> FakeLLM:
     return FakeLLM({
         "lead_enrichment": _enrich,
@@ -84,4 +91,5 @@ def offline_llm() -> FakeLLM:
                                 "confidence": 0.0},
         "whatif_narrative": _narrative, "risk_narrative": _narrative, "xray_narrative": _narrative,
         "risk_profile_chat": _risk_chat, "fund_fit": _fund_fit, "proposal": _proposal,
+        "order_explainer": _narrative, "held_order_review": _review,
     }, model="offline")
