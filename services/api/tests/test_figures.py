@@ -45,3 +45,10 @@ def test_only_money_and_percentage_facts_can_vouch_for_a_figure():
     pool = collect_figures(facts)
     assert unsupported_figures("an invented $10,000 and 15%", pool) == ["$10,000", "15%"]
     assert unsupported_figures("$354,245, a 14.2% fall, 66.8% of the risk and 6.9% in NVIDIA", pool) == []
+
+
+def test_percentile_names_in_fact_keys_can_be_written_as_percentages():
+    from app.ai.figures import collect_figures
+
+    pool = collect_figures({"lower_10pct_usd": 99202, "upper_10pct_usd": 172000})
+    assert unsupported_figures("The lower 10% outcome is $99,202.", pool) == []

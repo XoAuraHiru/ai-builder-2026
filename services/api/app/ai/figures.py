@@ -16,6 +16,7 @@ FIGURE = re.compile(
     r"|(?P<pct>(?P<percent>\d+(?:\.\d+)?)\s?(?:%|percent\b))")
 UNITS = {"k": 1e3, "thousand": 1e3, "m": 1e6, "million": 1e6, "b": 1e9, "billion": 1e9}
 ALWAYS_ALLOWED = {0.0, 100.0}
+PERCENTILE_KEY = re.compile(r"(\d+)pct")
 
 
 def _decimals(digits: str) -> int:
@@ -85,7 +86,10 @@ def collect_figures(facts) -> set[float]:
                 except ValueError:
                     pass
         elif isinstance(item, dict):
-            stack.extend((value, figure or _is_figure_key(key)) for key, value in item.items())
+            for key, value in item.items():
+                # Keys such as "lower_10pct_usd" name a percentile: "the lower 10% outcome" is a label, not a claim.
+                out.update(float(n) for n in PERCENTILE_KEY.findall(str(key)))
+                stack.append((value, figure or _is_figure_key(key)))
         elif isinstance(item, (list, tuple, set)):
             stack.extend((value, figure) for value in item)
     return out
