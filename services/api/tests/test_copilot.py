@@ -122,3 +122,21 @@ def test_copilot_access_and_failures(client, db, invested):
     assert other.status_code == 403
     busy = ask(client, invested, FailingLlm())
     assert busy.status_code == 503 and "try again" in busy.json()["detail"]
+
+
+def test_quote_and_trade_preview_tools_place_nothing(client, db, invested, paper):
+    from sqlalchemy import func
+
+    from app.models import TradeOrder
+
+    paper.deposit(invested, "5000")
+    db.commit()
+    scripted = ScriptedLlm(responses=[call("get_quote", symbol="ko"),
+                                      call("preview_trade", symbol="KO", side="buy", quantity=3), say("Done.")])
+    body = ask(client, invested, scripted).json()
+    quote, preview = tool_results(scripted)
+    assert quote["symbol"] == "KO" and quote["price_usd"] > 0 and quote["risk_band"] == 4
+    assert preview["verdict"] == "warn" and preview["order"].startswith("Buy 3 shares of")  # band 4 against profile 3
+    assert "Markets" in preview["where_to_place"] and preview["concerns"][0]["check"] == "Suitability"
+    assert [t["tool"] for t in body["trace"]] == ["get_quote", "preview_trade"]
+    assert db.scalar(select(func.count()).select_from(TradeOrder)) == 0

@@ -58,7 +58,7 @@ export default function RiskPage() {
 
   const r = report;
   const codes = Object.keys(r.weights);
-  const name = (c: string) => names[c] ?? c;
+  const name = (c: string) => r.names?.[c] ?? names[c] ?? c;
   const tone = r.verdict === "above" ? "caution" : r.verdict === "within" ? "success" : "info";
   return (
     <>

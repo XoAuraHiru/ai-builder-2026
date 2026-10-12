@@ -7,16 +7,14 @@ from sqlalchemy.orm import Session
 from app.ai.llm import LLM, LLMError, get_llm
 from app.auth import CurrentUser, assert_account_access, get_current_user
 from app.db import get_db
-from app.models import Account, Fund
+from app.models import Account
 from app.routers.accounts import account_or_404
-from app.routers.invest import EXPLAIN_BUSY, all_funds
+from app.routers.invest import EXPLAIN_BUSY
 from app.schemas.insights import ExplainedRisk, ExplainedXRay, RiskOut, XRayOut
-from app.seed.history import load_etf_document
 from app.knowledge.docs import month_name
+from app.services.analytics import portfolio_risk, portfolio_xray, universe
 from app.services.narrative import write_narrative
 from app.services.portfolio import PortfolioView, PriceUnavailable, valuation
-from app.services.risk_metrics import risk_report
-from app.services.xray import xray
 
 router = APIRouter(prefix="/accounts", tags=["insights"])
 NO_HOLDINGS = "This account has no holdings yet. Invest in a fund to see this analysis."
@@ -49,20 +47,20 @@ def verdict(portfolio_band: int, profile_band: int | None) -> str:
 
 
 def build_risk(db: Session, account: Account, view: PortfolioView) -> RiskOut:
-    report = risk_report(all_funds(db), {c: float(v) for c, v in view.by_fund.items()}, float(view.total_value))
+    funds = universe(db)
+    report = portfolio_risk(funds, view)
     band = account.person.risk_band
-    return RiskOut(**asdict(report), profile_band=band, verdict=verdict(report.portfolio_band, band))
+    return RiskOut(**asdict(report), names={c: funds[c].name for c in report.weights}, profile_band=band,
+                   verdict=verdict(report.portfolio_band, band))
 
 
 def build_xray(db: Session, view: PortfolioView) -> XRayOut:
-    document = load_etf_document()
-    result = xray({c: float(v) for c, v in view.by_fund.items()}, all_funds(db), document["etfs"], document["as_of"])
-    return XRayOut(**asdict(result))
+    return XRayOut(**asdict(portfolio_xray(universe(db), view)))
 
 
-def risk_facts(r: RiskOut, funds: dict[str, Fund]) -> dict:
+def risk_facts(r: RiskOut) -> dict:
     def name(code: str) -> str:
-        return funds[code].name if code in funds else code
+        return r.names.get(code, code)
 
     return {
         "history_window": f"{month_name(r.window_start)} to {month_name(r.window_end)}", "portfolio_value_usd": round(r.value_usd),
@@ -104,7 +102,7 @@ def explain_risk(account_id: str, db: Session = Depends(get_db), llm: LLM = Depe
     report = build_risk(db, account, view)
     try:
         narrative = write_narrative(db, llm, purpose="risk_narrative", agent="investor_copilot", task=RISK_TASK,
-                                    audience="an investor", facts=risk_facts(report, all_funds(db)),
+                                    audience="an investor", facts=risk_facts(report),
                                     subject_type="account", subject_id=account.id)
     except LLMError as e:
         raise HTTPException(status_code=503, detail=EXPLAIN_BUSY) from e

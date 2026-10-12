@@ -34,9 +34,13 @@ class RiskReport:
 
 
 def blended_band(funds: dict[str, Fund], weights: dict[str, float]) -> int:
-    """Value-weighted average of the funds' risk bands, rounded half up."""
-    total = sum(weights.values())
-    return int(math.floor(sum(w / total * funds[c].risk_band for c, w in weights.items()) + 0.5))
+    """Value-weighted average of the holdings' risk bands, rounded half up. Cash waiting to be traded is left out: the
+    band describes how the money that is invested behaves."""
+    invested = {c: w for c, w in weights.items() if funds[c].category != "cash"}
+    total = sum(invested.values())
+    if total <= 0:
+        return 1
+    return int(math.floor(sum(w / total * funds[c].risk_band for c, w in invested.items()) + 0.5))
 
 
 def risk_report(funds: dict[str, Fund], weights: dict[str, float], value_usd: float,
