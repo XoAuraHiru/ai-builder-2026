@@ -7,11 +7,13 @@ export const WORKSPACES: Record<WorkspaceKey, Workspace> = {
     key: "investor", label: "Investor", home: "/investor",
     links: [
       { href: "/investor", label: "Overview" },
+      { href: "/investor/markets", label: "Markets" },
+      { href: "/investor/trades", label: "Trades" },
       { href: "/investor/what-if", label: "What-if Studio" },
       { href: "/investor/xray", label: "Portfolio X-ray" },
       { href: "/investor/risk", label: "Risk" },
       { href: "/investor/funds", label: "Funds" },
-      { href: "/investor/orders", label: "Orders" },
+      { href: "/investor/orders", label: "Fund orders" },
       { href: "/investor/copilot", label: "Copilot" },
       { href: "/investor/profile", label: "Risk profile" },
     ],
@@ -20,6 +22,7 @@ export const WORKSPACES: Record<WorkspaceKey, Workspace> = {
     key: "advisor", label: "Advisor", home: "/advisor",
     links: [
       { href: "/advisor", label: "Lead pipeline" },
+      { href: "/advisor/held", label: "Held orders" },
       { href: "/apply", label: "Prospect form" },
     ],
   },
