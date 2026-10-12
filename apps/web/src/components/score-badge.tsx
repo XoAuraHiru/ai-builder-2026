@@ -1,27 +1,18 @@
+import { Badge } from "@/components/ui";
 import { scoreTone, TRUST_LABEL, trustTone, type TrustBand } from "@/lib/leads";
 
-const SCORE_STYLE = {
-  high: "bg-emerald-100 text-emerald-800", medium: "bg-amber-100 text-amber-800",
-  low: "bg-slate-200 text-slate-700", pending: "bg-slate-100 text-slate-500",
-};
-const TRUST_STYLE = {
-  clear: "bg-emerald-100 text-emerald-800", review: "bg-amber-100 text-amber-800",
-  high_risk: "bg-red-100 text-red-700", blocked: "bg-red-700 text-white", pending: "bg-slate-100 text-slate-500",
-};
+const SCORE_TONE = { high: "gain", medium: "caution", low: "neutral", pending: "neutral" } as const;
+const TRUST_TONE = { clear: "gain", review: "caution", high_risk: "loss", blocked: "strong", pending: "neutral" } as const;
 
 export function ScoreBadge({ score }: { score: number | null }) {
-  return (
-    <span className={`rounded px-2 py-0.5 text-xs font-semibold ${SCORE_STYLE[scoreTone(score)]}`}>
-      Lead {score ?? "–"}
-    </span>
-  );
+  return <Badge tone={SCORE_TONE[scoreTone(score)]}><span className="num">{score === null ? "Lead not scored" : `Lead ${score}`}</span></Badge>;
 }
 
 export function TrustBadge({ band, score }: { band: TrustBand | null; score: number | null }) {
   const tone = trustTone(band);
   return (
-    <span className={`rounded px-2 py-0.5 text-xs font-semibold ${TRUST_STYLE[tone]}`}>
-      Trust {score ?? "–"} · {TRUST_LABEL[tone]}
-    </span>
+    <Badge tone={TRUST_TONE[tone]}>
+      <span className="num">{score === null ? "Trust not scored" : `Trust ${score}, ${TRUST_LABEL[tone]}`}</span>
+    </Badge>
   );
 }

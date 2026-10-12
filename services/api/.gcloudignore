@@ -1,0 +1,10 @@
+# Files gcloud run deploy --source must not upload (the Dockerfile only needs pyproject.toml, uv.lock and app/).
+.gcloudignore
+.venv/
+tests/
+*.db
+*.db-journal
+data/cache/
+.env
+__pycache__/
+.pytest_cache/

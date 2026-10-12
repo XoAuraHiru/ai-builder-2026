@@ -34,3 +34,11 @@ def test_clean_text_is_ok_and_records_decision_when_asked(db, make_lead):
                               FakeLLM(NO_FINDINGS), db=db, subject_id=lead.id)
     assert report.ok and report.findings == []
     assert db.scalar(select(AIDecision)).purpose == "compliance_review"
+
+
+def test_disclaimers_that_deny_a_guarantee_are_not_flagged():
+    text = ("These numbers do not guarantee future returns. We can never promise or guarantee returns, "
+            "and no investment is risk-free.")
+    report = check_compliance(text, FakeLLM(NO_FINDINGS))
+    assert report.ok, [f.phrase for f in report.findings]
+    assert not check_compliance("Returns are guaranteed.", FakeLLM(NO_FINDINGS)).ok

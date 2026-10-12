@@ -48,6 +48,12 @@ cat > "$WORK/bin/curl" <<'FAKE'
 #!/usr/bin/env bash
 echo "curl $*" >> "$FAKE_LOG"
 case "$*" in
+  *discoveryengine*"documents:import"*) echo '{"name": "operations/import-1"}' ;;
+  *discoveryengine*"dataStores?dataStoreId"*) touch "$FAKE_LOG.datastore"; echo '{"name": "operations/create-datastore"}' ;;
+  *discoveryengine*"engines?engineId"*) echo '{"name": "operations/create-engine"}' ;;
+  *discoveryengine*"dataStores/atrium-fund-docs"*)
+    { [ -n "${FAKE_EXISTING:-}" ] || [ -f "$FAKE_LOG.datastore" ]; } && echo '{"name": "atrium-fund-docs"}' || exit 22 ;;
+  *discoveryengine*"engines/atrium-fund-search"*) [ -n "${FAKE_EXISTING:-}" ] && echo '{"name": "atrium-fund-search"}' || exit 22 ;;
   *"-X POST"*) echo '{"name": "projects/1/locations/us/processors/new456", "type": "ID_PROOFING_PROCESSOR"}' ;;
   *) if [ -n "${FAKE_EXISTING:-}" ]; then
        echo '{"processors": [{"name": "projects/1/locations/us/processors/abc123", "displayName": "atrium-id-proofing"}]}'
@@ -63,7 +69,7 @@ check() { if eval "$2"; then printf '  pass %s\n' "$1"; else printf '  FAIL %s\n
 cd "$ROOT"
 
 echo "setup_gcp.sh on an empty project"
-: > "$FAKE_LOG"
+: > "$FAKE_LOG"; rm -f "$FAKE_LOG.datastore"
 BILLING_ACCOUNT=TEST-BILLING bash infra/setup_gcp.sh > "$WORK/setup.out" 2>&1
 STATUS=$?
 check "exits 0 (was $STATUS)" '[ "$STATUS" -eq 0 ]'
@@ -80,9 +86,14 @@ check "lets Pub/Sub write to BigQuery" 'grep -q "service-1234@gcp-sa-pubsub.iam.
 check "creates the BigQuery subscription" 'grep "pubsub subscriptions create atrium-events-bq" "$FAKE_LOG" | grep -q "bigquery-table=atrium-cup-2026:atrium.events"'
 check "creates the ID proofing processor" 'grep "^curl" "$FAKE_LOG" | grep -q "ID_PROOFING_PROCESSOR"'
 check "stores the processor id as a secret" 'grep -q "secrets versions add atrium-docai-proofing-processor" "$FAKE_LOG"'
+check "creates the fund-documents bucket" 'grep -q "storage buckets create gs://atrium-cup-2026-fund-docs" "$FAKE_LOG"'
+check "uploads the fund fact sheets" 'grep "storage cp" "$FAKE_LOG" | grep -q "ATR-BAL.html.*gs://atrium-cup-2026-fund-docs/funds/"'
+check "creates the search data store with layout chunking" 'grep -q "dataStoreId=atrium-fund-docs" "$FAKE_LOG" && grep -q "layoutBasedChunkingConfig" "$FAKE_LOG"'
+check "imports the documents with full reconciliation" 'grep -q "documents:import" "$FAKE_LOG" && grep -q "\"FULL\"" "$FAKE_LOG"'
+check "creates an Enterprise search app" 'grep -q "engineId=atrium-fund-search" "$FAKE_LOG" && grep -q "SEARCH_TIER_ENTERPRISE" "$FAKE_LOG"'
 
 echo "setup_gcp.sh rerun on a project that is already set up"
-: > "$FAKE_LOG"
+: > "$FAKE_LOG"; rm -f "$FAKE_LOG.datastore"
 FAKE_EXISTING=1 BILLING_ACCOUNT=TEST-BILLING bash infra/setup_gcp.sh > "$WORK/setup2.out" 2>&1
 STATUS=$?
 check "exits 0 (was $STATUS)" '[ "$STATUS" -eq 0 ]'
@@ -92,10 +103,12 @@ check "leaves the live database password alone" '! grep -q "sql users set-passwo
 check "does not add a new secret version" '! grep -q "secrets versions add" "$FAKE_LOG"'
 check "does not create a second budget" '! grep -q "billing budgets create" "$FAKE_LOG"'
 check "does not recreate the dataset or subscription" '! grep -q "mk --dataset" "$FAKE_LOG" && ! grep -q "subscriptions create" "$FAKE_LOG"'
-check "reuses the existing ID proofing processor" '! grep -q "X POST" "$FAKE_LOG"'
+check "reuses the existing ID proofing processor" '! grep -q "ID_PROOFING_PROCESSOR" "$FAKE_LOG"'
+check "reuses the data store and search app" '! grep -q "dataStoreId=" "$FAKE_LOG" && ! grep -q "engineId=" "$FAKE_LOG"'
+check "still re-imports the documents" 'grep -q "documents:import" "$FAKE_LOG"'
 
 echo "deploy.sh when the web service already exists"
-: > "$FAKE_LOG"; rm -f "$FAKE_LOG.web"
+: > "$FAKE_LOG"; rm -f "$FAKE_LOG.web" "$FAKE_LOG.datastore"
 FAKE_WEB_EXISTS=1 bash infra/deploy.sh > "$WORK/deploy.out" 2>&1
 STATUS=$?
 API_DEPLOY="$(grep -m1 "run deploy atrium-api" "$FAKE_LOG")"
@@ -106,18 +119,21 @@ check "API deploy allows both Cloud Run URLs of the web service" 'echo "$API_DEP
 check "API env values reach gcloud unmangled" 'echo "$API_DEPLOY" | grep -q "MARKET_CACHE_DIR=/tmp/cache@" && echo "$API_DEPLOY" | grep -q "CORS_ORIGINS=https://atrium-web-123.us-central1.run.app,"'
 check "API runs Gemini from the global endpoint" 'echo "$API_DEPLOY" | grep -q "LLM_PROVIDER=gemini" && echo "$API_DEPLOY" | grep -q "GOOGLE_CLOUD_LOCATION=global" && echo "$API_DEPLOY" | grep -q "GOOGLE_GENAI_USE_ENTERPRISE=true"'
 check "API gets the ID proofing processor from Secret Manager" 'echo "$API_DEPLOY" | grep -q "DOCAI_PROOFING_PROCESSOR=atrium-docai-proofing-processor:latest"'
+check "API searches fund documents with Vertex AI Search" 'echo "$API_DEPLOY" | grep -q "FUND_SEARCH_ENGINE=atrium-fund-search@FUND_SEARCH_LOCATION=global"'
 check "API scales to zero by default" 'echo "$API_DEPLOY" | grep -q -- "--min-instances 0"'
 check "web scales to zero by default" 'echo "$WEB_DEPLOY" | grep -q -- "--min-instances 0"'
 check "both services use startup CPU boost" 'echo "$API_DEPLOY" | grep -q -- "--cpu-boost" && echo "$WEB_DEPLOY" | grep -q -- "--cpu-boost"'
 
+check "API source upload leaves out the local virtualenv and tests" 'grep -qx ".venv/" services/api/.gcloudignore && grep -qx "tests/" services/api/.gcloudignore'
+
 echo "deploy.sh with warm instances for the judging window"
-: > "$FAKE_LOG"; rm -f "$FAKE_LOG.web"
+: > "$FAKE_LOG"; rm -f "$FAKE_LOG.web" "$FAKE_LOG.datastore"
 FAKE_WEB_EXISTS=1 API_MIN_INSTANCES=1 WEB_MIN_INSTANCES=1 bash infra/deploy.sh > "$WORK/deploy-warm.out" 2>&1
 check "API keeps one warm instance" 'grep -m1 "run deploy atrium-api" "$FAKE_LOG" | grep -q -- "--min-instances 1"'
 check "web keeps one warm instance" 'grep -m1 "run deploy atrium-web" "$FAKE_LOG" | grep -q -- "--min-instances 1"'
 
 echo "deploy.sh on the very first release"
-: > "$FAKE_LOG"; rm -f "$FAKE_LOG.web"
+: > "$FAKE_LOG"; rm -f "$FAKE_LOG.web" "$FAKE_LOG.datastore"
 bash infra/deploy.sh > "$WORK/deploy1.out" 2>&1
 STATUS=$?
 check "exits 0 (was $STATUS)" '[ "$STATUS" -eq 0 ]'

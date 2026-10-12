@@ -11,13 +11,15 @@ from app.auth import CurrentUser, require_roles
 from app.config import get_settings
 from app.db import get_db
 from app.events import emit
-from app.models import AIDecision, Lead
-from app.schemas.leads import AskIn, ConvertIn, IdentityCheckOut, LeadAck, LeadIn, LeadOut, StageIn
+from app.models import AIDecision, Lead, Proposal
+from app.knowledge.search import get_fund_search
+from app.schemas.leads import AskIn, ConvertIn, IdentityCheckOut, LeadAck, LeadIn, LeadOut, ProposalOut, StageIn
 from app.services.capture_guard import check_capture_rate, ip_hash
 from app.services.conversion import ConversionError, convert_lead
 from app.services.lead_pipeline import count_pending, process_lead, score_pending
 from app.services.identity import (MAX_BYTES, DocumentTooLarge, ProofingClient, UnsupportedDocument,
                                    analyze_identity, get_proofing)
+from app.services.proposal import ProposalBlocked, build_proposal
 from app.services.trust import apply_trust
 
 log = logging.getLogger(__name__)
@@ -25,6 +27,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/leads", tags=["leads"])
 staff = require_roles("staff")
 BUSY = "The AI assistant is busy right now; please try again in a minute."
+PROPOSAL_BUSY = "The proposal writer is busy right now; please try again in a minute."
 
 
 def lead_or_404(db: Session, lead_id: str) -> Lead:
@@ -146,6 +149,27 @@ def ask(lead_id: str, body: AskIn, db: Session = Depends(get_db), llm: LLM = Dep
     db.commit()
     return {"answer": answer}
 
+
+
+@router.post("/{lead_id}/proposal", response_model=ProposalOut, status_code=201)
+def generate_proposal(lead_id: str, db: Session = Depends(get_db), llm: LLM = Depends(get_llm),
+                      search=Depends(get_fund_search), user: CurrentUser = Depends(staff)):
+    lead = lead_or_404(db, lead_id)
+    try:
+        row = build_proposal(db, lead, llm, search, user.email)
+    except ProposalBlocked as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except LLMError as e:
+        db.rollback()
+        raise HTTPException(status_code=503, detail=PROPOSAL_BUSY) from e
+    db.commit()
+    return row
+
+
+@router.get("/{lead_id}/proposals", response_model=list[ProposalOut])
+def list_proposals(lead_id: str, db: Session = Depends(get_db), user: CurrentUser = Depends(staff)):
+    lead_or_404(db, lead_id)
+    return db.scalars(select(Proposal).where(Proposal.lead_id == lead_id).order_by(Proposal.created_at.desc())).all()
 
 @router.post("/{lead_id}/convert", status_code=201)
 def convert(lead_id: str, body: ConvertIn, db: Session = Depends(get_db), user: CurrentUser = Depends(staff)):

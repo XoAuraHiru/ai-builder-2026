@@ -8,6 +8,7 @@ _GOALS = [("retire|retirement|grow|growth|long term|wealth", "growth", ["ATR-GRW
           ("safe|emergency|preserve|short term", "capital_preservation", ["ATR-CASH"]),
           ("tech|technology", "thematic_tech", ["ATR-TEC", "ATR-GRW"]),
           ("global|international|world", "global", ["ATR-GLB"])]
+OFFLINE = "Offline mode: connect Gemini to write this from the cited documents and the engines' figures."
 
 
 def _enrich(prompt: str) -> dict:
@@ -23,6 +24,57 @@ def _enrich(prompt: str) -> dict:
             "confidence": 0.5}
 
 
+def _narrative(prompt: str) -> dict:
+    return {"headline": "Offline mode: connect Gemini for a written reading of these figures.",
+            "paragraphs": ["Every figure on this page comes from Atrium's deterministic engines. When Gemini is "
+                           "connected, it adds a plain-English reading here."],
+            "cautions": ["Simulations and past performance are not guarantees."]}
+
+
+def _risk_chat(prompt: str) -> dict:
+    """Best-effort keyword extraction from the investor's latest message."""
+    conversation = prompt.split("<conversation>")[-1].split("</conversation>")[0]
+    said = [line[5:].lower() for line in conversation.strip().splitlines() if line.startswith("user:")]
+    text = said[-1] if said else ""
+    answers: dict = {}
+    if m := re.search(r"(\d+)\s*(?:years?|yrs?)", text):
+        answers["horizon_years"] = int(m.group(1))
+    if m := re.search(r"(\d+)\s*%", text):
+        answers["max_loss_pct"] = int(m.group(1))
+    for words, key, value in (
+            (("buy more",), "reaction_to_drop", "buy_more"), (("sell everything", "sell all"), "reaction_to_drop", "sell_all"),
+            (("sell some",), "reaction_to_drop", "sell_some"), (("hold", "wait"), "reaction_to_drop", "hold"),
+            (("most of it",), "withdraw_within_2y", "most"), (("some of it",), "withdraw_within_2y", "some"),
+            (("none of it", "won't need", "not touch"), "withdraw_within_2y", "none"),
+            (("no experience", "beginner", "never invested"), "experience", "none"),
+            (("experienced", "a lot of experience"), "experience", "experienced"),
+            (("some experience", "a little"), "experience", "some")):
+        if key not in answers and any(w in text for w in words):
+            answers[key] = value
+    return {"answers": answers, "reply": ""}
+
+
+def _passage_ids(prompt: str) -> list[str]:
+    return re.findall(r'<passage id="([^"]+)"', prompt)
+
+
+def _fund_fit(prompt: str) -> dict:
+    return {"headline": "Offline mode: connect Gemini for a personal reading of this fund.",
+            "points": [{"text": "The fund's objective, fees and risks are in the documents cited here.",
+                        "citations": _passage_ids(prompt)[:2]}],
+            "caution": "Past performance does not predict future returns."}
+
+
+def _proposal(prompt: str) -> dict:
+    ids = _passage_ids(prompt)
+    firm = [i for i in ids if i.startswith("ATRIUM#")][:1]
+    funds = [i for i in ids if not i.startswith("ATRIUM#")][:2]
+    keys = [("why_atrium", "Why Atrium", firm), ("recommendation", "Our suggestion", funds),
+            ("projection", "What it could become", ["projection"]), ("fees", "Fees", funds[:1]),
+            ("risks", "Risks", funds[:1])]
+    return {"sections": [{"key": k, "heading": h, "body": OFFLINE, "citations": c} for k, h, c in keys]}
+
+
 def offline_llm() -> FakeLLM:
     return FakeLLM({
         "lead_enrichment": _enrich,
@@ -30,4 +82,6 @@ def offline_llm() -> FakeLLM:
         "identity_extraction": {"document_type": "other", "full_name": None, "date_of_birth": None,
                                 "document_number": None, "expiry_date": None, "issuing_country": None,
                                 "confidence": 0.0},
+        "whatif_narrative": _narrative, "risk_narrative": _narrative, "xray_narrative": _narrative,
+        "risk_profile_chat": _risk_chat, "fund_fit": _fund_fit, "proposal": _proposal,
     }, model="offline")

@@ -92,8 +92,9 @@ class GeminiLLM:
         contents: list = [types.Part.from_bytes(data=a.data, mime_type=a.mime_type) for a in attachments or []]
         contents.append(prompt)
         config_args: dict = {"response_mime_type": "application/json", "response_schema": schema}
-        if not pro:  # Flash ignores temperature; thinking level is its quality and latency dial
-            config_args["thinking_config"] = types.ThinkingConfig(thinking_level="LOW")
+        # Thinking level is Gemini 3's quality, latency and cost dial. LOW suits grounded writing from given facts:
+        # at its default, a Pro proposal took about 95 s and $0.11; at LOW it is far quicker and cheaper.
+        config_args["thinking_config"] = types.ThinkingConfig(thinking_level="LOW")
         started = time.perf_counter()
         try:
             resp = self._client.models.generate_content(

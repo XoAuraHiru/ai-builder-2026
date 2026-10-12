@@ -1,26 +1,78 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Atrium design tokens. Daylight is the colour of explanation: Why panels and anything Gemini wrote carry it. */
+@theme {
+  --color-ground: #f4f5f2;
+  --color-surface: #ffffff;
+  --color-ink: #17202a;
+  --color-ink-2: #3c4752;
+  --color-muted: #66717c;
+  --color-line: #dcdfdb;
+  --color-line-strong: #b8beb9;
+  --color-daylight: #e6b03c;
+  --color-daylight-ink: #7a5708;
+  --color-daylight-wash: #fbf3df;
+  --color-gain: #17734f;
+  --color-gain-wash: #e7f3ed;
+  --color-loss: #b0321f;
+  --color-danger-wash: #fbebe8;
+  --color-caution: #8f5b00;
+  --color-caution-wash: #fdf4e3;
+  --color-band-1: #4d7f95;
+  --color-band-2: #4f8f7a;
+  --color-band-3: #8f9a45;
+  --color-band-4: #c58a2c;
+  --color-band-5: #b5502f;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+  --radius-control: 6px;
+  --radius-panel: 10px;
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    background: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--color-daylight-wash);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Figures line up in columns. */
+@utility num {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+/* Archivo's width axis: wider letterforms for headings and key figures. */
+@utility wide {
+  font-variation-settings: "wdth" 112;
+}
+@utility wider {
+  font-variation-settings: "wdth" 125;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
 }

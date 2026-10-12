@@ -63,13 +63,13 @@ def test_gemini_llm_builds_structured_request_and_reads_usage():
     assert result.cost_usd == pytest.approx((1000 * 0.75 + 300 * 3.75) / 1_000_000)
 
 
-def test_gemini_llm_parses_text_when_parsed_is_missing_and_uses_pro_without_thinking_config():
+def test_gemini_llm_parses_text_when_parsed_is_missing_and_runs_pro_at_low_thinking():
     s = Settings(_env_file=None, gcp_project="p")
     models = FakeModels(SimpleNamespace(parsed=None, text='{"label": "y", "score": 0.1}', usage_metadata=None))
     result = GeminiLLM(s, client=SimpleNamespace(models=models)).generate_json(
         purpose="c", prompt="p", schema=Answer, pro=True)
     assert models.kwargs["model"] == "gemini-3.1-pro-preview"
-    assert models.kwargs["config"].thinking_config is None
+    assert str(models.kwargs["config"].thinking_config.thinking_level).upper().endswith("LOW")
     assert result.parsed.label == "y" and result.tokens_in == 0
 
 

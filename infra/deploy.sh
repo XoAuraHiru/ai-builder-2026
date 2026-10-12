@@ -43,6 +43,7 @@ API_ENV="${API_ENV}@CORS_ORIGINS=${CORS}"
 # Gemini serves from the global endpoint; ADK reads the GOOGLE_* variables, the app reads LLM_PROVIDER and GEMINI_*.
 API_ENV="${API_ENV}@LLM_PROVIDER=gemini@GEMINI_LOCATION=global@GOOGLE_GENAI_USE_ENTERPRISE=true"
 API_ENV="${API_ENV}@GOOGLE_CLOUD_PROJECT=${PROJECT_ID}@GOOGLE_CLOUD_LOCATION=global@DOCAI_LOCATION=us"
+API_ENV="${API_ENV}@FUND_SEARCH_ENGINE=atrium-fund-search@FUND_SEARCH_LOCATION=global"
 
 gcloud run deploy atrium-api --source services/api --region "$REGION" --allow-unauthenticated --quiet \
   --service-account "$SA" --add-cloudsql-instances "$CONN" \

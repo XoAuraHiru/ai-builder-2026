@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { deviceId } from "@/lib/leads";
+import { Button, Field, inputClass, MoneyInput, Notice, Panel } from "@/components/ui";
 
-const FUNDS = ["salary", "business", "savings", "inheritance", "property_sale", "investments", "other", "unspecified"];
+const FUNDS = [["salary", "Salary"], ["business", "Business income"], ["savings", "Savings"], ["inheritance", "Inheritance"],
+  ["property_sale", "Property sale"], ["investments", "Investments"], ["other", "Other"], ["unspecified", "Prefer not to say"]];
 const SOURCES = [["web", "Searching online"], ["referral", "A friend or colleague"], ["email", "An email from Atrium"],
   ["event", "An event or seminar"], ["chat", "Chat"]];
 
@@ -22,48 +24,66 @@ export default function ApplyPage() {
     setError("");
     try {
       await api("/leads", { method: "POST", body: JSON.stringify({
-        ...form, phone: form.phone || null, notes: form.notes || null, country: "US",
-        horizon_years: Number(form.horizon_years), device_id: deviceId(localStorage) }) });
+        ...form, phone: form.phone || null, notes: form.notes || null, country: "US", horizon_years: Number(form.horizon_years),
+        investable_usd: form.investable_usd || "0", monthly_usd: form.monthly_usd || "0", device_id: deviceId(localStorage) }) });
       setState("done");
     } catch (err) {
       setState("idle");
-      setError(err instanceof ApiError && err.status === 429
-        ? "We've received several submissions from this device; please try again later."
-        : err instanceof ApiError && err.status === 422 ? "Please check the highlighted fields and try again."
-        : "Something went wrong; please try again.");
+      setError(err instanceof ApiError && err.status === 429 ? "We have received several applications from this device. Please try again later."
+        : err instanceof ApiError && err.status === 422 ? "Some answers need another look. Check the fields and try again."
+        : "Your application did not reach us. Please try again.");
     }
   }
 
-  if (state === "done")
-    return <div className="mx-auto max-w-lg rounded-lg border border-slate-200 bg-white p-6">
-      <h1 className="text-xl font-semibold">Thank you</h1>
-      <p className="mt-2 text-slate-600">An Atrium advisor will be in touch within one business day.</p></div>;
-
-  const input = "mt-1 w-full rounded border border-slate-300 px-3 py-2";
   return (
-    <form onSubmit={submit} className="mx-auto max-w-lg space-y-3">
-      <h1 className="text-2xl font-semibold">Start investing with Atrium</h1>
-      <p className="text-sm text-slate-600">Tell us about your goals. Every field helps us match you with the right advisor.</p>
-      <label className="block text-sm">Full name<input required minLength={2} className={input} value={form.full_name} onChange={set("full_name")} /></label>
-      <label className="block text-sm">Email<input required type="email" className={input} value={form.email} onChange={set("email")} /></label>
-      <label className="block text-sm">Phone<input className={input} placeholder="+1 415 555 0123" value={form.phone} onChange={set("phone")} /></label>
-      <label className="block text-sm">What are you investing for?<textarea required minLength={3} className={input} value={form.goals} onChange={set("goals")} /></label>
-      <div className="grid grid-cols-3 gap-3">
-        <label className="block text-sm">Years<input required type="number" min={0} max={50} className={input} value={form.horizon_years} onChange={set("horizon_years")} /></label>
-        <label className="block text-sm">To invest ($)<input required type="number" min={0} className={input} value={form.investable_usd} onChange={set("investable_usd")} /></label>
-        <label className="block text-sm">Monthly ($)<input type="number" min={0} className={input} value={form.monthly_usd} onChange={set("monthly_usd")} /></label>
+    <div className="grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <div className="max-w-md">
+        <h1 className="wide text-[34px] font-semibold leading-[1.1] tracking-[-0.02em]">Start investing with Atrium</h1>
+        <p className="mt-4 text-[17px] leading-relaxed text-ink-2">Tell us what you are investing for. An advisor reads every application.</p>
+        <ol className="mt-8 space-y-4 border-t border-line pt-6 text-sm">
+          <li><span className="num font-semibold">1</span> <span className="font-medium">You tell us your goals.</span> <span className="text-ink-2">Two minutes, in your own words.</span></li>
+          <li><span className="num font-semibold">2</span> <span className="font-medium">An advisor gets in touch.</span> <span className="text-ink-2">Within one business day.</span></li>
+          <li><span className="num font-semibold">3</span> <span className="font-medium">You see a proposal.</span> <span className="text-ink-2">Funds that fit you, what your money could become, and what it costs.</span></li>
+        </ol>
+        <p className="mt-8 text-xs text-muted">This is a prototype. Please do not enter real personal information.</p>
       </div>
-      <label className="block text-sm">Source of funds
-        <select className={input} value={form.source_of_funds} onChange={set("source_of_funds")}>
-          {FUNDS.map((f) => <option key={f} value={f}>{f.replace("_", " ")}</option>)}</select></label>
-      <label className="block text-sm">How did you hear about us?
-        <select className={input} value={form.source} onChange={set("source")}>
-          {SOURCES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-      <label className="block text-sm">Anything else?<textarea className={input} value={form.notes} onChange={set("notes")} /></label>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button disabled={state === "sending"} className="rounded bg-[#0b5fff] px-4 py-2 text-white disabled:opacity-60">
-        {state === "sending" ? "Sending…" : "Send"}</button>
-      <p className="text-xs text-slate-500">Prototype: please do not enter real personal information.</p>
-    </form>
+      {state === "done" ? (
+        <Panel className="h-fit p-6">
+          <h2 className="text-lg font-semibold">Thank you</h2>
+          <p className="mt-2 text-ink-2">An Atrium advisor will be in touch within one business day.</p>
+        </Panel>
+      ) : (
+        <Panel className="p-6">
+          <form onSubmit={submit} className="space-y-5">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="Full name"><input required minLength={2} className={inputClass} value={form.full_name} onChange={set("full_name")} autoComplete="name" /></Field>
+              <Field label="Email"><input required type="email" className={inputClass} value={form.email} onChange={set("email")} autoComplete="email" /></Field>
+            </div>
+            <Field label="Phone" hint="Optional"><input className={inputClass} placeholder="+1 415 555 0123" value={form.phone} onChange={set("phone")} autoComplete="tel" /></Field>
+            <Field label="What are you investing for?"><textarea required minLength={3} rows={3} className={inputClass} value={form.goals} onChange={set("goals")} /></Field>
+            <div className="grid gap-5 sm:grid-cols-3">
+              <Field label="Years"><input required type="number" min={0} max={50} className={`${inputClass} num`} value={form.horizon_years} onChange={set("horizon_years")} /></Field>
+              <Field label="To invest now"><MoneyInput value={form.investable_usd} onChange={(v) => setForm({ ...form, investable_usd: v })} /></Field>
+              <Field label="Every month"><MoneyInput value={form.monthly_usd} onChange={(v) => setForm({ ...form, monthly_usd: v })} /></Field>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="Where the money comes from">
+                <select className={inputClass} value={form.source_of_funds} onChange={set("source_of_funds")}>
+                  {FUNDS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </Field>
+              <Field label="How did you hear about us?">
+                <select className={inputClass} value={form.source} onChange={set("source")}>
+                  {SOURCES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </Field>
+            </div>
+            <Field label="Anything else?" hint="Optional"><textarea rows={2} className={inputClass} value={form.notes} onChange={set("notes")} /></Field>
+            {error && <Notice tone="error">{error}</Notice>}
+            <Button type="submit" busy={state === "sending"} disabled={!form.investable_usd}>Send application</Button>
+          </form>
+        </Panel>
+      )}
+    </div>
   );
 }

@@ -10,6 +10,16 @@ doing the scoring, explaining, guarding and reconciling at every step.
 
 https://atrium-web-1070337126396.us-central1.run.app (pick a demo persona; every person and number is synthetic).
 
+## What you can try
+
+| Persona | What to open |
+|---|---|
+| Priya Raman (investor) | Overview, What-if Studio (10,000 simulated futures over real history since 2007), Portfolio X-ray (companies under the funds), Risk (the mix has drifted above the risk profile), fund pages with a cited "is it right for you?" reading, the risk-profile conversation, Orders with suitability checks, and the Copilot agent |
+| Lucas Moreau (investor) | The X-ray: about a tenth of the portfolio sits in one company, held through six ETFs |
+| Daniel Okafor (advisor) | The lead pipeline with three fraud stories, identity checks, AI replies, and personalised proposals written by Gemini Pro with a printable view |
+
+Every AI paragraph is set in a serif face beside a gold rule and says which model wrote it. Every dollar and percentage figure it writes is checked against the engine that produced it, and claims about funds cite the fact-sheet section they come from.
+
 ## Documents
 
 | File | What it is |
@@ -41,8 +51,8 @@ Open the web app and pick a demo persona (dev auth mode). Every person and trans
 Tests:
 
 ```bash
-cd services/api && uv run pytest     # API: ledger, pricing, market data, portfolio, auth, events
-cd apps/web && pnpm test             # web: pure data transforms
+cd services/api && uv run pytest     # API: ledger, leads, trust, what-if, risk, X-ray, fund search, instructions, agents
+cd apps/web && pnpm test             # web: formatting, chart scales, navigation, invest and order helpers
 ```
 
 ## Deploy to Google Cloud
@@ -58,6 +68,8 @@ The default deployment uses `AUTH_MODE=dev`: anyone with the URL can pick a demo
 
 If Yahoo Finance is unreachable from Cloud Run, seeding falls back to the committed real-price snapshot in `services/api/app/seed/prices_snapshot.csv`. Refresh it locally with `uv run python -m app.seed.snapshot`.
 
+The Invest features read committed data, so production never calls Yahoo for them: month-end prices since June 2007 (`app/seed/history_monthly.csv`) and ETF look-through profiles (`app/seed/etf_profiles.json`). Refresh both with `uv run python -m app.seed.history`, then rebuild the fund fact sheets with `uv run python -m app.knowledge.build` and rerun `infra/setup_gcp.sh` so Vertex AI Search re-indexes them.
+
 ## Running cost
 
 Both Cloud Run services scale to zero, so compute is billed only while requests are served and normally stays inside Cloud Run's free tier. The one always-on piece is Cloud SQL (db-f1-micro, 10 GB SSD, daily backups): about $9.40 a month. A budget alert emails the billing admins at 50, 90 and 100 percent of $15 a month.
@@ -70,8 +82,13 @@ AI is pay-per-use. Measured on the live system (Gemini 3.8 Flash on the global e
 | Identity check (Gemini extraction + Document AI ID Proofing) | $0.102 |
 | AI first-reply draft (ADK agent + compliance review) | $0.008 |
 | Advisor question to the concierge agent | $0.003 |
+| What-if, risk or X-ray explanation (Gemini, figures checked) | $0.002 |
+| Fund "is it right for you?" reading (Gemini + one Vertex AI Search query) | $0.006 |
+| Risk-profile conversation turn | $0.0007 |
+| Investor Copilot question (ADK agent with tools) | $0.003, plus $0.004 per fund-document search |
+| Personalised proposal (Gemini Pro + compliance review + searches), about 30 seconds | $0.045 |
 
-At demo volumes (100 leads, 30 drafts, 30 questions and 20 identity checks a month) that adds about $2.50, so the whole system runs at roughly $12 a month. Every call is listed with its cost under `GET /ai/usage` and on each lead's AI activity panel, and lands in BigQuery (`atrium.events`).
+Vertex AI Search (the fund documents) is billed per query at the Enterprise list price of $4 per 1,000; its index is a few kilobytes, inside the free storage tier. At demo volumes (100 leads, 30 drafts, 30 questions and 20 identity checks, plus 150 Invest explanations and readings, 80 Copilot questions and 20 proposals a month) AI adds about $4.50, so the whole system runs at roughly $14 a month. Every call is listed with its cost under `GET /ai/usage` and on each lead's AI activity panel, and lands in BigQuery (`atrium.events`).
 
 Cold start after idle time: about 6 seconds for the API and 2 to 4 seconds for the web app. For the judging window, keep both warm (about $23 a month extra):
 
@@ -83,8 +100,8 @@ API_MIN_INSTANCES=1 WEB_MIN_INSTANCES=1 bash infra/deploy.sh
 
 | Path | What |
 |---|---|
-| `services/api` | FastAPI core: people, accounts, house funds, prices, append-only ledger, events, auth |
-| `apps/web` | Next.js workspaces: investor today; advisor, operations and compliance in later plans |
+| `services/api` | FastAPI core: ledger, leads, risk profiles, what-if engine, risk and X-ray analytics, fund documents and search, instructions, ADK agents |
+| `apps/web` | Next.js workspaces on the Atrium design system: investor and advisor today; operations and compliance in the Operate release |
 | `infra` | GCP setup, deploy and preflight scripts |
 | `docs` | Blueprint, implementation plans, diagrams |
 

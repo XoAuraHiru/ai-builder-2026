@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.db import Base, SessionLocal
+from app.seed.migrate import apply_migrations
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ def bootstrap_database(settings: Settings) -> str:
                 # Held until commit/rollback: a second instance waits here, then finds the data and skips.
                 db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": BOOTSTRAP_LOCK_KEY})
             Base.metadata.create_all(bind=db.connection())
+            apply_migrations(db.connection())  # new columns on tables an earlier release created
             if not settings.auto_seed:
                 db.commit()
                 return "disabled"

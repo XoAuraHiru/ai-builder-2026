@@ -1,8 +1,12 @@
+import { Notice, PageHeader } from "@/components/ui";
+
 export function WorkspacePlaceholder({ name, arrives }: { name: string; arrives: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
-      <h1 className="text-xl font-semibold">{name} workspace</h1>
-      <p className="mt-2 text-sm text-slate-600">{arrives}</p>
-    </div>
+    <>
+      <PageHeader title={`${name} workspace`} description={arrives} />
+      <Notice title="Arriving in the Operate release">
+        This workspace is next in the build plan. The investor and advisor workspaces are complete today.
+      </Notice>
+    </>
   );
 }

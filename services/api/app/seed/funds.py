@@ -75,3 +75,16 @@ def all_tickers() -> list[str]:
             if ticker not in seen:
                 seen.append(ticker)
     return seen
+
+
+def house_fund_objects() -> dict[str, Fund]:
+    """The seven house funds as transient objects (no session), for tools and tests that run without a database."""
+    out: dict[str, Fund] = {}
+    for spec in HOUSE_FUNDS:
+        out[spec["code"]] = Fund(
+            code=spec["code"], name=spec["name"], category=spec["category"], risk_band=spec["risk_band"],
+            fee_bps=spec["fee_bps"], min_investment=Decimal(spec["min_investment"]), objective=spec["objective"],
+            who_for=spec["who_for"], inception_on=INCEPTION,
+            constituents=[FundConstituent(ticker=t, weight=Decimal(w), asset_class=a, region=r, sector=s)
+                          for (t, w, a, r, s) in spec["constituents"]])
+    return out

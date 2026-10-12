@@ -1,18 +1,29 @@
 import type { Metadata } from "next";
+import { Archivo, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
-import { Nav } from "@/components/nav";
+import { MotionProvider } from "@/components/motion-provider";
+import { Shell } from "@/components/shell";
+import { SessionProvider } from "@/lib/session-context";
 
-export const metadata: Metadata = { title: "Atrium", description: "AI-native wealth operating system" };
+const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"], style: ["normal", "italic"], variable: "--font-source-serif", display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "Atrium",
+  description: "One AI-native platform to acquire, serve, protect and administer every client relationship.",
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
-        <Nav />
-        <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
-        <footer className="mx-auto max-w-6xl px-4 py-6 text-xs text-slate-500">
-          Prototype with synthetic data and paper trading. Nothing here is investment advice.
-        </footer>
+    <html lang="en" className={`${archivo.variable} ${sourceSerif.variable}`} suppressHydrationWarning>
+      <body>
+        <MotionProvider>
+          <SessionProvider>
+            <Shell>{children}</Shell>
+          </SessionProvider>
+        </MotionProvider>
       </body>
     </html>
   );
