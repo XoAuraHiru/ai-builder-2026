@@ -2,22 +2,23 @@
 
 /* Atrium design tokens. Daylight is the colour of explanation: Why panels and anything Gemini wrote carry it. */
 @theme {
-  --color-ground: #f4f5f2;
+  --color-ground: #f1f3f1;
   --color-surface: #ffffff;
-  --color-ink: #17202a;
-  --color-ink-2: #3c4752;
-  --color-muted: #66717c;
-  --color-line: #dcdfdb;
-  --color-line-strong: #b8beb9;
-  --color-daylight: #e6b03c;
-  --color-daylight-ink: #7a5708;
-  --color-daylight-wash: #fbf3df;
-  --color-gain: #17734f;
-  --color-gain-wash: #e7f3ed;
-  --color-loss: #b0321f;
-  --color-danger-wash: #fbebe8;
-  --color-caution: #8f5b00;
-  --color-caution-wash: #fdf4e3;
+  --color-wash: #e8ece9;
+  --color-ink: #0f1b24;
+  --color-ink-2: #3a4652;
+  --color-muted: #5f6b76;
+  --color-line: #dce1de;
+  --color-line-strong: #c3cac6;
+  --color-daylight: #e3a72f;
+  --color-daylight-ink: #7a5508;
+  --color-daylight-wash: #fbf1d9;
+  --color-gain: #157347;
+  --color-gain-wash: #e5f2ea;
+  --color-loss: #b23a26;
+  --color-danger-wash: #fbeae6;
+  --color-caution: #8a5a00;
+  --color-caution-wash: #fcf2df;
   --color-band-1: #4d7f95;
   --color-band-2: #4f8f7a;
   --color-band-3: #8f9a45;
@@ -25,8 +26,8 @@
   --color-band-5: #b5502f;
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
-  --radius-control: 6px;
-  --radius-panel: 10px;
+  --radius-control: 12px;
+  --radius-panel: 18px;
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -62,7 +63,7 @@
 }
 /* Archivo's width axis: wider letterforms for headings and key figures. */
 @utility wide {
-  font-variation-settings: "wdth" 112;
+  font-variation-settings: "wdth" 116;
 }
 @utility wider {
   font-variation-settings: "wdth" 125;

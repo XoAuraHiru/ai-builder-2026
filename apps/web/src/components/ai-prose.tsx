@@ -9,12 +9,15 @@ export type Narrative = {
   model: string;
 };
 
-/** Words written by Gemini. They are always set in the serif, beside a daylight rule, with who wrote them. */
+/** Words written by Gemini. They are always set in the serif, captioned with who wrote them and what was checked. */
 export function AiProse({ children, caption, warning }: { children: ReactNode; caption: string; warning?: string }) {
   return (
-    <figure className="border-l-2 border-daylight pl-5">
-      <div className="max-w-[68ch] font-serif text-[17px] leading-[1.65] text-ink">{children}</div>
-      <figcaption className="mt-3 text-xs text-daylight-ink">{caption}</figcaption>
+    <figure className="max-w-[68ch]">
+      <div className="font-serif text-[17px] leading-[1.65] text-ink">{children}</div>
+      <figcaption className="mt-3 flex items-start gap-2 text-xs text-daylight-ink">
+        <span aria-hidden="true" className="mt-[4px] h-2 w-2 shrink-0 rounded-[1px] bg-daylight" />
+        {caption}
+      </figcaption>
       {warning && <p className="mt-2 text-xs font-medium text-caution">{warning}</p>}
     </figure>
   );
