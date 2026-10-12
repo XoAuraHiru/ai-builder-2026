@@ -86,9 +86,9 @@ AI is pay-per-use. Measured on the live system (Gemini 3.8 Flash on the global e
 | Fund "is it right for you?" reading (Gemini + one Vertex AI Search query) | $0.006 |
 | Risk-profile conversation turn | $0.0007 |
 | Investor Copilot question (ADK agent with tools) | $0.003, plus $0.004 per fund-document search |
-| Personalised proposal (Gemini Pro + compliance review + searches) | $0.08 |
+| Personalised proposal (Gemini Pro + compliance review + searches), about 30 seconds | $0.045 |
 
-Vertex AI Search (the fund documents) is billed per query at the Enterprise list price of $4 per 1,000; its index is a few kilobytes, inside the free storage tier. At demo volumes (100 leads, 30 drafts, 30 questions and 20 identity checks, plus 150 Invest explanations and readings, 80 Copilot questions and 20 proposals a month) AI adds about $5, so the whole system runs at roughly $14 to $15 a month. Every call is listed with its cost under `GET /ai/usage` and on each lead's AI activity panel, and lands in BigQuery (`atrium.events`).
+Vertex AI Search (the fund documents) is billed per query at the Enterprise list price of $4 per 1,000; its index is a few kilobytes, inside the free storage tier. At demo volumes (100 leads, 30 drafts, 30 questions and 20 identity checks, plus 150 Invest explanations and readings, 80 Copilot questions and 20 proposals a month) AI adds about $4.50, so the whole system runs at roughly $14 a month. Every call is listed with its cost under `GET /ai/usage` and on each lead's AI activity panel, and lands in BigQuery (`atrium.events`).
 
 Cold start after idle time: about 6 seconds for the API and 2 to 4 seconds for the web app. For the judging window, keep both warm (about $23 a month extra):
 
