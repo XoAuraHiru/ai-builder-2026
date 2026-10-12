@@ -192,7 +192,7 @@ export default function LeadDetail() {
           actions={latest ? <Link href={`/advisor/leads/${id}/proposal`} className="text-sm underline underline-offset-4">Open the printable proposal</Link> : undefined}>
           <Button variant={latest ? "secondary" : "primary"} busy={busy === "proposal"} disabled={risky}
             onClick={() => run("proposal", async () => { await api<Proposal>(`/leads/${id}/proposal`, { method: "POST" }); await load(); })}>
-            {busy === "proposal" ? "Gemini Pro is writing, about half a minute" : latest ? "Write a new version" : "Write a proposal"}
+            {busy === "proposal" ? "Gemini Pro is writing, which can take up to a minute" : latest ? "Write a new version" : "Write a proposal"}
           </Button>
           {risky && <p className="mt-2 text-sm text-muted">Resolve the trust review before preparing a proposal.</p>}
           {fail("proposal")}
