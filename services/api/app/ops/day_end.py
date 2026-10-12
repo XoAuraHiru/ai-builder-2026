@@ -139,8 +139,8 @@ def run_day_end(db: Session, *, now: datetime, triggered_by: str, llm: LLM, clos
         record_decision(db, agent="operations", purpose="ops_brief", result=result, subject_type="ops_run",
                         subject_id=run.id, input_text=prompt)
         brief: MorningBrief = result.parsed
-        text = " ".join([brief.headline, *brief.points, *brief.watch])
-        bad = unsupported_figures(text, collect_figures(facts))
+        written = " ".join([brief.headline, *brief.points, *brief.watch])
+        bad = unsupported_figures(written, collect_figures(facts))
         summary = {**brief.model_dump(), "verified": not bad, "unsupported_figures": bad, "model": result.model}
         record("Morning brief", True, f"Written by {result.model}.")
     except LLMError as e:

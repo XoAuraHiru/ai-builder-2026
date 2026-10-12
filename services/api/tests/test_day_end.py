@@ -57,3 +57,19 @@ def test_missing_closes_make_a_partial_run_that_says_why(db, priced):
     run = run_day_end(db, now=NOW, triggered_by="test", llm=offline_llm(), closes=closes(present=False), model=QUIET)
     prices = {s["step"]: s for s in run.steps}["Prices"]
     assert run.status == "partial" and not prices["ok"] and "No closing prices yet" in prices["detail"]
+
+
+def test_on_postgres_runs_wait_for_each_other(db, priced, monkeypatch):
+    """Two day-end runs at once (the scheduled job and the workspace button) take the same advisory lock."""
+    locks, real_execute = [], db.execute
+
+    def execute(statement, *args, **kwargs):
+        if "pg_advisory_xact_lock" in str(statement):
+            locks.append(str(statement))
+            return None
+        return real_execute(statement, *args, **kwargs)
+
+    monkeypatch.setattr(db.get_bind().dialect, "name", "postgresql")
+    monkeypatch.setattr(db, "execute", execute)
+    run = run_day_end(db, now=NOW, triggered_by="test", llm=offline_llm(), closes=closes(), model=QUIET)
+    assert run.status == "ok" and len(locks) == 1 and "day-end" in locks[0]
