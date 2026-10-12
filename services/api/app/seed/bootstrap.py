@@ -48,6 +48,10 @@ def bootstrap_database(settings: Settings) -> str:
 
                 if seed_trading(db):  # databases seeded before trading existed get it once
                     log.info("seeded paper-trading data")
+                from app.seed.operations import seed_operations
+
+                if seed_operations(db):  # databases seeded before operations existed get it once
+                    log.info("seeded operations data")
                 db.commit()
                 return "skipped"
             import app.seed.generate as gen
@@ -57,6 +61,10 @@ def bootstrap_database(settings: Settings) -> str:
             from app.seed.trading import seed_trading
 
             seed_trading(db)
+            from app.seed.operations import seed_operations
+
+            if seed_operations(db):
+                log.info("seeded operations data")
             db.commit()
             log.info("seeded database: %s", report)
             return "seeded"
