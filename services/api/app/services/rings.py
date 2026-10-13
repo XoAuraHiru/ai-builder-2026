@@ -254,9 +254,13 @@ def _device_label(raw: str) -> str:
 
 
 def _documents(db: Session) -> dict[str, list[IdentityCheck]]:
+    """Each lead's identity checks, without those made with Atrium's own sample cards (no one's identity)."""
+    from app.services.identity import SAMPLE_CARD_SHA256
+
     out: dict[str, list[IdentityCheck]] = defaultdict(list)
     for check in db.scalars(select(IdentityCheck).order_by(IdentityCheck.created_at)).all():
-        out[check.lead_id].append(check)
+        if check.sha256 not in SAMPLE_CARD_SHA256:
+            out[check.lead_id].append(check)
     return out
 
 

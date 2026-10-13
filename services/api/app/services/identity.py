@@ -6,6 +6,7 @@ import re
 import unicodedata
 from datetime import date
 from difflib import SequenceMatcher
+from pathlib import Path
 from typing import Literal, Protocol
 
 from pydantic import BaseModel, Field
@@ -14,6 +15,12 @@ from sqlalchemy.orm import Session
 from app.ai.decisions import record_decision
 from app.ai.llm import LLM, Attachment
 from app.config import Settings, get_settings
+
+# Atrium's own sample ID cards, offered on every lead page (apps/web/public/demo holds the same files). They are no
+# one's identity: visitors try them on many leads, so the ring radar must not read them as a shared document.
+_SAMPLES = Path(__file__).resolve().parents[1] / "governance" / "golden" / "identity_proofing"
+SAMPLE_CARD_SHA256 = frozenset(hashlib.sha256((_SAMPLES / name).read_bytes()).hexdigest()
+                               for name in ("specimen-match.png", "specimen-mismatch.png"))
 from app.events import emit
 from app.models import IdentityCheck, Lead
 
