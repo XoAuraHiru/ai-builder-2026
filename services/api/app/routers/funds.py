@@ -11,8 +11,9 @@ from app.knowledge.docs import cached_facts, fund_doc
 from app.knowledge.fit import fund_fit
 from app.knowledge.search import get_fund_search
 from app.models import Fund, Person, Price
-from app.schemas.funds import FundOut, PriceOut
+from app.schemas.funds import FundOut, PriceOut, UnitHistoryOut
 from app.schemas.knowledge import FitOut, FundExplainerOut, FundStatsOut, SectionOut
+from app.services.unit_history import unit_history
 
 router = APIRouter(prefix="/funds", tags=["funds"])
 FIT_BUSY = "The AI reading is unavailable right now; the fund facts on this page are complete. Try again in a minute."
@@ -87,3 +88,13 @@ def fund_prices(
     if end:
         q = q.where(Price.as_of <= end)
     return db.scalars(q.order_by(Price.as_of)).all()
+
+
+@router.get("/{code}/unit-history", response_model=UnitHistoryOut)
+def fund_unit_history(code: str, db: Session = Depends(get_db)):
+    """Public: the unit price since 2007, published from launch and a flagged backtest before it."""
+    fund = _fund_or_404(db, code)
+    published = db.execute(select(Price.as_of, Price.nav).where(Price.fund_code == code, Price.status == "published")
+                           .order_by(Price.as_of)).all()
+    return UnitHistoryOut(code=fund.code, name=fund.name, inception_on=fund.inception_on,
+                          points=unit_history(fund, [(d, nav) for d, nav in published]))

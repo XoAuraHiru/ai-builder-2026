@@ -145,14 +145,12 @@ The `analysis_out` helper turns an `AnalysisResult` into the response; the resul
 - Consumes: `Price` (published rows), `fund_returns`, `constituent_weights`, `monthly_returns` from `services/fund_returns.py`.
 - Produces: `GET /funds/{code}/unit-history`, public: `{ code, name, inception_on, points: [{date, price, backtest}] }`
   - From launch: every published daily price, with `backtest: false`.
-  - Before launch: one point per month-start from the monthly backtest, with `backtest: true`. The series is chained backward from the first published price, so the month before launch ends on that price's level:
-
-    `price_m = first_published / prod(1 + r) over the months from m+1 to launch`
+  - Before launch: one point per month-end from the monthly backtest (the history rows are month-end closes labelled with the month's first day), with `backtest: true`. The series is chained backward so the last month-end before launch equals the first published price: `price_(m-1) = price_m / (1 + r_m)`.
   - If there are no published prices, the backtest is based at 100.
 
 - [ ] **Step 1: Write the failing tests:**
   - `test_unit_history_flags_points_before_launch`
-  - `test_backtest_joins_the_first_published_price` (the last backtest point times the launch month's return equals the first published price within a cent)
+  - `test_backtest_joins_the_first_published_price` (the last month-end before launch equals the first published price)
   - `test_unit_history_is_public`
   - `test_unknown_fund_is_404`
 - [ ] **Step 2: Run them and see them fail.**
