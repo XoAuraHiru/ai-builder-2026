@@ -9,6 +9,7 @@ import { initials, PERSONAS, personaFor, personasByAct, type Persona } from "@/l
 import { setDevUser } from "@/lib/session";
 import { useSession } from "@/lib/session-context";
 import { Analyzer } from "@/components/analyzer";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { PlanDiagram } from "@/components/plan-diagram";
 import { Footer, Wordmark } from "@/components/shell";
 import { Badge, Button, ButtonLink } from "@/components/ui";
@@ -59,8 +60,8 @@ function PersonCard({ person, current, opening, disabled, onEnter }:
           </li>
         ))}
       </ul>
-      <Button variant="tonal" disabled={disabled} onClick={onEnter} className="mt-1 w-full">
-        {opening ? "Opening…" : `Enter as ${first}`}
+      <Button variant="tonal" disabled={disabled} busy={opening} onClick={onEnter} className="mt-1 w-full">
+        {opening ? `Opening ${first}'s workspace` : `Enter as ${first}`}
       </Button>
     </article>
   );
@@ -117,27 +118,34 @@ export default function FrontDoor() {
       <main>
         <section className="mx-auto max-w-[1240px] px-4 pb-16 pt-8 sm:px-8 lg:pb-24 lg:pt-14">
           <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.02fr)] lg:gap-16">
+            {/* The hero settles line by line, then the floor plan builds itself room by room (the page's one moment). */}
             <div className="flex flex-col gap-6">
-              <h1 className="text-[36px] font-semibold leading-[42px] tracking-[-0.025em] sm:text-[44px] sm:leading-[48px]">
-                A wealth firm run by people, with an AI that shows its working.
-              </h1>
-              <p className="max-w-[34em] text-[17px] leading-[26px] text-ink-700">
-                Atrium follows an investor from the first enquiry to a reconciled ledger: four stages, eight people, and Gemini at
-                every step, checked against the numbers it explains.
-              </p>
-              <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
+              <Reveal>
+                <h1 className="text-[36px] font-semibold leading-[42px] tracking-[-0.025em] sm:text-[44px] sm:leading-[48px]">
+                  A wealth firm run by people, with an AI that shows its working.
+                </h1>
+              </Reveal>
+              <Reveal delay={0.08}>
+                <p className="max-w-[34em] text-[17px] leading-[26px] text-ink-700">
+                  Atrium follows an investor from the first enquiry to a reconciled ledger: four stages, eight people, and Gemini at
+                  every step, checked against the numbers it explains.
+                </p>
+              </Reveal>
+              <Reveal delay={0.16} className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
                 {me && space
                   ? <ButtonLink href={space.home}>Continue as {firstName}</ButtonLink>
                   : (
-                    <Button disabled={busy} onClick={() => enter(start)}>
-                      {opening === start.email ? "Opening…" : `Start as ${start.name.split(" ")[0]}, an investor`}
+                    <Button disabled={busy} busy={opening === start.email} onClick={() => enter(start)}>
+                      {opening === start.email ? `Opening ${start.name.split(" ")[0]}'s workspace` : `Start as ${start.name.split(" ")[0]}, an investor`}
                     </Button>
                   )}
                 <ButtonLink href="#journeys" variant="tonal">Choose another person</ButtonLink>
-              </div>
-              <p className="text-[13px] leading-[19px] text-ink-500">
-                Every person, account and trade here is synthetic. Trading uses paper money at real US market prices.
-              </p>
+              </Reveal>
+              <Reveal delay={0.24}>
+                <p className="text-[13px] leading-[19px] text-ink-500">
+                  Every person, account and trade here is synthetic. Trading uses paper money at real US market prices.
+                </p>
+              </Reveal>
             </div>
             <PlanDiagram />
           </div>
@@ -172,20 +180,23 @@ export default function FrontDoor() {
           {cfg && cfg.authMode !== "dev" && (
             <p className="mt-3 text-sm text-ink-700">This deployment uses real sign-in. <Link href="/login" className="font-semibold text-green-600 hover:text-green-800 hover:underline">Sign in</Link> to continue.</p>
           )}
-          <div className="mt-8 grid gap-x-4 gap-y-8 sm:grid-cols-2 xl:grid-cols-4 xl:items-start">
+          {/* The people arrive stage by stage, in the order a client meets them. */}
+          <Stagger className="mt-8 grid gap-x-4 gap-y-8 sm:grid-cols-2 xl:grid-cols-4 xl:items-start">
             {personasByAct().map(({ act, people }) => (
               <div key={act.key} className="flex flex-col gap-3">
-                <div className="flex flex-col gap-2 px-1">
+                <StaggerItem className="flex flex-col gap-2 px-1">
                   <span aria-hidden="true" className="h-1 rounded-[2px] bg-green-500" />
                   <p className="text-[13px] text-ink-500"><span className="num font-semibold text-ink-900">{act.number}</span> · {act.label}</p>
-                </div>
+                </StaggerItem>
                 {people.map((p) => (
-                  <PersonCard key={p.email} person={p} current={signedInAs === p.email} opening={opening === p.email}
-                    disabled={busy} onEnter={() => enter(p)} />
+                  <StaggerItem key={p.email}>
+                    <PersonCard person={p} current={signedInAs === p.email} opening={opening === p.email}
+                      disabled={busy} onEnter={() => enter(p)} />
+                  </StaggerItem>
                 ))}
               </div>
             ))}
-          </div>
+          </Stagger>
         </section>
       </main>
       <Footer />
