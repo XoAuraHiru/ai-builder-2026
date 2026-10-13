@@ -13,7 +13,8 @@ from app.markets.universe import holding_objects, instruments
 from app.seed.funds import house_fund_objects
 from app.seed.history import load_etf_profiles
 from app.services.portfolio import HoldingView, PortfolioView
-from app.services.scenarios import (WINDOWS, apply_shocks, exposures, is_empty, replays, trough_and_recovery)
+from app.services.scenarios import (WINDOWS, ScenarioProposal, apply_shocks, exposures, is_empty, replays,
+                                    trough_and_recovery, validate_proposal)
 
 SEED = Path(__file__).resolve().parents[1] / "app" / "seed"
 FUNDS = {**holding_objects(), **house_fund_objects()}
@@ -188,3 +189,38 @@ def test_cash_alone_has_nothing_to_stress_test():
     nothing = apply_shocks(make_view({}), FUNDS, {"us_equity": -50})
     assert nothing.total_usd == 0 and nothing.holdings == []
     assert all(r.loss_usd == 0 and r.holdings == [] for r in replays(make_view({}), FUNDS))
+
+
+# --- the proposal and its bounds -----------------------------------------------------------------------------------
+
+def proposal(shocks: list[tuple[str, float]], **overrides) -> ScenarioProposal:
+    fields = dict(in_scope=True, title="AI stocks fall", horizon_months=12,
+                  shocks=[{"factor": f, "pct": pct, "reason": "Because."} for f, pct in shocks], analogue="none")
+    fields.update(overrides)
+    return ScenarioProposal.model_validate(fields)
+
+
+def test_a_shock_beyond_its_bounds_is_clamped_and_marked():
+    v = validate_proposal(proposal([("technology", 500), ("bonds", -45), ("cash", 3)]))
+    assert v.shocks["technology"] == 50 and v.shocks["bonds"] == -30 and v.shocks["cash"] == 3
+    assert v.clamped == ["technology", "bonds"] and v.dropped == []
+    kept = {s.factor: s.pct for s in v.proposal.shocks}
+    assert kept == {"technology": 50, "bonds": -30, "cash": 3}  # the proposal shown is the one applied
+
+
+def test_an_unknown_factor_is_dropped_and_marked():
+    v = validate_proposal(proposal([("crypto", -60), ("energy", 20), ("Energy", 40)]))
+    assert "crypto" not in v.shocks and v.shocks["energy"] == 20  # the first of a repeated factor stands
+    assert v.dropped == ["crypto", "Energy"] and v.clamped == []
+    assert [s.factor for s in v.proposal.shocks] == ["energy"]
+
+
+def test_asset_classes_without_a_shock_default_to_zero():
+    v = validate_proposal(proposal([("technology", -40), ("US_Equity ", -10)]))
+    assert v.shocks == {"us_equity": -10, "intl_equity": 0, "bonds": 0, "cash": 0, "technology": -40}
+
+
+def test_an_out_of_scope_proposal_has_no_shocks():
+    v = validate_proposal(proposal([("technology", -40)], in_scope=False, refusal=""))
+    assert v.shocks == {} and v.proposal.shocks == [] and v.clamped == [] and v.dropped == []
+    assert v.proposal.refusal  # a plain refusal even when the model left it empty

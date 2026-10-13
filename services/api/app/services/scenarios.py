@@ -6,10 +6,13 @@ class, a stock's sector). Gemini only proposes shocks; the arithmetic here is ex
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from functools import lru_cache
+from typing import Literal
 
 import pandas as pd
+from pydantic import BaseModel, Field
 
 from app.markets.universe import CASH, analytics_returns, instruments, load_market_monthly
 from app.models import Fund
@@ -248,3 +251,68 @@ def _replay(key: str, held: list[tuple[str, str, float]], funds: dict[str, Fund]
 def replays(view: PortfolioView, funds: dict[str, Fund]) -> list[Replay]:
     held = _held(view)
     return [_replay(key, held, funds) for key in WINDOWS]
+
+
+# --- the proposal Gemini returns, and its validation ---------------------------------------------------------------
+
+DEFAULT_REFUSAL = ("Scenario Studio models market scenarios, such as a rate rise, an oil shock or a sector sell-off. "
+                   "It cannot help with this request.")
+
+
+class Shock(BaseModel):
+    factor: str  # one of FACTORS or SECTORS
+    pct: float
+    reason: str = Field(max_length=200)
+
+
+class ScenarioProposal(BaseModel):
+    in_scope: bool
+    refusal: str = Field(default="", max_length=300)  # when not in scope
+    title: str = Field(default="", max_length=120)
+    horizon_months: int = Field(default=12, ge=1, le=60)
+    shocks: list[Shock] = Field(default_factory=list, max_length=16)
+    analogue: Literal["crisis_2008", "pandemic_2020", "rates_2022", "none"] = "none"
+    analogue_reason: str = Field(default="", max_length=300)
+    assumptions: list[str] = Field(default_factory=list, max_length=6)
+
+
+@dataclass
+class Validated:
+    shocks: dict[str, float]  # every asset-class factor (0 when not given) and each sector given
+    clamped: list[str]        # factors held to their bounds
+    dropped: list[str]        # factors not in FACTORS or SECTORS, repeats and non-numbers, as Gemini wrote them
+    proposal: ScenarioProposal  # with only the kept shocks, at their clamped values
+
+
+def clamp(factor: str, pct: float) -> tuple[float, bool]:
+    low, high = BOUNDS[factor]
+    held = min(max(pct, low), high)
+    return held, held != pct
+
+
+def normalise_factor(factor: str) -> str:
+    return factor.strip().lower().replace(" ", "_").replace("-", "_")
+
+
+def validate_proposal(p: ScenarioProposal) -> Validated:
+    """Keep known factors once each, hold every shock within its bounds, and say what was changed."""
+    if not p.in_scope:
+        refused = p.model_copy(update={"shocks": [], "refusal": p.refusal.strip() or DEFAULT_REFUSAL})
+        return Validated({}, [], [], refused)
+    shocks: dict[str, float] = {}
+    kept: list[Shock] = []
+    clamped: list[str] = []
+    dropped: list[str] = []
+    for s in p.shocks:
+        factor = normalise_factor(s.factor)
+        if factor not in BOUNDS or factor in shocks or not math.isfinite(s.pct):
+            dropped.append(s.factor)
+            continue
+        pct, was_clamped = clamp(factor, s.pct)
+        if was_clamped:
+            clamped.append(factor)
+        shocks[factor] = pct
+        kept.append(Shock(factor=factor, pct=pct, reason=s.reason))
+    for factor in FACTORS:
+        shocks.setdefault(factor, 0.0)
+    return Validated(shocks, clamped, dropped, p.model_copy(update={"shocks": kept}))
