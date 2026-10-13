@@ -27,6 +27,7 @@ class ComplianceReport(BaseModel):
     ok: bool
     findings: list[ComplianceFinding]
     reviewed_by: list[str]
+    paused: str | None = None  # why Gemini's review did not run, when its breaker is open
 
 
 RULES: list[tuple[str, Rule, str, str]] = [
@@ -75,11 +76,18 @@ def _rule_findings(text: str) -> list[ComplianceFinding]:
 
 
 def check_compliance(text: str, llm: LLM, *, db: Session | None = None, subject_id: str | None = None,
-                     collect: list | None = None) -> ComplianceReport:
+                     collect: list | None = None, paused: str | None = None) -> ComplianceReport:
     """`db` records the Gemini review now; `collect` hands (result, prompt) back so a caller that cannot touch the
-    database at this moment (an agent tool) can record it afterwards."""
+    database at this moment (an agent tool) can record it afterwards, and passes `paused` (the breaker's message,
+    read beforehand) instead. While the breaker is open, the rules alone check the draft."""
     findings = _rule_findings(text)
     reviewed_by = ["rules"]
+    if db is not None and paused is None:
+        from app.governance.breakers import breaker_message
+
+        paused = breaker_message(db, "draft_compliance")
+    if paused:
+        return ComplianceReport(ok=not findings, findings=_unique(findings), reviewed_by=reviewed_by, paused=paused)
     try:
         prompt = REVIEW_PROMPT.format(text=text)
         result = llm.generate_json(purpose="compliance_review", prompt=prompt, schema=ComplianceReview)
@@ -92,7 +100,12 @@ def check_compliance(text: str, llm: LLM, *, db: Session | None = None, subject_
                             subject_type="lead", subject_id=subject_id, input_text=prompt)
     except LLMError:
         pass
-    unique: dict[str, ComplianceFinding] = {}
+    unique = _unique(findings)
+    return ComplianceReport(ok=not unique, findings=unique, reviewed_by=reviewed_by)
+
+
+def _unique(findings: list[ComplianceFinding]) -> list[ComplianceFinding]:
+    out: dict[str, ComplianceFinding] = {}
     for f in findings:
-        unique.setdefault(f.phrase.lower(), f)
-    return ComplianceReport(ok=not unique, findings=list(unique.values()), reviewed_by=reviewed_by)
+        out.setdefault(f.phrase.lower(), f)
+    return list(out.values())

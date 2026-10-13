@@ -112,7 +112,9 @@ export default function AlertPage() {
               <h2 className="text-[17px] font-semibold">Case review</h2>
               {alert.ai_review?.verified && <Badge tone="gain">Figures and citations checked</Badge>}
             </div>
-            {alert.ai_review ? <Review review={alert.ai_review} labels={labels} /> : (
+            {alert.ai_review ? <Review review={alert.ai_review} labels={labels} /> : alert.review_paused ? (
+              <Notice tone="caution" title="Case reviews are paused">{alert.review_paused} Decide from the evidence.</Notice>
+            ) : (
               <div className="space-y-3">
                 <p className="text-sm text-ink-2">Gemini Pro reads the alert, its evidence and the linked accounts, and suggests what to do. It takes about half a minute.</p>
                 <Button variant="secondary" busy={busy === "review"} disabled={Boolean(busy)}

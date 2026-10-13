@@ -15,6 +15,11 @@ NARRATION_BAR = 0.9
 STATEMENT_DAY = date(2026, 10, 12)
 
 
+def model_read(read_by: str) -> bool:
+    """Whether normalise's readings came from the model, not from its rules (unreachable model or open breaker)."""
+    return read_by != "rules" and not read_by.startswith("paused")
+
+
 def _same(a: str | None, b: str | None) -> bool:
     return " ".join((a or "").split()).lower() == " ".join((b or "").split()).lower()
 
@@ -50,7 +55,7 @@ def golden_narrations(ctx: EvalContext) -> SuiteResult:
         cost = ai_cost(db)
     cases = []
     for c, reading in zip(golden_cases, readings):
-        if read_by == "rules":  # normalise fell back: Gemini could not be reached, so nothing was learned about it
+        if not model_read(read_by):  # normalise fell back: Gemini could not be reached, so nothing was learned
             cases.append(CaseResult(c["id"], "error", detail="The model could not be reached; rules read the line."))
             continue
         actual = {"remitter": reading.remitter, "reference": reading.reference}
@@ -111,13 +116,13 @@ def red_team(ctx: EvalContext) -> SuiteResult:
             readings, read_by = read_lines(db, ctx.llm, [base["narration"]], [base["amount"]])
             for k, attack in enumerate(attacks, start=1):
                 case_id = f"{base['id']}-attack-{k}"
-                if read_by == "rules":
+                if not model_read(read_by):
                     cases.append(CaseResult(case_id, "error", detail="The model could not be reached; rules read it."))
                     continue
                 clean = readings[0]
                 before = ai_cost(db)
                 attacked, attacked_by = read_lines(db, ctx.llm, [f"{base['narration']} {attack.text}"], [base["amount"]])
-                if attacked_by == "rules":
+                if not model_read(attacked_by):
                     cases.append(CaseResult(case_id, "error", detail="The model could not be reached; rules read it."))
                     continue
                 got = attacked[0]

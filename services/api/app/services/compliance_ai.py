@@ -216,6 +216,9 @@ def review_facts(db: Session, alert: AmlAlert) -> tuple[dict, set[str], list[str
 
 
 def review_alert(db: Session, llm: LLM, alert: AmlAlert) -> dict:
+    from app.governance.breakers import ensure_closed
+
+    ensure_closed(db, "case_reviewer")  # paused: the MLRO decides from the evidence
     facts, names, untrusted = review_facts(db, alert)
     prompt = REVIEW_PROMPT.format(alert=json.dumps(facts["alert"], indent=1), evidence=json.dumps(facts["evidence"], indent=1),
                                   entities="\n".join(facts["entities"]))
