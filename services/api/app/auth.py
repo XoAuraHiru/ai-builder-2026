@@ -77,6 +77,13 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> Current
     return CurrentUser(uid=uid, email=email, roles=_roles_for(person), person_id=person.id)
 
 
+def optional_user(request: Request, db: Session = Depends(get_db)) -> CurrentUser | None:
+    """For public endpoints: no credentials means a visitor (None). Credentials that are sent must still be valid."""
+    if not (request.headers.get("X-Dev-User") or request.headers.get("Authorization")):
+        return None
+    return get_current_user(request, db)
+
+
 def require_roles(*roles: str):
     def _dep(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
         if not set(roles) & set(user.roles):
