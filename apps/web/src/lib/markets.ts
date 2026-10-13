@@ -39,6 +39,33 @@ export function priceSource(source: PriceSource, asOf: string | null, now: Date 
   return `Last close, ${NY_DAY.format(when)}. Live prices are unavailable right now.`;
 }
 
+const NY_WEEKDAY = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short" });
+const short = (d: Date) => NY_TIME.format(d).replace(/\s+/g, " ").toLowerCase();
+
+/** The market's state for a status chip beside the title: "US market closed · opens 9:30 am ET". */
+export function sessionChip(session: Session, now: Date = new Date()): { text: string; open: boolean } {
+  if (session.is_open) return { text: "US market open · closes 4:00 pm ET", open: true };
+  const next = new Date(session.next_open);
+  if (Number.isNaN(next.getTime())) return { text: "US market closed", open: false };
+  const tomorrow = new Date(now.getTime() + 86_400_000);
+  const day = NY_DAY.format(next) === NY_DAY.format(now) ? ""
+    : NY_DAY.format(next) === NY_DAY.format(tomorrow) ? "tomorrow " : `${NY_WEEKDAY.format(next)} `;
+  return { text: `US market closed · opens ${day}${short(next)} ET`, open: false };
+}
+
+/** A day's change with its arrow, so direction never rests on colour: "↑ 1.29%", "↓ 0.52%", "0.00%". */
+export function changeText(pct: number): string {
+  const text = `${Math.abs(pct).toFixed(2)}%`;
+  if (Number(Math.abs(pct).toFixed(2)) === 0) return "0.00%";
+  return `${pct > 0 ? "↑" : "↓"} ${text}`;
+}
+
+/** The risk legend in the Markets toolbar, measured against the investor's own profile band. */
+export function profileLegend(profile: number | null): { within: string; above: string } | null {
+  if (!profile) return null;
+  return { within: `Within your profile (band ${profile})`, above: "Above it" };
+}
+
 /** 15.9 million, 379 billion: big counts the way people say them. */
 export function compactCount(n: number | null): string {
   if (n === null || !Number.isFinite(n)) return "Not available";

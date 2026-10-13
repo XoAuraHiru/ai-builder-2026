@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { formatPct, formatUsd } from "@/lib/format";
 import { filterRows, priceSource, type MarketFilter, type Markets } from "@/lib/markets";
-import { SessionDot, WatchButton } from "@/components/market-bits";
+import { SessionChip, WatchButton } from "@/components/market-bits";
 import { EmptyState, inputClass, Loading, Notice, PageHeader, RiskBand, Segmented, tableStyles } from "@/components/ui";
 
 const FILTERS: { value: MarketFilter; label: string }[] = [
@@ -50,7 +50,7 @@ export default function MarketsPage() {
       {header}
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <SessionDot session={data.session} />
+          <SessionChip session={data.session} />
           <div className="flex flex-wrap items-center gap-3">
             <label className="w-56">
               <span className="sr-only">Search by symbol or name</span>

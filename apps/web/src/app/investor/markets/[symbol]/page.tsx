@@ -6,7 +6,7 @@ import { api, ApiError, type Portfolio } from "@/lib/api";
 import { formatPct, formatSignedUsd, formatUsd } from "@/lib/format";
 import { compactCount, priceSource, type MarketDetail } from "@/lib/markets";
 import { useMe } from "@/lib/session-context";
-import { SessionDot, WatchButton } from "@/components/market-bits";
+import { SessionChip, WatchButton } from "@/components/market-bits";
 import { OrderTicket } from "@/components/order-ticket";
 import { readShareOrder } from "@/lib/analyzer";
 import { PriceChart } from "@/components/price-chart";
@@ -75,7 +75,7 @@ export default function SymbolPage() {
               </p>
             </div>
             <p className="mt-2 text-xs text-muted">{priceSource(q.source, q.as_of)}</p>
-            <div className="mt-3"><SessionDot session={detail.session} /></div>
+            <div className="mt-3"><SessionChip session={detail.session} /></div>
         </div>
         <div className="min-w-0 max-w-[460px] 2xl:col-start-2 2xl:row-span-2 2xl:row-start-1 2xl:max-w-none">
           {account
