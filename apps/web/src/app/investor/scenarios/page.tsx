@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useReducer, useRef, useState, type ReactNode } from "react";
 import { api, ApiError } from "@/lib/api";
 import { formatMonth } from "@/lib/format";
-import { ANALOGUE_TITLE, clampedNote, EXAMPLES, FACTOR_LABEL, formatShock, impactTitle, recoveryText, signedPct,
-  signedUsd0, sliderRows, windowText, type HoldingChange, type History, type Impact, type MapResult, type Narrative,
-  type Replay, type SliderRow } from "@/lib/scenarios";
+import { ANALOGUE_TITLE, canMap, clampedNote, EXAMPLES, FACTOR_LABEL, formatShock, impactTitle, INITIAL_STUDIO,
+  recoveryText, signedPct, signedUsd0, sliderRows, studio, windowText, type HoldingChange, type History, type Impact,
+  type MapResult, type Narrative, type Replay, type SliderRow, type Studio } from "@/lib/scenarios";
 import { useMe } from "@/lib/session-context";
 import { NarrativeView } from "@/components/ai-prose";
 import { WhyPanel } from "@/components/why-panel";
@@ -118,36 +118,32 @@ function ShockSlider({ row, onChange }: { row: SliderRow; onChange: (pct: number
   );
 }
 
-function ScenarioResult({ result, impact, shocks, onShock, updating, accountId }:
-  { result: MapResult; impact: Impact; shocks: Record<string, number>; onShock: (factor: string, pct: number) => void;
-    updating: boolean; accountId: string }) {
-  const [narrative, setNarrative] = useState<Narrative | null>(null);
-  const [explaining, setExplaining] = useState(false);
-  const [explainError, setExplainError] = useState("");
+/** Google's own rendering of the searches behind the sources. Google's terms ask for it to be shown as sent; a
+ * sandboxed frame keeps its markup and styles away from the page, and its links open in a new tab. */
+function SearchSuggestions({ html }: { html: string }) {
+  const doc = `<!doctype html><html><head><meta charset="utf-8"><base target="_blank"></head>`
+    + `<body style="margin:0">${html}</body></html>`;
+  return (
+    <iframe title="Google Search suggestions" srcDoc={doc} sandbox="allow-popups allow-popups-to-escape-sandbox"
+      className="mt-3 h-18 w-full rounded-control border border-line bg-surface" />
+  );
+}
+
+function ScenarioResult({ s, onShock, onExplain }:
+  { s: Studio & { result: MapResult; impact: Impact }; onShock: (factor: string, pct: number) => void; onExplain: () => void }) {
+  const { result, impact, shocks, updating, narrative, explaining, explainError } = s;
   const p = result.proposal;
   const rows = sliderRows(result, shocks);
   const loss = impact.total_usd < 0;
-
-  useEffect(() => { setNarrative(null); setExplainError(""); }, [shocks]);
-
-  async function explain() {
-    setExplaining(true);
-    setExplainError("");
-    try {
-      setNarrative(await api<Narrative>(`/accounts/${accountId}/scenarios/explain`, { method: "POST", body: JSON.stringify({ shocks }) }));
-    } catch (e) {
-      setExplainError(message(e, "The explanation is unavailable right now; the figures above are complete."));
-    } finally {
-      setExplaining(false);
-    }
-  }
+  const total = impactTitle(impact.total_usd, impact.total_pct);
 
   return (
     <div className="space-y-10">
-      <KeyMoment tone={loss ? "attention" : "good"} label={`If this happened: ${p.title}`} title={impactTitle(impact.total_usd, impact.total_pct)}>
+      <p className="sr-only" aria-live="polite">{`If this happened: ${total}`}</p>
+      <KeyMoment tone={loss ? "attention" : "good"} label={`If this happened: ${p.title}`} title={total}>
         <p className="max-w-[62ch] text-[15px] text-ink-2">
           Over about {p.horizon_months} month{p.horizon_months === 1 ? "" : "s"}, with the shocks below applied to what you hold today.
-          {updating && <span role="status" className="ml-2 text-xs text-muted">Updating…</span>}
+          {updating && <span className="ml-2 text-xs text-muted">Updating…</span>}
         </p>
         <ChangeBars holdings={impact.holdings} />
       </KeyMoment>
@@ -199,13 +195,14 @@ function ScenarioResult({ result, impact, shocks, onShock, updating, accountId }
                 ))}
               </ul>
             ) : <p className="text-sm text-muted">{result.sources_note ?? "No sources were cited."}</p>}
+            {result.search_suggestions && <SearchSuggestions html={result.search_suggestions} />}
           </Section>
         </div>
       </div>
 
       <Section title="What this means for you" description="Gemini reads the figures above and explains them. It cannot change them.">
         {narrative ? <NarrativeView narrative={narrative} /> : (
-          <Button variant="secondary" busy={explaining} onClick={explain}>{explaining ? "Gemini is reading the result" : "Explain this result"}</Button>
+          <Button variant="secondary" busy={explaining} onClick={onExplain}>{explaining ? "Gemini is reading the result" : "Explain this result"}</Button>
         )}
         {explainError && <div className="mt-3"><Notice tone="caution">{explainError}</Notice></div>}
       </Section>
@@ -219,16 +216,10 @@ export default function ScenariosPage() {
   const [history, setHistory] = useState<History | null>(null);
   const [historyError, setHistoryError] = useState("");
   const [text, setText] = useState("");
-  const [mapping, setMapping] = useState(false);
-  const [mapError, setMapError] = useState("");
-  const [result, setResult] = useState<MapResult | null>(null);
-  const [shocks, setShocks] = useState<Record<string, number>>({});
-  const [impact, setImpact] = useState<Impact | null>(null);
-  const [edited, setEdited] = useState(0);
-  const [updating, setUpdating] = useState(false);
-  const [applyError, setApplyError] = useState("");
-  const latest = useRef(0);
+  const [s, dispatch] = useReducer(studio, INITIAL_STUDIO);
+  const tickets = useRef(0);
   const resultRef = useRef<HTMLDivElement>(null);
+  const { result, shocks, edits } = s;
 
   useEffect(() => {
     if (result) resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -241,45 +232,43 @@ export default function ScenariosPage() {
   }, [account]);
 
   useEffect(() => {
-    if (!account || edited === 0) return;
-    const ticket = ++latest.current;
+    if (!account || edits === 0) return;
     const timer = setTimeout(async () => {
-      setUpdating(true);
+      const ticket = ++tickets.current;
+      dispatch({ type: "applying", ticket });
       try {
-        const next = await api<Impact>(`/accounts/${account.id}/scenarios/apply`, { method: "POST", body: JSON.stringify({ shocks }) });
-        if (ticket === latest.current) { setImpact(next); setApplyError(""); }
+        const impact = await api<Impact>(`/accounts/${account.id}/scenarios/apply`, { method: "POST", body: JSON.stringify({ shocks }) });
+        dispatch({ type: "applied", ticket, impact });
       } catch (e) {
-        if (ticket === latest.current) setApplyError(message(e, "Atrium could not apply the shocks. Try again."));
-      } finally {
-        if (ticket === latest.current) setUpdating(false);
+        dispatch({ type: "applyFailed", ticket, error: message(e, "Atrium could not apply the shocks. Try again.") });
       }
     }, 250);
     return () => clearTimeout(timer);
-  }, [account, shocks, edited]);
+  }, [account, shocks, edits]);
 
   async function map(scenario: string) {
-    if (!account || scenario.trim().length < 3) return;
+    if (!account || !canMap(s, scenario)) return;
+    const ticket = ++tickets.current;
     setText(scenario);
-    setMapping(true);
-    setMapError("");
+    dispatch({ type: "map", ticket });
     try {
       const r = await api<MapResult>(`/accounts/${account.id}/scenarios/map`, { method: "POST", body: JSON.stringify({ text: scenario.trim() }) });
-      latest.current++;
-      setResult(r);
-      setShocks(r.shocks);
-      setImpact(r.impact);
-      setEdited(0);
-      setApplyError("");
+      dispatch({ type: "mapped", ticket, result: r });
     } catch (e) {
-      setMapError(message(e, "Atrium could not reach its server. Try again."));
-    } finally {
-      setMapping(false);
+      dispatch({ type: "mapFailed", ticket, error: message(e, "Atrium could not reach its server. Try again.") });
     }
   }
 
-  function moveShock(factor: string, pct: number) {
-    setShocks((s) => ({ ...s, [factor]: pct }));
-    setEdited((n) => n + 1);
+  async function explain() {
+    if (!account) return;
+    const forShocks = shocks;
+    dispatch({ type: "explain" });
+    try {
+      const narrative = await api<Narrative>(`/accounts/${account.id}/scenarios/explain`, { method: "POST", body: JSON.stringify({ shocks: forShocks }) });
+      dispatch({ type: "explained", forShocks, narrative });
+    } catch (e) {
+      dispatch({ type: "explainFailed", forShocks, error: message(e, "The explanation is unavailable right now; the figures above are complete.") });
+    }
   }
 
   const header = <PageHeader title="Scenarios" description={DESCRIPTION} />;
@@ -315,35 +304,44 @@ export default function ScenariosPage() {
 
         <Section id="your-scenario" title="Your scenario"
           description="Describe a market scenario in your own words. Gemini, grounded with Google Search, proposes the shocks; Atrium's engine applies them to what you hold, and you can change every one.">
-          <Panel className="space-y-4 p-5">
-            <Field label="Scenario" hint="For example a rate move, an oil shock or a sector sell-off. Up to 400 characters.">
-              <textarea value={text} maxLength={400} rows={2} onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void map(text); } }}
-                placeholder="Oil at $150 and a US recession" className={`${inputClass} resize-y`} />
-            </Field>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted">Try:</span>
-              {EXAMPLES.map((x) => (
-                <Button key={x} variant="secondary" size="sm" disabled={mapping} onClick={() => map(x)}>{x}</Button>
-              ))}
-            </div>
-            <div>
-              <Button busy={mapping} disabled={text.trim().length < 3} onClick={() => map(text)}>
-                {mapping ? "Gemini is reading the scenario…" : "See what it could do"}
-              </Button>
-            </div>
-          </Panel>
-          {mapError && <div className="mt-4"><Notice tone="caution" title="The scenario was not mapped">{mapError}</Notice></div>}
+          {history.paused ? (
+            <Notice tone="caution" title="Only the history replays are available right now">
+              {history.paused} The replays above still work; they use no AI.
+            </Notice>
+          ) : (
+            <Panel className="space-y-4 p-5">
+              <Field label="Scenario" hint="For example a rate move, an oil shock or a sector sell-off. Up to 400 characters.">
+                <textarea value={text} maxLength={400} rows={2} onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void map(text); } }}
+                  placeholder="Oil at $150 and a US recession" className={`${inputClass} resize-y`} />
+              </Field>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted">Try:</span>
+                {EXAMPLES.map((x) => (
+                  <Button key={x} variant="secondary" size="sm" disabled={s.mapping} onClick={() => map(x)}>{x}</Button>
+                ))}
+              </div>
+              <div>
+                <Button busy={s.mapping} disabled={!canMap(s, text)} onClick={() => map(text)}>
+                  {s.mapping ? "Gemini is reading the scenario…" : "See what it could do"}
+                </Button>
+              </div>
+            </Panel>
+          )}
+          {s.mapError && (
+            <div role="alert" className="mt-4"><Notice tone="caution" title="The scenario was not mapped">{s.mapError}</Notice></div>
+          )}
         </Section>
 
         {result && (
           <div ref={resultRef} className="scroll-mt-24 space-y-6">
             {!result.proposal.in_scope && (
-              <Notice tone="info" title="Gemini did not turn this into shocks">{result.proposal.refusal}</Notice>
+              <div role="status"><Notice tone="info" title="Gemini did not turn this into shocks">{result.proposal.refusal}</Notice></div>
             )}
-            {applyError && <Notice tone="error">{applyError}</Notice>}
-            {result.proposal.in_scope && impact && (
-              <ScenarioResult result={result} impact={impact} shocks={shocks} onShock={moveShock} updating={updating} accountId={account.id} />
+            {s.applyError && <Notice tone="error">{s.applyError}</Notice>}
+            {result.proposal.in_scope && s.impact && (
+              <ScenarioResult s={{ ...s, result, impact: s.impact }} onExplain={explain}
+                onShock={(factor, pct) => dispatch({ type: "move", factor, pct })} />
             )}
           </div>
         )}

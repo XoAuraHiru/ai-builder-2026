@@ -7,12 +7,13 @@ class, a stock's sector). Gemini only proposes shocks; the arithmetic here is ex
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Literal
 
 import pandas as pd
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy.orm import Session
 
 from app.ai.decisions import record_decision
@@ -263,6 +264,22 @@ def replays(view: PortfolioView, funds: dict[str, Fund]) -> list[Replay]:
 
 DEFAULT_REFUSAL = ("Scenario Studio models market scenarios, such as a rate rise, an oil shock or a sector sell-off. "
                    "It cannot help with this request.")
+TRADE_REFUSAL = ("Scenario Studio shows what a scenario could do to what you hold; it never proposes or approves a "
+                 "trade. Describe a market scenario instead.")
+ANALOGUE_KEYS = ("crisis_2008", "pandemic_2020", "rates_2022", "none")
+# Text that proposes or approves a trade. Describing a sell-off is not a trade; telling the reader to sell is.
+TRADE_TALK = (
+    re.compile(r"\b(buy|sell|purchase|short)\s+\d", re.I),
+    re.compile(r"\b(should|recommend\w*|consider|advis\w*)\b[^.]*\b(buy|buying|sell|selling|purchase)\b", re.I),
+    re.compile(r"\bapprov\w*\b[^.]*\b(trade|order|purchase)\b", re.I),
+    re.compile(r"\b(trade|order)\b[^.]*\bapproved\b", re.I),
+    re.compile(r"\b(place|placed|placing|execute|executed|executing)\b[^.]*\b(order|trade)\b", re.I),
+    re.compile(r"\b\d[\d,]*\s+(shares\s+of\s+)?nvda\b", re.I),
+)
+
+
+def _trimmed(value, limit: int) -> str:
+    return "" if value is None else str(value)[:limit]
 
 
 class Shock(BaseModel):
@@ -270,8 +287,15 @@ class Shock(BaseModel):
     pct: float
     reason: str = Field(max_length=200)
 
+    @field_validator("reason", mode="before")
+    @classmethod
+    def _trim_reason(cls, v):
+        return _trimmed(v, 200)
+
 
 class ScenarioProposal(BaseModel):
+    """What Gemini returns. Over-long text and lists are trimmed, not failed: one long reason must not lose the
+    whole proposal."""
     in_scope: bool
     refusal: str = Field(default="", max_length=300)  # when not in scope
     title: str = Field(default="", max_length=120)
@@ -280,6 +304,31 @@ class ScenarioProposal(BaseModel):
     analogue: Literal["crisis_2008", "pandemic_2020", "rates_2022", "none"] = "none"
     analogue_reason: str = Field(default="", max_length=300)
     assumptions: list[str] = Field(default_factory=list, max_length=6)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _trim(cls, data):
+        if not isinstance(data, dict):
+            return data
+        out = dict(data)
+        for key, limit in (("refusal", 300), ("title", 120), ("analogue_reason", 300)):
+            if key in out:
+                out[key] = _trimmed(out[key], limit)
+        if isinstance(out.get("shocks"), list):
+            out["shocks"] = out["shocks"][:16]
+        if isinstance(out.get("assumptions"), list):
+            out["assumptions"] = [_trimmed(a, 300) for a in out["assumptions"][:6]]
+        if out.get("analogue") not in ANALOGUE_KEYS:
+            out["analogue"] = "none"
+        horizon = out.get("horizon_months")
+        if isinstance(horizon, (int, float)) and not isinstance(horizon, bool) and math.isfinite(horizon):
+            out["horizon_months"] = min(60, max(1, int(horizon)))
+        return out
+
+
+def proposes_trade(p: ScenarioProposal) -> bool:
+    texts = [p.title, p.analogue_reason, *p.assumptions, *(s.reason for s in p.shocks)]
+    return any(pattern.search(t) for t in texts for pattern in TRADE_TALK)
 
 
 @dataclass
@@ -323,7 +372,11 @@ def bound_shocks(pairs: list[tuple[str, float]]) -> tuple[dict[str, float], list
 
 
 def validate_proposal(p: ScenarioProposal) -> Validated:
-    """Keep known factors once each, hold every shock within its bounds, and say what was changed."""
+    """Keep known factors once each, hold every shock within its bounds, and say what was changed. A proposal that
+    proposes or approves a trade is refused: nobody sees it."""
+    if p.in_scope and proposes_trade(p):
+        refused = ScenarioProposal(in_scope=False, refusal=TRADE_REFUSAL)
+        return Validated({}, [], [], refused)
     if not p.in_scope:
         refused = p.model_copy(update={"shocks": [], "refusal": p.refusal.strip() or DEFAULT_REFUSAL})
         return Validated({}, [], [], refused)
@@ -443,11 +496,11 @@ def map_scenario(db: Session, llm: LLM, account: Account, view: PortfolioView, t
     """Two recorded Gemini calls, then the validated shocks applied to the account. Raises BreakerOpen while the
     mapper is paused and LLMError when the proposal cannot be made; a failed grounded call only loses the sources."""
     ensure_closed(db, MODEL_KEY)
-    context, sources, note = "", [], None
+    context, sources, search_html, note = "", [], "", SOURCES_UNAVAILABLE
     try:
         grounded, prompt = gather_context(llm, text)
     except LLMError:
-        note = SOURCES_UNAVAILABLE
+        pass
     else:
         record_decision(db, agent=AGENT, purpose="scenario_context", subject_type="account", subject_id=account.id,
                         input_text=prompt,
@@ -456,16 +509,18 @@ def map_scenario(db: Session, llm: LLM, account: Account, view: PortfolioView, t
                                          model=grounded.model, tokens_in=grounded.tokens_in,
                                          tokens_out=grounded.tokens_out, latency_ms=grounded.latency_ms,
                                          cost_usd=grounded.cost_usd))
-        context, sources = grounded.text, grounded.sources
-        note = None if sources else NO_SOURCES
+        if grounded.text:  # an empty answer is logged and paid for, but gives no context
+            context, sources, search_html = grounded.text, grounded.sources, grounded.search_html
+            note = None if sources else NO_SOURCES
     result, prompt = propose(llm, text, context)
     record_decision(db, agent=AGENT, purpose="scenario_proposal", result=result, subject_type="account",
                     subject_id=account.id, input_text=prompt)
     v = validate_proposal(result.parsed)
-    impact = apply_shocks(view, universe(db), v.shocks) if v.proposal.in_scope else None
+    in_scope = v.proposal.in_scope
+    impact = apply_shocks(view, universe(db), v.shocks) if in_scope else None
     return {"proposal": v.proposal, "shocks": v.shocks, "clamped": v.clamped, "dropped": v.dropped,
-            "sources": sources if v.proposal.in_scope else [], "sources_note": note if v.proposal.in_scope else None,
-            "impact": impact}
+            "sources": sources if in_scope else [], "sources_note": note if in_scope else None,
+            "search_suggestions": search_html if in_scope else "", "impact": impact}
 
 
 def impact_facts(impact: Impact, shocks: dict[str, float]) -> dict:

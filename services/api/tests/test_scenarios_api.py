@@ -16,7 +16,8 @@ from app.services.pricing import publish_prices
 
 HDR = {"X-Dev-User": "priya@example.test"}
 CONTEXT = {"text": "The Fed funds rate is 4.25%; oil trades near $80.",
-           "sources": [{"title": "Fed holds rates", "uri": "https://example.test/fed"}]}
+           "sources": [{"title": "Fed holds rates", "uri": "https://example.test/fed"}],
+           "search_html": '<div class="chips">fed funds rate</div>'}
 IN_SCOPE = {"in_scope": True, "title": "AI stocks fall 40%", "horizon_months": 12,
             "shocks": [{"factor": "technology", "pct": -500, "reason": "AI leaders reprice sharply."},
                        {"factor": "us_equity", "pct": -10, "reason": "The rest of the market follows."},
@@ -51,7 +52,7 @@ def test_history_replays_three_windows_on_the_account(client, invested):
     r = client.get(f"/accounts/{invested.id}/scenarios/history", headers=HDR)
     assert r.status_code == 200, r.text
     body = r.json()
-    assert body["empty"] is False
+    assert body["empty"] is False and body["paused"] is None
     assert [x["key"] for x in body["replays"]] == ["crisis_2008", "pandemic_2020", "rates_2022"]
     crisis = body["replays"][0]
     assert {h["symbol"] for h in crisis["holdings"]} == {"ATR-BAL", "ATR-TEC"} and crisis["loss_usd"] < 0
@@ -68,6 +69,7 @@ def test_mapping_grounds_bounds_and_records_both_calls(client, db, invested):
     assert body["clamped"] == ["technology"] and body["dropped"] == ["crypto"]
     assert [s["factor"] for s in body["proposal"]["shocks"]] == ["technology", "us_equity"]
     assert body["sources"] == CONTEXT["sources"] and body["sources_note"] is None
+    assert body["search_suggestions"] == CONTEXT["search_html"]  # Google Search suggestions, shown as Google sent them
     # ATR-TEC is all technology (XLK and VGT's other sectors fall back to -10%), ATR-BAL is 60% VTI.
     assert body["impact"]["total_usd"] < 0 and len(body["impact"]["holdings"]) == 2
 
@@ -94,9 +96,19 @@ def test_without_sources_the_proposal_still_comes_and_says_so(client, db, invest
     use(client, {"scenario_proposal": IN_SCOPE})  # the grounded call fails
     body = client.post(f"/accounts/{invested.id}/scenarios/map", json={"text": "AI stocks fall 40%"},
                        headers=HDR).json()
-    assert body["proposal"]["in_scope"] is True and body["sources"] == []
+    assert body["proposal"]["in_scope"] is True and body["sources"] == [] and body["search_suggestions"] == ""
     assert body["sources_note"] == "Current sources were unavailable; the shocks rest on the model's knowledge."
     assert db.scalars(select(AIDecision.purpose)).all() == ["scenario_proposal"]
+
+
+def test_an_empty_grounded_answer_is_logged_and_treated_as_no_context(client, db, invested):
+    llm = use(client, {"scenario_context": {"text": "", "sources": []}, "scenario_proposal": IN_SCOPE})
+    body = client.post(f"/accounts/{invested.id}/scenarios/map", json={"text": "AI stocks fall 40%"},
+                       headers=HDR).json()
+    assert body["sources_note"] == "Current sources were unavailable; the shocks rest on the model's knowledge."
+    assert "No current context was gathered." in llm.calls[1]["prompt"]
+    assert db.scalars(select(AIDecision.purpose).order_by(AIDecision.created_at)).all() == [
+        "scenario_context", "scenario_proposal"]  # the empty answer was paid for, so it is logged
 
 
 def test_a_failed_proposal_is_a_plain_503(client, invested):
@@ -166,7 +178,9 @@ def test_a_paused_mapper_gives_503_with_the_breakers_reason(client, db, invested
     r = client.post(f"/accounts/{invested.id}/scenarios/map", json={"text": "AI stocks fall 40%"}, headers=HDR)
     assert r.status_code == 503 and r.json()["detail"].startswith("Scenario mapping is paused")
     assert llm.calls == []  # no model call while paused
-    assert client.get(f"/accounts/{invested.id}/scenarios/history", headers=HDR).status_code == 200
+    history = client.get(f"/accounts/{invested.id}/scenarios/history", headers=HDR)
+    assert history.status_code == 200 and len(history.json()["replays"]) == 3  # the replays are the fallback
+    assert history.json()["paused"] == r.json()["detail"]  # so the page can say so before anyone types
 
 
 def test_offline_mode_maps_a_plausible_scenario_and_refuses_a_trade(client, db, invested):
@@ -189,10 +203,10 @@ def test_an_account_with_nothing_invested_has_nothing_to_stress_test(client, db,
     seed_funds(db)
     db.commit()
     url = f"/accounts/{account.id}/scenarios"
-    assert client.get(f"{url}/history", headers=HDR).json() == {"replays": [], "empty": True}
+    assert client.get(f"{url}/history", headers=HDR).json() == {"replays": [], "empty": True, "paused": None}
     paper.deposit(account, "1000")  # cash alone is still nothing to stress-test
     db.commit()
-    assert client.get(f"{url}/history", headers=HDR).json() == {"replays": [], "empty": True}
+    assert client.get(f"{url}/history", headers=HDR).json() == {"replays": [], "empty": True, "paused": None}
     use(client, {"scenario_context": CONTEXT, "scenario_proposal": IN_SCOPE})
     r = client.post(f"{url}/map", json={"text": "AI stocks fall 40%"}, headers=HDR)
     assert r.status_code == 422 and "nothing to stress-test" in r.json()["detail"]

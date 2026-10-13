@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.ai.llm import LLM, LLMError, get_llm
 from app.auth import CurrentUser, get_current_user
 from app.db import get_db
-from app.governance.breakers import BreakerOpen
+from app.governance.breakers import BreakerOpen, breaker_message
 from app.models import Account
 from app.routers.accounts import account_or_404
 from app.routers.insights import NO_HOLDINGS, holdings_of
@@ -18,7 +18,7 @@ from app.routers.invest import EXPLAIN_BUSY
 from app.services.analytics import universe
 from app.services.narrative import NarrativeOut
 from app.services.portfolio import PortfolioView
-from app.services.scenarios import (NOTHING_TO_TEST, apply_shocks, bound_shocks, explain_impact, is_empty,
+from app.services.scenarios import (MODEL_KEY, NOTHING_TO_TEST, apply_shocks, bound_shocks, explain_impact, is_empty,
                                     map_scenario, replays)
 
 router = APIRouter(prefix="/accounts", tags=["scenarios"])
@@ -58,10 +58,12 @@ def bounded(body: ShocksIn) -> dict[str, float]:
 
 @router.get("/{account_id}/scenarios/history")
 def history(account_id: str, db: Session = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
+    """The replays, and the breaker's message while mapping is paused, so the page says so up front."""
     _, view = portfolio_of(db, account_id, user)
+    paused = breaker_message(db, MODEL_KEY)
     if is_empty(view):
-        return {"replays": [], "empty": True}
-    return {"replays": [asdict(r) for r in replays(view, universe(db))], "empty": False}
+        return {"replays": [], "empty": True, "paused": paused}
+    return {"replays": [asdict(r) for r in replays(view, universe(db))], "empty": False, "paused": paused}
 
 
 @router.post("/{account_id}/scenarios/map")

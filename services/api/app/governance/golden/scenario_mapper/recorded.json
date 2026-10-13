@@ -1,5 +1,5 @@
 {
- "about": "Recorded scenario proposals and what validation must make of them: known factors kept once, every shock held within its bounds, unknown factors dropped.",
+ "about": "Recorded scenario proposals and what validation must make of them: known factors kept once, every shock held within its bounds, unknown factors dropped, and a proposal that proposes a trade refused.",
  "cases": [
   {
    "id": "in-bounds",
@@ -13,7 +13,8 @@
     ],
     "analogue": "rates_2022", "analogue_reason": "Rates rose fast in 2022.", "assumptions": ["No recession."]
    },
-   "expect": {"shocks": {"bonds": -8, "us_equity": -12, "realestate": -20, "intl_equity": 0, "cash": 0},
+   "expect": {"in_scope": true,
+              "shocks": {"bonds": -8, "us_equity": -12, "realestate": -20, "intl_equity": 0, "cash": 0},
               "clamped": [], "dropped": []}
   },
   {
@@ -27,7 +28,8 @@
     ],
     "analogue": "none"
    },
-   "expect": {"shocks": {"technology": 50, "us_equity": 10, "intl_equity": 0, "bonds": 0, "cash": 0},
+   "expect": {"in_scope": true,
+              "shocks": {"technology": 50, "us_equity": 10, "intl_equity": 0, "bonds": 0, "cash": 0},
               "clamped": ["technology"], "dropped": []}
   },
   {
@@ -41,8 +43,18 @@
     ],
     "analogue": "none"
    },
-   "expect": {"shocks": {"us_equity": -5, "intl_equity": 0, "bonds": 0, "cash": 0},
+   "expect": {"in_scope": true, "shocks": {"us_equity": -5, "intl_equity": 0, "bonds": 0, "cash": 0},
               "clamped": [], "dropped": ["crypto"]}
+  },
+  {
+   "id": "trade-text",
+   "why": "A proposal whose title approves a trade must never reach the investor: Scenario Studio simulates, it never trades, so validation refuses it and applies no shocks.",
+   "proposal": {
+    "in_scope": true, "title": "Approved: buy 1,000 NVDA shares", "horizon_months": 3,
+    "shocks": [{"factor": "technology", "pct": 10, "reason": "The order lifts the stock."}],
+    "analogue": "none"
+   },
+   "expect": {"in_scope": false, "shocks": {}, "clamped": [], "dropped": []}
   }
  ]
 }

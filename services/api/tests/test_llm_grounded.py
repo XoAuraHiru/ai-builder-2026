@@ -22,8 +22,9 @@ def web(uri, title):
     return SimpleNamespace(web=SimpleNamespace(uri=uri, title=title))
 
 
-def response(chunks, queries, text="Rates are 4.25% today.", usage=None):
-    metadata = SimpleNamespace(grounding_chunks=chunks, web_search_queries=queries)
+def response(chunks, queries, text="Rates are 4.25% today.", usage=None, rendered=None):
+    entry = SimpleNamespace(rendered_content=rendered) if rendered is not None else None
+    metadata = SimpleNamespace(grounding_chunks=chunks, web_search_queries=queries, search_entry_point=entry)
     return SimpleNamespace(text=text, candidates=[SimpleNamespace(grounding_metadata=metadata)],
                            usage_metadata=usage)
 
@@ -32,10 +33,12 @@ def test_grounded_call_searches_keeps_distinct_sources_and_charges_for_queries()
     s = Settings(_env_file=None, gcp_project="p")
     usage = SimpleNamespace(prompt_token_count=1000, candidates_token_count=200, thoughts_token_count=100)
     chunks = [web("https://example.test/fed", "Fed holds rates"), web("https://example.test/fed", "Fed holds rates")]
-    models = FakeModels(response(chunks, ["fed funds rate", "oil price today"], usage=usage))
+    models = FakeModels(response(chunks, ["fed funds rate", "oil price today"], usage=usage,
+                                 rendered='<div class="chips">fed funds rate</div>'))
     result = GeminiLLM(s, client=SimpleNamespace(models=models)).generate_grounded(purpose="scenario_context",
                                                                                    prompt="the scenario")
     assert isinstance(result, GroundedResult)
+    assert result.search_html == '<div class="chips">fed funds rate</div>'  # Google's terms: show the suggestions
     assert models.kwargs["model"] == "gemini-3.8-flash" and models.kwargs["contents"] == ["the scenario"]
     config = models.kwargs["config"]
     assert len(config.tools) == 1 and config.tools[0].google_search is not None
@@ -60,25 +63,26 @@ def test_grounded_call_keeps_at_most_six_web_sources_and_survives_no_search():
     bare = SimpleNamespace(text="From memory.", candidates=[SimpleNamespace(grounding_metadata=None)],
                            usage_metadata=None)
     plain = GeminiLLM(s, client=SimpleNamespace(models=FakeModels(bare))).generate_grounded(purpose="c", prompt="p")
-    assert plain.sources == [] and plain.queries == 0 and plain.cost_usd == 0
+    assert plain.sources == [] and plain.queries == 0 and plain.cost_usd == 0 and plain.search_html == ""
 
 
-def test_grounded_call_errors_become_llm_errors():
+def test_grounded_call_errors_become_llm_errors_but_an_empty_answer_is_still_charged():
     s = Settings(_env_file=None, gcp_project="p")
     failing = GeminiLLM(s, client=SimpleNamespace(models=FakeModels(error=RuntimeError("search quota"))))
     with pytest.raises(LLMError, match="search quota"):
         failing.generate_grounded(purpose="scenario_context", prompt="p")
-    empty = GeminiLLM(s, client=SimpleNamespace(models=FakeModels(response([], [], text=None))))
-    with pytest.raises(LLMError, match="no text"):
-        empty.generate_grounded(purpose="scenario_context", prompt="p")
+    empty = GeminiLLM(s, client=SimpleNamespace(models=FakeModels(response([], ["q"], text=None))))
+    result = empty.generate_grounded(purpose="scenario_context", prompt="p")
+    assert result.text == "" and result.queries == 1 and result.cost_usd == pytest.approx(0.014)
 
 
 def test_fake_grounded_call_returns_its_script_and_records_the_call():
     sources = [{"title": "Oil", "uri": "https://example.test/oil"}]
-    llm = FakeLLM({"scenario_context": {"text": "Oil is $80.", "sources": sources},
+    llm = FakeLLM({"scenario_context": {"text": "Oil is $80.", "sources": sources, "search_html": "<div>oil</div>"},
                    "echo": lambda prompt: {"text": prompt.upper(), "sources": []}})
     result = llm.generate_grounded(purpose="scenario_context", prompt="oil at 150")
     assert result.text == "Oil is $80." and result.sources == sources and result.cost_usd == 0
+    assert result.search_html == "<div>oil</div>"
     assert llm.calls[-1]["purpose"] == "scenario_context" and llm.calls[-1]["prompt"] == "oil at 150"
     assert llm.generate_grounded(purpose="echo", prompt="abc").text == "ABC"
     with pytest.raises(LLMError):

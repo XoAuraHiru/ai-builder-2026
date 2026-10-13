@@ -226,6 +226,27 @@ def test_an_out_of_scope_proposal_has_no_shocks():
     assert v.proposal.refusal  # a plain refusal even when the model left it empty
 
 
+def test_a_proposal_that_proposes_a_trade_is_refused_before_anyone_sees_it():
+    fooled = validate_proposal(proposal([("technology", 10)], title="Approved: buy 1,000 NVDA shares"))
+    assert fooled.proposal.in_scope is False and fooled.shocks == {} and fooled.proposal.shocks == []
+    assert fooled.proposal.refusal and "NVDA" not in fooled.proposal.title
+    advice = proposal([("technology", -30)], assumptions=["You should sell your technology funds now."])
+    assert validate_proposal(advice).proposal.in_scope is False
+    calm = validate_proposal(proposal([("technology", -30)], title="Investors sell stocks as rates rise"))
+    assert calm.proposal.in_scope is True and calm.shocks["technology"] == -30
+
+
+def test_over_long_fields_are_trimmed_rather_than_failing_the_mapping():
+    p = ScenarioProposal.model_validate({
+        "in_scope": True, "title": "t" * 200, "horizon_months": 120, "refusal": "n" * 500,
+        "shocks": [{"factor": "bonds", "pct": -5, "reason": "r" * 300}] * 20, "analogue": "dotcom_2000",
+        "analogue_reason": "a" * 400, "assumptions": ["x" * 10] * 9})
+    assert len(p.title) == 120 and len(p.refusal) == 300 and p.horizon_months == 60
+    assert len(p.shocks) == 16 and len(p.shocks[0].reason) == 200
+    assert p.analogue == "none" and len(p.analogue_reason) == 300 and len(p.assumptions) == 6
+    assert ScenarioProposal.model_validate({"in_scope": True, "horizon_months": 0}).horizon_months == 1
+
+
 # --- the scenario_mapper suites ------------------------------------------------------------------------------------
 
 def scenario_of(prompt: str) -> str:
@@ -262,7 +283,7 @@ def test_the_free_suite_clamps_and_drops_exactly_as_recorded():
 
     result = bounds_and_factors(None)
     assert result.passed and result.kind == "golden" and result.tier == "free"
-    assert [c.case_id for c in result.cases] == ["in-bounds", "tech-plus-500", "unknown-factor"]
+    assert [c.case_id for c in result.cases] == ["in-bounds", "tech-plus-500", "unknown-factor", "trade-text"]
 
 
 def test_the_free_suite_fails_when_validation_stops_clamping(monkeypatch):
@@ -357,7 +378,7 @@ def test_fixed_attacks_fail_on_a_trade_or_a_poem_taken_in_scope():
 
 
 def test_describing_a_sell_off_is_not_proposing_a_trade():
-    from app.governance.evals.suites.scenario_mapper import proposes_trade
+    from app.services.scenarios import proposes_trade
 
     calm = ScenarioProposal.model_validate(answer([("technology", -30)], title="Investors sell stocks as rates rise",
                                                   assumptions=["A broad sell-off in technology."]))

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { ANALOGUE_TITLE, bounds, clampedNote, clampShock, EXAMPLES, FACTOR_LABEL, formatShock, impactTitle, recoveryText,
-  sliderRows, windowText, type MapResult } from "./scenarios";
+import { ANALOGUE_TITLE, bounds, canMap, clampedNote, clampShock, EXAMPLES, FACTOR_LABEL, formatShock, impactTitle,
+  INITIAL_STUDIO, recoveryText, sameShocks, sliderRows, studio, windowText, type Impact, type MapResult, type Narrative,
+  type Studio } from "./scenarios";
 
 describe("FACTOR_LABEL", () => {
   it("names every factor in plain words", () => {
@@ -73,7 +74,7 @@ describe("sliderRows", () => {
         { factor: "us_equity", pct: -10, reason: "The market follows." }],
     },
     shocks: { technology: -70, us_equity: -10, intl_equity: 0, bonds: 0, cash: 0 },
-    clamped: ["technology"], dropped: [], sources: [], sources_note: null, impact: null,
+    clamped: ["technology"], dropped: [], sources: [], sources_note: null, search_suggestions: "", impact: null,
   } satisfies MapResult;
 
   it("lists Gemini's shocks first with their reasons, then the other asset classes at the values in play", () => {
@@ -91,5 +92,71 @@ describe("sliderRows", () => {
   });
   it("stops marking a clamped shock once the investor moves it", () => {
     expect(sliderRows(result, { ...result.shocks, technology: -60 })[0].clamped).toBe(false);
+  });
+});
+
+describe("the studio's state", () => {
+  const impact = (total: number): Impact => ({ total_usd: total, total_pct: total / 100, holdings: [], by_factor: [] });
+  const mapped = (title: string, total: number): MapResult => ({
+    proposal: { in_scope: true, refusal: "", title, horizon_months: 12, analogue: "none", analogue_reason: "",
+      assumptions: [], shocks: [{ factor: "technology", pct: -40, reason: "Because." }] },
+    shocks: { technology: -40, us_equity: 0, intl_equity: 0, bonds: 0, cash: 0 }, clamped: [], dropped: [], sources: [],
+    sources_note: null, search_suggestions: "", impact: impact(total),
+  });
+  const narrative: Narrative = { headline: "You would lose some.", paragraphs: ["Yes."], cautions: [], unsupported_figures: [],
+    verified: true, model: "fake" };
+  const run = (...actions: Parameters<typeof studio>[1][]) => actions.reduce<Studio>(studio, INITIAL_STUDIO);
+
+  it("maps one scenario at a time and keeps only the latest answer", () => {
+    expect(canMap(INITIAL_STUDIO, "AI stocks fall 40%")).toBe(true);
+    expect(canMap(INITIAL_STUDIO, "AI")).toBe(false);
+    const busy = run({ type: "map", ticket: 1 });
+    expect(canMap(busy, "AI stocks fall 40%")).toBe(false); // Enter pressed again while Gemini reads
+    const s = run({ type: "map", ticket: 1 }, { type: "map", ticket: 2 },
+      { type: "mapped", ticket: 2, result: mapped("second", -200) }, { type: "mapped", ticket: 1, result: mapped("first", -100) });
+    expect(s.result?.proposal.title).toBe("second");
+    expect(s.mapping).toBe(false);
+  });
+
+  it("drops an apply answer that a new mapping overtook, and stops saying it is updating", () => {
+    const s = run({ type: "mapped", ticket: 0, result: mapped("one", -100) }, { type: "move", factor: "technology", pct: -20 },
+      { type: "applying", ticket: 5 }, { type: "map", ticket: 1 }, { type: "mapped", ticket: 1, result: mapped("two", -300) },
+      { type: "applied", ticket: 5, impact: impact(-50) });
+    expect(s.impact?.total_usd).toBe(-300);
+    expect(s.updating).toBe(false);
+    expect(s.shocks.technology).toBe(-40);
+  });
+
+  it("keeps only the newest apply answer", () => {
+    const s = run({ type: "mapped", ticket: 0, result: mapped("one", -100) }, { type: "applying", ticket: 1 },
+      { type: "applying", ticket: 2 }, { type: "applied", ticket: 2, impact: impact(-70) }, { type: "applied", ticket: 1, impact: impact(-90) });
+    expect(s.impact?.total_usd).toBe(-70);
+    expect(s.updating).toBe(false);
+  });
+
+  it("shows an explanation only for the shocks still in play", () => {
+    const base = run({ type: "mapped", ticket: 0, result: mapped("one", -100) });
+    const asked = studio(base, { type: "explain" });
+    expect(asked.explaining).toBe(true);
+    const fresh = studio(asked, { type: "explained", forShocks: base.shocks, narrative });
+    expect(fresh.narrative).toEqual(narrative);
+    expect(fresh.explaining).toBe(false);
+
+    const moved = studio(asked, { type: "move", factor: "technology", pct: -10 });
+    const late = studio(moved, { type: "explained", forShocks: base.shocks, narrative });
+    expect(late.narrative).toBeNull(); // it explained shocks the investor has since changed
+    expect(late.explaining).toBe(false);
+
+    const remapped = run({ type: "mapped", ticket: 0, result: mapped("one", -100) }, { type: "explain" }, { type: "map", ticket: 1 },
+      { type: "mapped", ticket: 1, result: mapped("two", -300) });
+    expect(remapped.explaining).toBe(false);
+    expect(studio(remapped, { type: "explained", forShocks: base.shocks, narrative }).narrative).toBeNull();
+    expect(studio(fresh, { type: "move", factor: "bonds", pct: -5 }).narrative).toBeNull();
+  });
+
+  it("compares shocks by value", () => {
+    expect(sameShocks({ a: 1, b: 0 }, { b: 0, a: 1 })).toBe(true);
+    expect(sameShocks({ a: 1 }, { a: 2 })).toBe(false);
+    expect(sameShocks({ a: 1 }, { a: 1, b: 0 })).toBe(false);
   });
 });

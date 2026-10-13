@@ -40,6 +40,7 @@ class GroundedResult:
     tokens_out: int
     latency_ms: int
     cost_usd: float
+    search_html: str = ""  # Google Search suggestions as Google renders them; its terms require showing them
 
 
 MAX_SOURCES = 6
@@ -98,7 +99,8 @@ class FakeLLM:
         data = raw(prompt) if callable(raw) else raw
         sources = [dict(s) for s in data.get("sources", [])][:MAX_SOURCES]
         return GroundedResult(text=data["text"], sources=sources, queries=len(sources), model=self.model,
-                              tokens_in=len(prompt) // 4, tokens_out=50, latency_ms=1, cost_usd=0.0)
+                              tokens_in=len(prompt) // 4, tokens_out=50, latency_ms=1, cost_usd=0.0,
+                              search_html=data.get("search_html", ""))
 
 
 class GeminiLLM:
@@ -142,7 +144,8 @@ class GeminiLLM:
                          latency_ms=latency_ms, cost_usd=price_usd(self.settings, model, tokens_in, tokens_out))
 
     def generate_grounded(self, *, purpose, prompt) -> GroundedResult:
-        """Flash with the Google Search tool: prose about the present, with the pages it rests on."""
+        """Flash with the Google Search tool: prose about the present, with the pages it rests on. An empty answer is
+        returned, not raised, because it was still charged and the caller records every call."""
         from google.genai import types
 
         model = self.settings.gemini_flash_model
@@ -155,8 +158,6 @@ class GeminiLLM:
         except Exception as e:  # the SDK raises several error types; callers handle one
             raise LLMError(f"{purpose}: Gemini grounded call failed: {e}") from e
         latency_ms = int((time.perf_counter() - started) * 1000)
-        if not (text or "").strip():
-            raise LLMError(f"{purpose}: Gemini returned no text")
         candidates = getattr(resp, "candidates", None) or []
         metadata = getattr(candidates[0], "grounding_metadata", None) if candidates else None
         sources: list[dict] = []
@@ -168,12 +169,14 @@ class GeminiLLM:
             if len(sources) == MAX_SOURCES:
                 break
         queries = len(getattr(metadata, "web_search_queries", None) or [])
+        entry = getattr(metadata, "search_entry_point", None)
         usage = resp.usage_metadata
         tokens_in = (usage.prompt_token_count or 0) if usage else 0
         tokens_out = ((usage.candidates_token_count or 0) + (usage.thoughts_token_count or 0)) if usage else 0
         cost = price_usd(self.settings, model, tokens_in, tokens_out) + queries * self.settings.search_usd_per_query
-        return GroundedResult(text=text.strip(), sources=sources, queries=queries, model=model, tokens_in=tokens_in,
-                              tokens_out=tokens_out, latency_ms=latency_ms, cost_usd=round(cost, 6))
+        return GroundedResult(text=(text or "").strip(), sources=sources, queries=queries, model=model,
+                              tokens_in=tokens_in, tokens_out=tokens_out, latency_ms=latency_ms,
+                              cost_usd=round(cost, 6), search_html=getattr(entry, "rendered_content", None) or "")
 
 
 _gemini: GeminiLLM | None = None
