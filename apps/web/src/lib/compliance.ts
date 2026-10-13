@@ -1,7 +1,12 @@
-export type EvidenceKind = "instruction" | "posting" | "statement_line" | "order" | "bank_link" | "feature";
+export type EvidenceKind = "instruction" | "posting" | "statement_line" | "order" | "bank_link" | "feature" | "ring_link";
 export type EvidenceRow = { kind: EvidenceKind; id: string; date: string; amount: string | null; detail: string };
-export type GraphNode = { id: string; kind: "person" | "account" | "bank" | "payer"; label: string; flagged: boolean };
-export type GraphEdge = { source: string; target: string; label: string };
+/** Alert graphs use people, accounts, banks and payers; ring graphs use leads and clients and what they share. */
+export type GraphNodeKind =
+  | "person" | "account" | "bank" | "payer"
+  | "lead" | "client" | "device" | "phone" | "email" | "ip" | "document";
+export type GraphNode = { id: string; kind: GraphNodeKind; label: string; flagged: boolean };
+/** `strong` and `id` come with ring links only: a weak link is drawn dashed, and the id is what Gemini cites. */
+export type GraphEdge = { source: string; target: string; label: string; strong?: boolean; id?: string };
 export type CaseReview = {
   triage: "escalate" | "close" | "request_information"; triage_reason: string;
   narrative: { text: string; evidence: string[] }[]; questions: string[]; unsupported_figures: string[];
@@ -25,7 +30,7 @@ export const SEVERITY_LABEL: Record<Alert["severity"], string> = { high: "High",
 export const STATE_LABEL: Record<Alert["state"], string> = { open: "Open", escalated: "Escalated", closed: "Closed" };
 export const EVIDENCE_KIND: Record<EvidenceKind, string> = {
   instruction: "Fund instruction", posting: "Ledger posting", statement_line: "Bank statement line",
-  order: "Share order", bank_link: "Shared bank account", feature: "Behaviour measure",
+  order: "Share order", bank_link: "Shared bank account", feature: "Behaviour measure", ring_link: "Ring link",
 };
 export const TRIAGE_COPY: Record<CaseReview["triage"], string> = {
   escalate: "escalate it", close: "close it", request_information: "ask the client for more information",
@@ -40,10 +45,12 @@ export const SCENARIO_COPY: Record<string, string> = {
   dormant_reactivation: "$25,000 or more arriving after 180 days without any activity.",
   high_risk_jurisdiction: "Activity by a person recorded in a FATF call-for-action jurisdiction.",
   anomaly: "An account whose last 90 days sit far from every cluster of ordinary behaviour in the k-means model.",
+  ring: "Several identities share devices, bank accounts or documents across the lifecycle.",
 };
 const PURPOSE_COPY: Record<string, string> = {
   aml_case_review: "AML case review", ops_brief: "Morning brief", reconciliation: "Reconciliation agent",
   statement_normalise: "Statement reading", order_explainer: "Order explanation", held_order_review: "Held-order review",
+  ring_narrative: "Ring narrative",
 };
 
 export function purposeLabel(purpose: string): string {
@@ -56,13 +63,18 @@ export function citationLabels(evidence: { id: string }[]): Record<string, strin
   return Object.fromEntries(evidence.map((e, i) => [e.id, `E${i + 1}`]));
 }
 
-const COLUMN = { person: 0, account: 1, bank: 2, payer: 2 } as const;
+export type GraphColumns = Record<GraphNodeKind, 0 | 1 | 2>;
+/** The alert graph's columns. Ring kinds have a place too, but ring graphs pass their own (RING_COLUMNS in rings.ts). */
+const COLUMN: GraphColumns = {
+  person: 0, account: 1, bank: 2, payer: 2, lead: 0, client: 0, device: 2, phone: 2, email: 2, ip: 2, document: 2,
+};
 
 /** People on the left, accounts in the middle, and the bank accounts and outside payers they share on the right. The
  *  flagged person comes first in their column; each column spreads its nodes evenly over the height. */
-export function layoutGraph(nodes: GraphNode[], width: number, rowHeight: number): { at: Record<string, { x: number; y: number }>; height: number } {
+export function layoutGraph(nodes: GraphNode[], width: number, rowHeight: number, place: GraphColumns = COLUMN):
+  { at: Record<string, { x: number; y: number }>; height: number } {
   const columns: GraphNode[][] = [[], [], []];
-  for (const n of nodes) columns[COLUMN[n.kind]].push(n);
+  for (const n of nodes) columns[place[n.kind]].push(n);
   const height = (Math.max(1, ...columns.map((c) => c.length)) + 1) * rowHeight;
   const at: Record<string, { x: number; y: number }> = {};
   columns.forEach((column, c) => {
