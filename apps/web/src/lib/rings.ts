@@ -70,6 +70,18 @@ export function ringHeadline(ring: Ring): string {
     : `${n} identities share ${ring.strong_identifiers} identifiers, among them one ${noun}.`;
 }
 
+/** What Gemini Flash does while it explains a ring, in order (app/services/rings.py narrate_ring). */
+export const RING_STEPS = [
+  "Reading the ring's members and links",
+  "Gemini Flash is matching the ring to known fraud patterns",
+  "Checking every cited link belongs to this ring",
+];
+
+/** Every link a reading cites, once each, in the order it first cites them: what the graph lights when it arrives. */
+export function citedLinks(narrative: Pick<RingNarrative, "parts">): string[] {
+  return [...new Set(narrative.parts.flatMap((p) => p.links))];
+}
+
 export function flaggedMessage(count: number): string {
   if (count === 0) return "These leads were already flagged; nothing changed.";
   return count === 1 ? "1 lead flagged; its Trust Score was updated." : `${count} leads flagged; their Trust Scores were updated.`;

@@ -2,16 +2,24 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { AnimatePresence, useReducedMotion } from "motion/react";
 import { api, ApiError, apiDownload, apiUpload } from "@/lib/api";
 import { formatDate, formatUsd } from "@/lib/format";
 import {
-  acceptMany, balanceNote, confidenceWords, diffMarks, matchStatus, matchTotals, meterCells, proposerLabel, shortId, splitProposals,
-  statementFlow, TIER_COPY,
+  acceptMany, balanceNote, confidenceWords, confirmPause, diffMarks, MATCH_STEPS, matchStatus, matchTotals, meterCells, proposerLabel,
+  shortId, splitProposals, statementFlow, statementSteps, statementUsually, TIER_COPY,
   type Approval, type Match, type ReconcileResult, type Reconciliation, type Statement,
 } from "@/lib/operations";
 import { AiProse } from "@/components/ai-prose";
-import { Badge, Button, EmptyState, Field, inputClass, Loading, Notice, PageHeader, Section, Sparkle } from "@/components/ui";
-import { StatCard, StatusChip, TableCard, tbl } from "../_parts";
+import { AiThinking } from "@/components/ai-thinking";
+import { FillSegments } from "@/components/motion";
+import { Skeleton } from "@/components/skeleton";
+import { Badge, Button, EmptyState, Field, inputClass, Notice, PageHeader, Section, Sparkle } from "@/components/ui";
+import { Confirmed, QueueItem, StatCard, StatusChip, TableCard, tbl } from "../_parts";
+import { LoadingRegion, SectionTitleSkeleton, StatsSkeleton } from "../_skeletons";
+
+type Decision = "accept" | "reject";
+const wait = (ms: number) => new Promise<void>((done) => { window.setTimeout(done, ms); });
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 const UPLOAD = "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full border border-sand-200 bg-white px-5 text-sm font-medium text-ink-900 transition-colors hover:bg-fill focus-within:shadow-[0_0_0_3px_var(--color-green-200)]";
@@ -34,14 +42,13 @@ function Chevron() {
   );
 }
 
-/** How sure the proposer is, as a five-step green meter with the words and the percentage beside it. */
+/** How sure the proposer is, as a five-step green meter (filling one step after another) with the words and the
+ *  percentage beside it. */
 function Meter({ confidence }: { confidence: number }) {
   const filled = meterCells(confidence);
   return (
     <span className="flex items-center gap-2.5" role="img" aria-label={`Confidence ${Math.round(confidence * 100)}%, ${confidenceWords(confidence).toLowerCase()}`}>
-      <span className="flex gap-[3px]" aria-hidden="true">
-        {[0, 1, 2, 3, 4].map((i) => <span key={i} className={`h-2 w-4 rounded-[3px] ${i < filled ? "bg-green-500" : "bg-sand-200"}`} />)}
-      </span>
+      <FillSegments fills={[0, 1, 2, 3, 4].map((i) => (i < filled ? "bg-green-500" : null))} segment="h-2 w-4 rounded-[3px]" empty="bg-sand-200" />
       <span aria-hidden="true" className="whitespace-nowrap text-[13px] font-medium text-green-700">
         {confidenceWords(confidence)} <span className="num">{Math.round(confidence * 100)}%</span>
       </span>
@@ -69,7 +76,13 @@ function Side({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-function Pair({ match, busy, onDecide }: { match: Match; busy: string; onDecide: (id: string, action: "accept" | "reject") => void }) {
+const SETTLED: Record<Decision, { tone: "gain" | "neutral"; text: string }> = {
+  accept: { tone: "gain", text: "Matched: the payment is recorded against the subscription." },
+  reject: { tone: "neutral", text: "Rejected: the deposit goes back to be matched." },
+};
+
+function Pair({ match, busy, settled, onDecide }:
+  { match: Match; busy: string; settled?: Decision; onDecide: (id: string, action: Decision) => void }) {
   const sub = match.subscriptions[0];
   const typed = match.lines.length === 1 && match.lines[0].reference && sub && match.lines[0].reference !== sub.reference
     ? match.lines[0].reference : null;
@@ -121,8 +134,11 @@ function Pair({ match, busy, onDecide }: { match: Match; busy: string; onDecide:
           </li>
         ))}
       </ul>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-t border-sand-100 pt-4">
-        {match.state === "awaiting_approval" ? (
+      <div className="flex min-h-[61px] flex-wrap items-center gap-x-3 gap-y-2.5 border-t border-sand-100 pt-4">
+        {settled ? (
+          // The decision went through: its check draws, then the card leaves the queue.
+          <Confirmed tone={SETTLED[settled].tone}>{SETTLED[settled].text}</Confirmed>
+        ) : match.state === "awaiting_approval" ? (
           <p className="text-sm text-ink-700">Matched by hand; waiting for a second person in <Link href="/operations/approvals" className={LINK}>Approvals</Link>.</p>
         ) : (
           <>
@@ -182,6 +198,58 @@ function Pick({ checked, disabled, onChange, children }:
   );
 }
 
+/** A proposal card while the page loads: its heading and meter, the two sides with the arrow between, the reasons, then
+ *  the decision row. */
+function PairSkeleton() {
+  const side = (
+    <div className="flex flex-col gap-2.5 rounded-control bg-fill p-4">
+      <Skeleton className="h-3 w-28" />
+      <Skeleton className="h-6 w-32 rounded-[8px]" />
+      <Skeleton className="h-3.5 w-4/5" />
+    </div>
+  );
+  return (
+    <div className="space-y-4 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Skeleton className="h-4 w-56 max-w-full" />
+        <span className="flex items-center gap-2.5">
+          <span className="flex gap-[3px]">{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-2 w-4 rounded-[3px]" />)}</span>
+          <Skeleton className="h-3.5 w-24" />
+        </span>
+      </div>
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_32px_minmax(0,1fr)]">{side}<span className="hidden md:block" />{side}</div>
+      <div className="flex flex-wrap gap-2">{["w-40", "w-52", "w-32"].map((w) => <Skeleton key={w} className={`h-7 rounded-full ${w}`} />)}</div>
+      <div className="flex flex-wrap items-center gap-3 border-t border-sand-100 pt-4">
+        <Skeleton className="h-11 w-40 rounded-full" /><Skeleton className="h-11 w-24 rounded-full" />
+        <Skeleton className="h-3.5 w-48 sm:ml-auto" />
+      </div>
+    </div>
+  );
+}
+
+/** Reconciliation while it loads: the sample note, the latest statement's flow, the find bar and two proposals. */
+function ReconciliationSkeleton() {
+  return (
+    <LoadingRegion label="Loading reconciliation">
+      <div className="-mt-4 mb-8 flex max-w-[72ch] flex-col gap-2 px-1"><Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-3/5" /></div>
+      <div className="space-y-12">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-3 px-1"><Skeleton className="h-6 w-80 max-w-full rounded-[8px]" /><Skeleton className="h-3 w-56" /></div>
+          <StatsSkeleton />
+          <Skeleton className="mx-1 h-3.5 w-72 max-w-full" />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
+          <Skeleton className="h-4 w-[min(460px,100%)]" /><Skeleton className="h-11 w-32 rounded-full" />
+        </div>
+        <div>
+          <SectionTitleSkeleton width="w-48" />
+          <div className="space-y-4"><PairSkeleton /><PairSkeleton /></div>
+        </div>
+      </div>
+    </LoadingRegion>
+  );
+}
+
 export default function ReconciliationPage() {
   const [data, setData] = useState<Reconciliation | null>(null);
   const [busy, setBusy] = useState("");
@@ -193,6 +261,11 @@ export default function ReconciliationPage() {
   const [reason, setReason] = useState("");
   const [asked, setAsked] = useState<Approval | null>(null);
   const [showExact, setShowExact] = useState(false);
+  const [reading, setReading] = useState<"pdf" | "csv">("csv");
+  // Decisions that went through, shown on their cards while the check draws, and cards "Accept all" has taken.
+  const [settled, setSettled] = useState<Record<string, Decision>>({});
+  const [gone, setGone] = useState<string[]>([]);
+  const reduce = useReducedMotion();
   const file = useRef<HTMLInputElement>(null);
   const byHand = useRef<HTMLDetailsElement>(null);
 
@@ -216,10 +289,12 @@ export default function ReconciliationPage() {
 
   const fmt = data?.sample_format ?? "csv";
   const readSample = () => act("sample", "Atrium could not read the sample statement. Try again.", async () => {
+    setReading(fmt);
     setRead(await api<Statement>("/ops/statements/sample", { method: "POST", body: JSON.stringify({ fmt }) }));
     setFound(null);
   });
   const upload = (f: File) => act("upload", "Atrium could not read that statement.", async () => {
+    setReading(f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf") ? "pdf" : "csv");
     const form = new FormData();
     form.append("file", f);
     try {
@@ -232,14 +307,31 @@ export default function ReconciliationPage() {
   const findMatches = () => act("find", "Atrium could not look for matches. Try again.", async () => {
     setFound(await api<ReconcileResult>("/ops/reconcile", { method: "POST" }));
   });
-  const decide = (id: string, action: "accept" | "reject") => act(`${action}:${id}`, "Atrium could not record the decision. Try again.", async () => {
-    await api<Match>(`/ops/matches/${id}/${action}`, { method: "POST", body: JSON.stringify({}) });
+  const forget = (id: string) => setSettled((s) => {
+    const next = { ...s };
+    delete next[id];
+    return next;
   });
+  // A decision confirms on its card (the check draws), then the reload takes the card out of the queue.
+  const decide = (id: string, action: Decision) => act(`${action}:${id}`, "Atrium could not record the decision. Try again.", async () => {
+    await api<Match>(`/ops/matches/${id}/${action}`, { method: "POST", body: JSON.stringify({}) });
+    setSettled((s) => ({ ...s, [id]: action }));
+    await wait(confirmPause(reduce));
+  }).finally(() => forget(id));
+  // "Accept all" walks the cards in order: each one confirms, then leaves, before the next is accepted.
   async function acceptAll(ids: string[]) {
     setBusy("accept-all");
     setError("");
-    const { accepted, failed } = await acceptMany(ids, (id) =>
-      api<Match>(`/ops/matches/${id}/accept`, { method: "POST", body: JSON.stringify({}) }));
+    if (!showExact) {
+      setShowExact(true);
+      await wait(reduce ? 0 : 420);  // the list opens and arrives first, so the walk can be seen
+    }
+    const { accepted, failed } = await acceptMany(ids, async (id) => {
+      await api<Match>(`/ops/matches/${id}/accept`, { method: "POST", body: JSON.stringify({}) });
+      setSettled((s) => ({ ...s, [id]: "accept" }));
+      await wait(confirmPause(reduce, true));
+      setGone((g) => [...g, id]);
+    });
     if (failed.length > 0) {
       setError(`Accepted ${accepted.length} of ${ids.length}. Could not accept ${failed.length}: ${failed[0].message}`);
     }
@@ -249,6 +341,8 @@ export default function ReconciliationPage() {
       setError(msg(e, "Atrium could not reload reconciliation. Try again."));
     } finally {
       setBusy("");
+      setGone([]);
+      setSettled({});
     }
   }
   const download = (kind: "pdf" | "csv") => act(`download:${kind}`, "Atrium could not write the sample statement.", async () => {
@@ -287,11 +381,13 @@ export default function ReconciliationPage() {
         </>
       } />
   );
-  if (!data) return <>{header}{error ? <Notice tone="error">{error}</Notice> : <Loading label="Loading reconciliation" />}</>;
+  if (!data) return <>{header}{error ? <Notice tone="error">{error}</Notice> : <ReconciliationSkeleton />}</>;
 
   // The list holds live counts; the upload reply's counts are only as of the moment it was read.
   const latest = (read && data.statements.find((s) => s.id === read.id)) ?? read ?? data.statements[0] ?? null;
-  const { rules, others } = splitProposals(data.proposals);
+  const { rules: allRules, others } = splitProposals(data.proposals);
+  const rules = allRules.filter((m) => !gone.includes(m.id));
+  const readingNow = busy === "sample" || busy === "upload";
   const proposedLines = new Set(data.proposals.flatMap((m) => m.lines.map((l) => l.id)));
   const left = data.unmatched.filter((l) => !proposedLines.has(l.id));
   const waiting = data.receipts.filter((r) => !r.in_proposal);
@@ -314,7 +410,15 @@ export default function ReconciliationPage() {
       </p>
       <div className="space-y-12">
         {error && <Notice tone="error">{error}</Notice>}
-        {latest ? <Flow statement={latest} /> : (
+        {readingNow ? (
+          // Where the statement's flow will be: what the reader and Gemini are doing with it meanwhile.
+          <section aria-labelledby="flow-title" className="space-y-4">
+            <h2 id="flow-title" className="px-1 text-[20px] font-semibold leading-7 tracking-[-0.01em]">
+              Reading {busy === "sample" ? "the sample statement" : "your statement"}{reading === "pdf" ? " with Document AI" : ""}
+            </h2>
+            <AiThinking steps={statementSteps(reading)} usually={statementUsually(reading)} />
+          </section>
+        ) : latest ? <Flow statement={latest} /> : (
           <EmptyState title="No statement yet" action={<Button busy={busy === "sample"} onClick={readSample}>Read the sample statement</Button>}>
             Read the sample statement, or upload the client money account&apos;s statement as a PDF or CSV.
           </EmptyState>
@@ -329,7 +433,7 @@ export default function ReconciliationPage() {
             <Button busy={busy === "find"} disabled={Boolean(busy)} onClick={findMatches}>Find matches</Button>
           </div>
         )}
-        {found && (
+        {busy === "find" ? <AiThinking steps={MATCH_STEPS} usually="a few seconds to 15 s" /> : found && (
           <div className="space-y-3">
             <p className="px-1 text-sm text-ink-700">The rules proposed {found.rules}; {found.used_agent ? `the agent proposed ${found.agent}` : `the scorer proposed ${found.scorer}`}.</p>
             {found.used_agent
@@ -346,28 +450,42 @@ export default function ReconciliationPage() {
 
         {others.length > 0 && (
           <Section title="Proposals to decide" description="The agent's and the scorer's proposals. You decide each one.">
-            <div className="space-y-4">{others.map((m) => <Pair key={m.id} match={m} busy={busy} onDecide={decide} />)}</div>
+            <div className="-mb-4">
+              <AnimatePresence>
+                {others.map((m, i) => (
+                  <QueueItem key={m.id} index={i}><Pair match={m} busy={busy} settled={settled[m.id]} onDecide={decide} /></QueueItem>
+                ))}
+              </AnimatePresence>
+            </div>
           </Section>
         )}
 
-        {rules.length > 0 && (
+        {allRules.length > 0 && (
           <section className="space-y-4 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="min-w-0 max-w-[72ch]">
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <h2 className="text-base font-semibold">{rules.length} exact match{rules.length === 1 ? "" : "es"} by the rules</h2>
+                  <h2 className="text-base font-semibold">{allRules.length} exact match{allRules.length === 1 ? "" : "es"} by the rules</h2>
                   <StatusChip tone="neutral">Rules</StatusChip>
                 </div>
-                <p className="mt-1 text-sm text-ink-700">Reference and amount agree, or the only payment of its amount came from the holder: {rules.slice(0, 3).map((m) => m.subscriptions[0]?.holder).filter(Boolean).join(", ")}{rules.length > 3 ? ` and ${rules.length - 3} more` : ""}.</p>
+                <p className="mt-1 text-sm text-ink-700">Reference and amount agree, or the only payment of its amount came from the holder: {allRules.slice(0, 3).map((m) => m.subscriptions[0]?.holder).filter(Boolean).join(", ")}{allRules.length > 3 ? ` and ${allRules.length - 3} more` : ""}.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button variant="secondary" aria-expanded={showExact} onClick={() => setShowExact((v) => !v)}>{showExact ? "Hide them" : "Review them"}</Button>
                 <Button variant="tonal" busy={busy === "accept-all"} disabled={Boolean(busy)} onClick={() => acceptAll(rules.map((m) => m.id))}>
-                  Accept all {rules.length}
+                  Accept all {allRules.length}
                 </Button>
               </div>
             </div>
-            {showExact && <div className="space-y-4">{rules.map((m) => <Pair key={m.id} match={m} busy={busy} onDecide={decide} />)}</div>}
+            {showExact && (
+              <div className="-mb-4">
+                <AnimatePresence>
+                  {rules.map((m, i) => (
+                    <QueueItem key={m.id} index={i}><Pair match={m} busy={busy} settled={settled[m.id]} onDecide={decide} /></QueueItem>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
           </section>
         )}
 

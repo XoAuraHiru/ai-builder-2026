@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  agreementLine, asUtc, canPause, caseValue, clockUtc, driftLine, headline, passShare, runLine, runMeta, runNotice, STATUS_LABEL, STATUS_TONE,
+  agreementLine, asUtc, canPause, caseValue, clockUtc, driftLine, elapsedClock, headline, passShare, runLine, runMeta, runNotice, STATUS_LABEL, STATUS_TONE,
   suiteStatus, suiteTitle, type ModelRow, type RunRow,
 } from "./governance";
 
@@ -93,5 +93,19 @@ describe("runs and suites at a glance", () => {
     expect(suiteStatus({ passed: false, counts: { pass: 0, fail: 0, error: 2 } })).toEqual({ label: "No result", tone: "caution" });
     expect(passShare({ pass: 3, fail: 1, error: 0 })).toBe(75);
     expect(passShare({ pass: 0, fail: 0, error: 0 })).toBe(0);
+  });
+});
+
+describe("elapsedClock", () => {
+  const start = "2026-10-13T10:00:00";
+  const at = (s: number) => Date.parse("2026-10-13T10:00:00Z") + s * 1000;
+  it("counts a run's time as a clock, from the API's UTC start", () => {
+    expect(elapsedClock(start, at(7))).toBe("0:07");
+    expect(elapsedClock(start, at(582))).toBe("9:42");
+    expect(elapsedClock(start, at(3725))).toBe("1:02:05");
+    expect(elapsedClock("2026-10-13T10:00:00+00:00", at(61))).toBe("1:01");
+  });
+  it("never runs backwards when the clocks disagree", () => {
+    expect(elapsedClock(start, at(-30))).toBe("0:00");
   });
 });

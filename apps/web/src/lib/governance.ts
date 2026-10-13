@@ -112,6 +112,15 @@ const TRIGGER: Record<RunRow["trigger"], string> = {
   deploy: "after a deploy", button: "started from this page", local: "run on this server",
 };
 
+/** How long a run has been going, as a clock ("0:07", "9:42", "1:02:05"); never negative, whatever the clocks say. */
+export function elapsedClock(startedIso: string, nowMs: number): string {
+  const total = Math.max(0, Math.floor((nowMs - asUtc(startedIso).getTime()) / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = String(total % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
+}
+
 /** One run as a line: what started it, how it ended, and what it cost. */
 /** The notice after a run: success only when it finished; a failed or timed-out run is an error. */
 export function runNotice(run: Pick<RunRow, "status">): { tone: "success" | "error"; title: string } {

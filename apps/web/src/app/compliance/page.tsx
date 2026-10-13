@@ -5,8 +5,9 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { alertsMoment, SEVERITY_LABEL, SEVERITY_TONE, type Alert } from "@/lib/compliance";
-import { Button, ButtonLink, EmptyState, KeyMoment, Loading, Notice, PageHeader, Segmented } from "@/components/ui";
-import { StatusChip, TableCard, tbl } from "../operations/_parts";
+import { Button, ButtonLink, EmptyState, KeyMoment, Notice, PageHeader, Segmented } from "@/components/ui";
+import { Arrive, StatusChip, TableCard, tbl } from "../operations/_parts";
+import { ChipsSkeleton, LoadingRegion, MomentSkeleton, TableCardSkeleton } from "../operations/_skeletons";
 
 type State = "open" | "escalated" | "closed";
 const STATES: { value: State; label: string }[] = [
@@ -66,8 +67,12 @@ export default function AlertsPage() {
             )}
           </KeyMoment>
         )}
+        {/* While the open alerts load, the opening card's shape holds its place above the filter. */}
+        {!alerts && state === "open" && !error && <div aria-hidden="true"><MomentSkeleton actions={1}><ChipsSkeleton count={3} /></MomentSkeleton></div>}
         <Segmented label="Show" value={state} options={STATES} onChange={(s) => { setState(s); setAlerts(null); }} />
-        {!alerts ? <Loading label="Loading the alerts" /> : alerts.length === 0 ? (
+        {!alerts ? (
+          <LoadingRegion label="Loading the alerts"><TableCardSkeleton rows={6} widths={[0.8, 3, 1.3, 1, 0.8]} /></LoadingRegion>
+        ) : alerts.length === 0 ? (
           <EmptyState title={state === "open" ? "No open alerts" : `No ${state} alerts`}>Monitoring raises an alert when a rule fires or an account behaves unlike ordinary accounts.</EmptyState>
         ) : (
           <TableCard title={`${alerts.length} ${state} alert${alerts.length === 1 ? "" : "s"}`} description="Newest first. Open one to read its evidence and decide.">
@@ -77,8 +82,9 @@ export default function AlertsPage() {
                   <tr><th className={tbl.th}>Severity</th><th className={tbl.th}>Alert</th><th className={tbl.th}>Client</th><th className={tbl.th}>Raised</th><th className={`${tbl.th} text-right`}>Evidence</th></tr>
                 </thead>
                 <tbody>
-                  {alerts.map((a) => (
-                    <tr key={a.id} className={`${tbl.row} align-top transition-colors hover:bg-fill`}>
+                  {/* The alerts arrive in order, newest first. */}
+                  {alerts.map((a, i) => (
+                    <Arrive as="tr" index={i} key={a.id} className={`${tbl.row} align-top transition-colors hover:bg-fill`}>
                       <td className={tbl.td}><Severity alert={a} /></td>
                       <td className={`${tbl.td} max-w-[56ch]`}>
                         <Link href={href(a)} className="font-medium hover:text-green-700 hover:underline">{a.title}</Link>
@@ -87,14 +93,14 @@ export default function AlertsPage() {
                       <td className={`${tbl.td} whitespace-nowrap`}>{a.person.name}{a.account_number && <span className={`block ${tbl.id} text-[11px]! text-ink-500`}>{a.account_number}</span>}</td>
                       <td className={`${tbl.td} whitespace-nowrap text-ink-700`}>{formatDate(a.raised_at)}</td>
                       <td className={`${tbl.td} ${tbl.amount}`}>{a.evidence_count} row{a.evidence_count === 1 ? "" : "s"}</td>
-                    </tr>
+                    </Arrive>
                   ))}
                 </tbody>
               </table>
             </div>
             <ul className="divide-y divide-sand-100 md:hidden">
-              {alerts.map((a) => (
-                <li key={a.id}>
+              {alerts.map((a, i) => (
+                <Arrive as="li" index={i} key={a.id}>
                   <Link href={href(a)} className="block py-3.5">
                     <span className="flex items-center justify-between gap-3">
                       <Severity alert={a} />
@@ -107,7 +113,7 @@ export default function AlertsPage() {
                       <span>{a.evidence_count} row{a.evidence_count === 1 ? "" : "s"} of evidence</span>
                     </span>
                   </Link>
-                </li>
+                </Arrive>
               ))}
             </ul>
           </TableCard>

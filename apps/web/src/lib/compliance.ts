@@ -91,6 +91,23 @@ export function layoutGraph(nodes: GraphNode[], width: number, rowHeight: number
   return { at, height };
 }
 
+/** The order a graph's links draw in: strong links first, then weak ones, each group as listed (an alert's links carry
+ *  no strength and draw as listed). Gives each edge, by key, its place in that order. */
+export function drawOrder(edges: Pick<GraphEdge, "source" | "target" | "strong">[]): Record<string, number> {
+  const rank = (e: Pick<GraphEdge, "strong">) => (e.strong === false ? 1 : 0);
+  const order = edges.map((e, i) => ({ key: `${e.source}-${e.target}`, rank: rank(e), i }))
+    .sort((a, b) => a.rank - b.rank || a.i - b.i);
+  return Object.fromEntries(order.map((o, n) => [o.key, n]));
+}
+
+/** What Gemini Pro's case review does while the MLRO waits, in order (app/services/compliance_ai.py review_alert). */
+export const CASE_REVIEW_STEPS = [
+  "Gathering the alert, its evidence and the linked accounts",
+  "Gemini Pro is weighing the evidence against known typologies",
+  "Drafting the case narrative, each part citing its evidence",
+  "Checking every citation, figure and name against the evidence",
+];
+
 /** Where a payment sits against the threshold: over it (coral), just under it (amber, within 15%), or clear (green). */
 export type BarTone = "over" | "near" | "under";
 export type ThresholdBar = { id: string; label: string; date: string; amount: number; pct: number; tone: BarTone };
