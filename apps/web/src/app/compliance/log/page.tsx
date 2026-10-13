@@ -5,8 +5,10 @@ import { api, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { purposeLabel, type DecisionLog } from "@/lib/compliance";
 import { ACTION_COPY, approvalStatus, resultWords, shortId, shortWhen, type Approval } from "@/lib/operations";
-import { Loading, Notice, PageHeader } from "@/components/ui";
-import { StatCard, StatusChip, TableCard, tbl } from "../../operations/_parts";
+import { CountUp } from "@/components/motion";
+import { Notice, PageHeader } from "@/components/ui";
+import { Arrive, StatCard, StatusChip, TableCard, tbl } from "../../operations/_parts";
+import { LoadingRegion, StatsSkeleton, TableCardSkeleton } from "../../operations/_skeletons";
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 const subjectLabel = (s: string) => {
@@ -31,7 +33,23 @@ export default function DecisionLogPage() {
     <PageHeader title="Decision log"
       description="Every AI output Atrium has used, with its model, tokens and cost, and every two-person approval with who asked and who decided." />
   );
-  if (!log || !approvals) return <>{header}{error ? <Notice tone="error">{error}</Notice> : <Loading label="Loading the logs" />}</>;
+  if (!log || !approvals) {
+    return (
+      <>
+        {header}
+        {error ? <Notice tone="error">{error}</Notice> : (
+          // The four totals, then the AI decisions and the approvals as tables.
+          <LoadingRegion label="Loading the logs">
+            <StatsSkeleton className="mb-12" />
+            <div className="space-y-12">
+              <TableCardSkeleton rows={7} widths={[1, 1.6, 1.4, 1, 1.1, 0.8]} />
+              <TableCardSkeleton rows={4} widths={[3, 1, 1, 1.4]} chip />
+            </div>
+          </LoadingRegion>
+        )}
+      </>
+    );
+  }
   const models = new Set(log.decisions.map((d) => d.model)).size;
   const waiting = approvals.filter((a) => a.state === "pending").length;
   return (
@@ -41,7 +59,7 @@ export default function DecisionLogPage() {
         <StatCard icon="list" title="AI decisions shown" value={log.count} tone="neutral"
           caption={`From ${models} model${models === 1 ? "" : "s"}`} />
         <StatCard icon="hash" title="Tokens in" value={tokens(log.tokens_in)} tone="neutral" caption={`${tokens(log.tokens_out)} out`} />
-        <StatCard icon="money" title="Their cost" value={<span className="font-mono text-[26px] tracking-normal">{cost(log.cost_usd)}</span>} tone="neutral"
+        <StatCard icon="money" title="Their cost" value={<span className="font-mono text-[26px] tracking-normal"><CountUp text={cost(log.cost_usd)} /></span>} tone="neutral"
           caption={Number(log.cost_usd) > 0 && Number(log.cost_usd) < 0.01 ? "Under a cent" : "Every call, at list price"} />
         <StatCard icon="check" title="Two-person approvals" value={approvals.length} tone={waiting > 0 ? "caution" : "gain"}
           caption={waiting > 0 ? `${waiting} waiting for a second person` : "None waiting"} />
@@ -51,15 +69,15 @@ export default function DecisionLogPage() {
           {log.decisions.length === 0 ? <p className="py-6 text-sm text-ink-500">No AI output has been used yet.</p> : (
             <>
             <ul className="divide-y divide-sand-100 md:hidden">
-              {log.decisions.map((d) => (
-                <li key={d.id} className="py-3">
+              {log.decisions.map((d, i) => (
+                <Arrive as="li" index={i} key={d.id} className="py-3">
                   <span className="flex items-baseline justify-between gap-3">
                     <span className="font-medium">{purposeLabel(d.purpose)}</span>
                     <span className="code shrink-0 text-ink-700">{cost(d.cost_usd)}</span>
                   </span>
                   <span className="mt-0.5 block text-xs text-ink-500">{shortWhen(d.created_at)} · {subjectLabel(d.subject_type)}</span>
                   <span className="code mt-1 block text-[11px] text-ink-700">{d.model} · {tokens(d.tokens_in)} / {tokens(d.tokens_out)} tokens</span>
-                </li>
+                </Arrive>
               ))}
             </ul>
             <div className={`${tbl.wrap} hidden md:block`}>
@@ -71,15 +89,16 @@ export default function DecisionLogPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {log.decisions.map((d) => (
-                    <tr key={d.id} className={tbl.row}>
+                  {/* Newest first, arriving in order. */}
+                  {log.decisions.map((d, i) => (
+                    <Arrive as="tr" index={i} key={d.id} className={tbl.row}>
                       <td className={`${tbl.td} whitespace-nowrap text-ink-700`}>{shortWhen(d.created_at)}</td>
                       <td className={`${tbl.td} font-medium`}>{purposeLabel(d.purpose)}</td>
                       <td className={`${tbl.td} ${tbl.id}`}>{d.model}</td>
                       <td className={`${tbl.td} text-ink-700`}>{subjectLabel(d.subject_type)}</td>
                       <td className={`${tbl.td} ${tbl.amount}`}>{tokens(d.tokens_in)} / {tokens(d.tokens_out)}</td>
                       <td className={`${tbl.td} code whitespace-nowrap text-right text-ink-700`}>{cost(d.cost_usd)}</td>
-                    </tr>
+                    </Arrive>
                   ))}
                 </tbody>
               </table>
