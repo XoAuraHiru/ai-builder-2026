@@ -6,6 +6,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
+import { EASE } from "@/components/motion";
 import { Sparkle } from "@/components/ui";
 
 export function AiThinking({ steps, usually, compact = false }:
@@ -21,7 +22,7 @@ export function AiThinking({ steps, usually, compact = false }:
 
   return (
     <motion.figure role="status" aria-live="polite" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28 }}
+      transition={{ duration: 0.28, ease: EASE }}
       className={`flex max-w-[860px] flex-col rounded-[16px] bg-ai-50 ${compact ? "gap-3 px-5 py-4" : "gap-4 px-6 py-[22px]"}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-ai-700">
@@ -38,9 +39,10 @@ export function AiThinking({ steps, usually, compact = false }:
             </AnimatePresence>
           </span>
         </span>
-        <span className="code text-[11px] text-ai-700">
+        <span aria-hidden="true" className="code text-[11px] text-ai-700">
           {elapsed}s{usually ? <span className="hidden sm:inline"> · usually {usually}</span> : null}
         </span>
+        {usually && <span className="sr-only">This usually takes {usually}.</span>}
       </div>
       {!compact && (
         <span aria-hidden="true" className="flex flex-col gap-2.5">

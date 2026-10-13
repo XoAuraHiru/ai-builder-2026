@@ -3,8 +3,8 @@
 
 import type { ReactNode } from "react";
 
-export function Skeleton({ className = "" }: { className?: string }) {
-  return <span aria-hidden="true" className={`skeleton block rounded-[8px] ${className}`} />;
+export function Skeleton({ className = "", radius = "rounded-[8px]" }: { className?: string; radius?: string }) {
+  return <span aria-hidden="true" className={`skeleton block ${radius} ${className}`} />;
 }
 
 export function SkeletonText({ lines = 3, className = "" }: { lines?: number; className?: string }) {
@@ -17,7 +17,8 @@ export function SkeletonText({ lines = 3, className = "" }: { lines?: number; cl
   );
 }
 
-function Status({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) {
+/** A loading region: a status for screen readers, announced by its label. */
+export function Status({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) {
   return (
     <div role="status" aria-live="polite" className={className}>
       <span className="sr-only">{label}…</span>

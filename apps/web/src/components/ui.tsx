@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "motion/react";
-import { CountUp, EASE } from "@/components/motion";
+import { AnimatePresence, motion } from "motion/react";
+import { CountUp, DrawnCheck, EASE } from "@/components/motion";
 import { BlockSkeleton, PageSkeleton, type PageShape } from "@/components/skeleton";
 import { createContext, useContext, useId, type ButtonHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
 
@@ -72,7 +72,14 @@ export function Field({ label, hint, error, className = "", children }:
       <span className="block text-[13px] font-medium leading-[18px] text-ink-900">{label}</span>
       {hint && <span className="mt-0.5 block text-xs text-ink-500">{hint}</span>}
       <span className="mt-1.5 block">{children}</span>
-      {error && <span role="alert" className="mt-1.5 block text-[13px] text-coral-700">{error}</span>}
+      <AnimatePresence initial={false}>
+        {error && (
+          <motion.span key="error" className="block overflow-hidden" initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: EASE }}>
+            <span role="alert" className="block pt-1.5 text-[13px] text-coral-700">{error}</span>
+          </motion.span>
+        )}
+      </AnimatePresence>
     </label>
   );
 }
@@ -160,14 +167,16 @@ const NOTICE: Record<Tone, { box: string; dot: string }> = {
   error: { box: "bg-coral-50", dot: "bg-coral-500" }, success: { box: "bg-green-50", dot: "bg-green-500" },
 };
 
-export function Notice({ tone = "info", title, action, children }:
-  { tone?: Tone; title?: string; action?: ReactNode; children?: ReactNode }) {
+export function Notice({ tone = "info", title, action, children, confirmed = false }:
+  { tone?: Tone; title?: string; action?: ReactNode; children?: ReactNode; confirmed?: boolean }) {
   return (
     <motion.div role={tone === "error" ? "alert" : undefined} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24, ease: EASE }}
       className={`flex flex-wrap items-start justify-between gap-3 rounded-panel px-5 py-4 text-sm ${NOTICE[tone].box}`}>
       <div className="flex min-w-0 flex-1 gap-3">
-        <span aria-hidden="true" className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${NOTICE[tone].dot}`} />
+        {confirmed && tone === "success"
+          ? <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-green-600"><DrawnCheck size={16} /></span>
+          : <span aria-hidden="true" className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${NOTICE[tone].dot}`} />}
         <div className="min-w-0">
           {title && <p className="font-semibold text-ink-900">{title}</p>}
           {children && <div className="text-ink-700">{children}</div>}

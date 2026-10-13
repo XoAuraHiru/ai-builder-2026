@@ -5,7 +5,7 @@
  *  ease-out, no bounce), runs when the content appears rather than when it is scrolled to (so printing and full-page
  *  captures are always complete), and falls back to the final state for anyone who asks for reduced motion. */
 
-import { animate, motion, useReducedMotion, type Variants } from "motion/react";
+import { animate, motion, useReducedMotion, type TargetAndTransition, type Variants } from "motion/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
 import { formatLike, parseFigure } from "@/lib/motion-figures";
 
@@ -41,10 +41,10 @@ export function Stagger({ children, as = "div", className = "" }:
   );
 }
 
-export function StaggerItem({ children, as = "div", className = "" }:
-  { children: ReactNode; as?: keyof typeof TAGS; className?: string }) {
+export function StaggerItem({ children, as = "div", className = "", exit }:
+  { children: ReactNode; as?: keyof typeof TAGS; className?: string; exit?: TargetAndTransition }) {
   const Tag = TAGS[as];
-  return <Tag className={className} variants={ITEM}>{children}</Tag>;
+  return <Tag className={className} variants={ITEM} exit={exit}>{children}</Tag>;
 }
 
 /** An engine figure that counts up to itself ("$45,635.00", "7.78%", "6.2 / 10") when it appears on screen, and from
