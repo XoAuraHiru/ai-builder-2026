@@ -1,0 +1,47 @@
+{
+  "about": "Six orders on synthetic paper accounts, with the market open and quotes as given. The Guardian's verdict is its worst check: a hold outranks a warn, a block outranks everything. Thresholds: one risk band above the profile warns and two hold; one company above 15% of the account (counting what funds hold) warns and above 35% holds; a sector above 40% warns; an order above 25% of the account warns; an order the free cash or the free shares cannot cover blocks; buying back within 30 days of a sale at a loss warns; a large sale from a device never seen on the account holds. Devices are familiar (first seen 300 days ago) unless marked new.",
+  "cases": [
+    {
+      "id": "small-diversified-etf-buy",
+      "why": "Ten VTI (risk band 4) for a band 4 profile is within the profile; about $2,500 is covered by $20,000 of cash and is 12.5% of the account; VTI is a broad fund, so no sector nears 40%; the device is familiar: nothing stops it.",
+      "account": {"band": 4, "cash": "20000"},
+      "order": {"symbol": "VTI", "side": "buy", "qty": 10, "price": "250"},
+      "expect": "proceed"
+    },
+    {
+      "id": "concentration-warning",
+      "why": "ATR-TEC already holds NVDA through its technology ETFs; adding 40 NVDA ($8,000) takes NVDA to about 28% of the $40,000 account, above 15% but under 35%, and technology above 40%: warnings the investor confirms, nothing that holds.",
+      "account": {"band": 5, "cash": "20000", "holdings": [{"code": "ATR-TEC", "value": "20000", "kind": "fund", "units": "1"}]},
+      "order": {"symbol": "NVDA", "side": "buy", "qty": 40, "price": "200"},
+      "expect": "warn"
+    },
+    {
+      "id": "suitability-hold",
+      "why": "TSLA is risk band 5 and the profile is band 3: two bands above, so an advisor reviews it. The $2,000 order is only 10% of the account, so nothing else holds or blocks.",
+      "account": {"band": 3, "cash": "20000"},
+      "order": {"symbol": "TSLA", "side": "buy", "qty": 5, "price": "400"},
+      "expect": "hold"
+    },
+    {
+      "id": "insufficient-funds",
+      "why": "Ten KO at about $60 needs about $600 and the account has $500 of paper cash: it cannot be placed.",
+      "account": {"band": 4, "cash": "500"},
+      "order": {"symbol": "KO", "side": "buy", "qty": 10, "price": "60"},
+      "expect": "block"
+    },
+    {
+      "id": "wash-sale",
+      "why": "PEP was sold at a loss of $120.50 on Oct 1; buying it back on Oct 12, within 30 days, is a wash sale warning. PEP is band 4 for a band 4 profile and the $1,250 order is about 6% of the account: nothing holds.",
+      "account": {"band": 4, "cash": "20000", "sales": [{"symbol": "PEP", "day": "2026-10-01", "gain": "-120.50"}]},
+      "order": {"symbol": "PEP", "side": "buy", "qty": 10, "price": "125"},
+      "expect": "warn"
+    },
+    {
+      "id": "new-device-large-sale",
+      "why": "Selling all 120 TSLA, about $46,000 of a $58,000 account, from a device never seen on this account is the pattern of an account takeover: an advisor confirms with the investor first.",
+      "account": {"band": 5, "cash": "12000", "holdings": [{"code": "TSLA", "value": "46000", "kind": "stock", "units": "120"}], "device": "new"},
+      "order": {"symbol": "TSLA", "side": "sell", "qty": 120, "price": "383.33"},
+      "expect": "hold"
+    }
+  ]
+}

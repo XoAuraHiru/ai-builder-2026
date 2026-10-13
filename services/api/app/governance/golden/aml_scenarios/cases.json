@@ -1,0 +1,199 @@
+{
+  "about": "One positive and one near miss for each AML scenario in app/services/aml.py, each built alone on a scratch database. Thresholds: structuring is 3 subscriptions from $8,500 up to (not including) $10,000 within 7 days; money in and straight out is a redemption of at least 75% of $10,000 or more paid in within the 10 days before; third-party funding is an accepted match whose payer's name shares under half its words with the holder's; a linked round trip is a redemption followed within 14 days by a subscription within 10% of it into another person's account paid from the same bank account; velocity is 5 instructions or orders within 24 hours; dormant reactivation is a subscription of $25,000 or more after 180 days without activity; the jurisdiction scenario is any instruction in the last 30 days by a person recorded in Iran, North Korea or Myanmar. Every instruction is placed at 15:00 UTC (11:00 in New York) unless an hour is given. Synthetic people only.",
+  "cases": [
+    {
+      "id": "structuring-positive",
+      "scenario": "structuring",
+      "why": "Three subscriptions of $9,400, $9,750 and $9,900 on Oct 6, 7 and 8: all three sit between $8,500 and $10,000 and fall within seven days.",
+      "today": "2026-10-09",
+      "accounts": [{"number": "ACC-7001", "full_name": "Arjun Mehta", "email": "arjun@example.test", "country": "US", "opened_on": "2025-01-02"}],
+      "instructions": [
+        {"account": "ACC-7001", "type": "subscribe", "fund": "ATR-BAL", "amount": "9400", "day": "2026-10-06", "state": "accepted"},
+        {"account": "ACC-7001", "type": "subscribe", "fund": "ATR-BAL", "amount": "9750", "day": "2026-10-07", "state": "accepted"},
+        {"account": "ACC-7001", "type": "subscribe", "fund": "ATR-BAL", "amount": "9900", "day": "2026-10-08", "state": "accepted"}
+      ],
+      "expect_fires": true
+    },
+    {
+      "id": "structuring-near-miss",
+      "scenario": "structuring",
+      "why": "Two subscriptions of $9,400 and $9,750 sit just under $10,000, but the third, $5,000, is below the $8,500 floor: two in the window, one short of the three the scenario needs.",
+      "today": "2026-10-09",
+      "accounts": [{"number": "ACC-7002", "full_name": "Pat Plain", "email": "pat@example.test", "country": "US", "opened_on": "2025-01-02"}],
+      "instructions": [
+        {"account": "ACC-7002", "type": "subscribe", "fund": "ATR-BAL", "amount": "9400", "day": "2026-10-06", "state": "accepted"},
+        {"account": "ACC-7002", "type": "subscribe", "fund": "ATR-BAL", "amount": "9750", "day": "2026-10-07", "state": "accepted"},
+        {"account": "ACC-7002", "type": "subscribe", "fund": "ATR-BAL", "amount": "5000", "day": "2026-10-08", "state": "accepted"}
+      ],
+      "expect_fires": false
+    },
+    {
+      "id": "rapid_in_out-positive",
+      "scenario": "rapid_in_out",
+      "why": "$45,000 paid in on Oct 1 and $42,000 taken out on Oct 7, six days later: 93% of a $10,000-plus inflow left within ten days, over the 75% share.",
+      "today": "2026-10-09",
+      "accounts": [{"number": "ACC-7003", "full_name": "Sofia Rossi", "email": "sofia@example.test", "country": "US", "opened_on": "2025-01-02"}],
+      "postings": [
+        {"account": "ACC-7003", "type": "subscription", "fund": "ATR-CASH", "amount": "45000", "day": "2026-10-01"},
+        {"account": "ACC-7003", "type": "redemption", "fund": "ATR-CASH", "amount": "42000", "day": "2026-10-07"}
+      ],
+      "expect_fires": true
+    },
+    {
+      "id": "rapid_in_out-near-miss",
+      "scenario": "rapid_in_out",
+      "why": "$45,000 paid in on Oct 1 but only $20,000 taken out on Oct 7: 44% of the inflow, well under the 75% share.",
+      "today": "2026-10-09",
+      "accounts": [{"number": "ACC-7004", "full_name": "Pat Plain", "email": "pat@example.test", "country": "US", "opened_on": "2025-01-02"}],
+      "postings": [
+        {"account": "ACC-7004", "type": "subscription", "fund": "ATR-CASH", "amount": "45000", "day": "2026-10-01"},
+        {"account": "ACC-7004", "type": "redemption", "fund": "ATR-CASH", "amount": "20000", "day": "2026-10-07"}
+      ],
+      "expect_fires": false
+    },
+    {
+      "id": "third_party_funding-positive",
+      "scenario": "third_party_funding",
+      "why": "Grace Li's $6,000 subscription was matched to a bank credit from Marcus Okonkwo: the payer shares no word with the holder's name.",
+      "today": "2026-10-09",
+      "accounts": [{"number": "ACC-7005", "full_name": "Grace Li", "email": "grace@example.test", "country": "US", "opened_on": "2025-01-02"}],
+      "instructions": [
+        {"id": "i1", "account": "ACC-7005", "type": "subscribe", "fund": "ATR-INC", "amount": "6000", "day": "2026-10-05", "state": "accepted"}
+      ],
+      "statement_lines": [
+        {"id": "l1", "day": "2026-10-06", "amount": "6000", "description": "ACH CREDIT MARCUS OKONKWO", "remitter": "Marcus Okonkwo"}
+      ],
+      "matches": [{"lines": ["l1"], "instructions": ["i1"], "state": "accepted"}],
+      "expect_fires": true
+    },
+    {
+      "id": "third_party_funding-near-miss",
+      "scenario": "third_party_funding",
+      "why": "The same $6,000 subscription and match, but the credit came from GRACE LI, the account holder: every word of the payer's name is the holder's.",
+      "today": "2026-10-09",
+      "accounts": [{"number": "ACC-7006", "full_name": "Grace Li", "email": "grace@example.test", "country": "US", "opened_on": "2025-01-02"}],
+      "instructions": [
+        {"id": "i1", "account": "ACC-7006", "type": "subscribe", "fund": "ATR-INC", "amount": "6000", "day": "2026-10-05", "state": "accepted"}
+      ],
+      "statement_lines": [
+        {"id": "l1", "day": "2026-10-06", "amount": "6000", "description": "ACH CREDIT GRACE LI", "remitter": "GRACE LI"}
+      ],
+      "matches": [{"lines": ["l1"], "instructions": ["i1"], "state": "accepted"}],
+      "expect_fires": false
+    },
+    {
+      "id": "linked_round_trip-positive",
+      "scenario": "linked_round_trip",
+      "why": "$8,000 left Noah Williams's account on Oct 2 and $8,000 came into Aisha Khan's on Oct 6, four days later; the two accounts are paid from the same bank account.",
+      "today": "2026-10-09",
+      "accounts": [
+        {"number": "ACC-7007", "full_name": "Noah Williams", "email": "noah@example.test", "country": "US", "opened_on": "2025-01-02"},
+        {"number": "ACC-7008", "full_name": "Aisha Khan", "email": "aisha@example.test", "country": "US", "opened_on": "2025-01-02"}
+      ],
+      "bank_links": [{"accounts": ["ACC-7007", "ACC-7008"], "last4": "4471"}],
+      "postings": [
+        {"account": "ACC-7007", "type": "subscription", "fund": "ATR-CASH", "amount": "8000", "day": "2026-06-01"},
+        {"account": "ACC-7007", "type": "redemption", "fund": "ATR-CASH", "amount": "8000", "day": "2026-10-02"}
+      ],
+      "instructions": [
+        {"account": "ACC-7008", "type": "subscribe", "fund": "ATR-BAL", "amount": "8000", "day": "2026-10-06", "state": "accepted"}
+      ],
+      "expect_fires": true
+    },
+    {
+      "id": "linked_round_trip-near-miss",
+      "scenario": "linked_round_trip",
+      "why": "The same two accounts on one bank account and the same $8,000, but the money came back in on Oct 6, 21 days after it left on Sep 15: outside the 14-day window.",
+      "today": "2026-10-09",
+      "accounts": [
+        {"number": "ACC-7009", "full_name": "Noah Williams", "email": "noah@example.test", "country": "US", "opened_on": "2025-01-02"},
+        {"number": "ACC-7010", "full_name": "Aisha Khan", "email": "aisha@example.test", "country": "US", "opened_on": "2025-01-02"}
+      ],
+      "bank_links": [{"accounts": ["ACC-7009", "ACC-7010"], "last4": "4471"}],
+      "postings": [
+        {"account": "ACC-7009", "type": "subscription", "fund": "ATR-CASH", "amount": "8000", "day": "2026-06-01"},
+        {"account": "ACC-7009", "type": "redemption", "fund": "ATR-CASH", "amount": "8000", "day": "2026-09-15"}
+      ],
+      "instructions": [
+        {"account": "ACC-7010", "type": "subscribe", "fund": "ATR-BAL", "amount": "8000", "day": "2026-10-06", "state": "accepted"}
+      ],
+      "expect_fires": false
+    },
+    {
+      "id": "velocity-positive",
+      "scenario": "velocity",
+      "why": "Five instructions on Oct 8 between 13:00 and 17:00 UTC: five within 24 hours, the scenario's count.",
+      "today": "2026-10-09",
+      "accounts": [{"number": "ACC-7011", "full_name": "Pat Plain", "email": "pat@example.test", "country": "US", "opened_on": "2025-01-02"}],
+      "instructions": [
+        {"account": "ACC-7011", "type": "subscribe", "fund": "ATR-BAL", "amount": "500", "day": "2026-10-08", "hour": 13, "state": "accepted"},
+        {"account": "ACC-7011", "type": "subscribe", "fund": "ATR-GRW", "amount": "500", "day": "2026-10-08", "hour": 14, "state": "accepted"},
+        {"account": "ACC-7011", "type": "subscribe", "fund": "ATR-INC", "amount": "500", "day": "2026-10-08", "hour": 15, "state": "accepted"},
+        {"account": "ACC-7011", "type": "subscribe", "fund": "ATR-DIV", "amount": "500", "day": "2026-10-08", "hour": 16, "state": "accepted"},
+        {"account": "ACC-7011", "type": "subscribe", "fund": "ATR-GLB", "amount": "500", "day": "2026-10-08", "hour": 17, "state": "accepted"}
+      ],
+      "expect_fires": true
+    },
+    {
+      "id": "velocity-near-miss",
+      "scenario": "velocity",
+      "why": "The same five instructions, one a day from Oct 4 to Oct 8 at 15:00 UTC: no 24 hours hold more than two of them.",
+      "today": "2026-10-09",
+      "accounts": [{"number": "ACC-7012", "full_name": "Pat Plain", "email": "pat@example.test", "country": "US", "opened_on": "2025-01-02"}],
+      "instructions": [
+        {"account": "ACC-7012", "type": "subscribe", "fund": "ATR-BAL", "amount": "500", "day": "2026-10-04", "state": "accepted"},
+        {"account": "ACC-7012", "type": "subscribe", "fund": "ATR-GRW", "amount": "500", "day": "2026-10-05", "state": "accepted"},
+        {"account": "ACC-7012", "type": "subscribe", "fund": "ATR-INC", "amount": "500", "day": "2026-10-06", "state": "accepted"},
+        {"account": "ACC-7012", "type": "subscribe", "fund": "ATR-DIV", "amount": "500", "day": "2026-10-07", "state": "accepted"},
+        {"account": "ACC-7012", "type": "subscribe", "fund": "ATR-GLB", "amount": "500", "day": "2026-10-08", "state": "accepted"}
+      ],
+      "expect_fires": false
+    },
+    {
+      "id": "dormant_reactivation-positive",
+      "scenario": "dormant_reactivation",
+      "why": "The account's only earlier activity was a $500 subscription on Jan 15; a $30,000 subscription on Oct 6 comes 264 days later: over $25,000 after more than 180 quiet days.",
+      "today": "2026-10-09",
+      "accounts": [{"number": "ACC-7013", "full_name": "Pat Plain", "email": "pat@example.test", "country": "US", "opened_on": "2025-01-02"}],
+      "instructions": [
+        {"account": "ACC-7013", "type": "subscribe", "fund": "ATR-BAL", "amount": "500", "day": "2026-01-15", "state": "settled"},
+        {"account": "ACC-7013", "type": "subscribe", "fund": "ATR-BAL", "amount": "30000", "day": "2026-10-06", "state": "accepted"}
+      ],
+      "expect_fires": true
+    },
+    {
+      "id": "dormant_reactivation-near-miss",
+      "scenario": "dormant_reactivation",
+      "why": "The same $30,000 on Oct 6, but the account was last active on Jun 1, 127 days earlier: under the 180 quiet days.",
+      "today": "2026-10-09",
+      "accounts": [{"number": "ACC-7014", "full_name": "Pat Plain", "email": "pat@example.test", "country": "US", "opened_on": "2025-01-02"}],
+      "instructions": [
+        {"account": "ACC-7014", "type": "subscribe", "fund": "ATR-BAL", "amount": "500", "day": "2026-06-01", "state": "settled"},
+        {"account": "ACC-7014", "type": "subscribe", "fund": "ATR-BAL", "amount": "30000", "day": "2026-10-06", "state": "accepted"}
+      ],
+      "expect_fires": false
+    },
+    {
+      "id": "high_risk_jurisdiction-positive",
+      "scenario": "high_risk_jurisdiction",
+      "why": "A client recorded in Iran (IR), a FATF call-for-action jurisdiction, placed a $2,000 subscription on Oct 5, inside the last 30 days.",
+      "today": "2026-10-09",
+      "accounts": [{"number": "ACC-7015", "full_name": "Farid Tehrani", "email": "farid@example.test", "country": "IR", "opened_on": "2025-01-02"}],
+      "instructions": [
+        {"account": "ACC-7015", "type": "subscribe", "fund": "ATR-INC", "amount": "2000", "day": "2026-10-05", "state": "accepted"}
+      ],
+      "expect_fires": true
+    },
+    {
+      "id": "high_risk_jurisdiction-near-miss",
+      "scenario": "high_risk_jurisdiction",
+      "why": "The same client recorded in Iran, but the only instruction was on Aug 10, 60 days ago: nothing in the last 30 days.",
+      "today": "2026-10-09",
+      "accounts": [{"number": "ACC-7016", "full_name": "Farid Tehrani", "email": "farid@example.test", "country": "IR", "opened_on": "2025-01-02"}],
+      "instructions": [
+        {"account": "ACC-7016", "type": "subscribe", "fund": "ATR-INC", "amount": "2000", "day": "2026-08-10", "state": "settled"}
+      ],
+      "expect_fires": false
+    }
+  ]
+}

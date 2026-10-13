@@ -22,5 +22,5 @@ def test_seed_demo_leads_inserts_unscored_stories_once(db, people):
 def test_bootstrap_seeds_demo_leads_even_when_people_exist(db, people, monkeypatch):
     monkeypatch.setattr(get_settings(), "auto_seed", True)
     bootstrap_database(get_settings())
-    assert db.scalar(select(func.count()).select_from(Lead)) == 12
+    assert db.scalar(select(func.count()).select_from(Lead)) == 12 + 1  # and Ruth Alvarez, the pressure call's lead
     assert db.scalar(select(func.count()).select_from(Person)) == 2  # people were already there; not re-seeded

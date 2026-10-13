@@ -1,7 +1,7 @@
 import { getConfig } from "./config";
 import { deviceId } from "./device";
 import { detailMessage } from "./errors";
-import { authHeaders } from "./session";
+import { authHeaders, readDevUser } from "./session";
 
 export class ApiError extends Error {
   constructor(
@@ -13,7 +13,7 @@ export class ApiError extends Error {
 }
 
 function deviceHeader(): Record<string, string> {
-  const id = deviceId();
+  const id = deviceId(undefined, readDevUser());
   return id ? { "X-Device-Id": id } : {};
 }
 

@@ -1,0 +1,563 @@
+{
+ "about": "A hand-built identifier graph for the ring_narrator suites: three true rings and two traps. Strong links are bank, device, document, phone and email; ip links are weak.",
+ "entities": [
+  {
+   "id": "lead:farm-1",
+   "kind": "lead",
+   "label": "Jordan Vale",
+   "created_at": "2026-10-12T09:00:00+00:00",
+   "flagged": true,
+   "flags": [
+    "Trust: high risk",
+    "Trust: disposable email domain",
+    "Trust: many leads from one device"
+   ]
+  },
+  {
+   "id": "lead:farm-2",
+   "kind": "lead",
+   "label": "Riley Shore",
+   "created_at": "2026-10-12T09:12:00+00:00",
+   "flagged": true,
+   "flags": [
+    "Trust: high risk",
+    "Trust: disposable email domain",
+    "Trust: many leads from one device"
+   ]
+  },
+  {
+   "id": "lead:farm-3",
+   "kind": "lead",
+   "label": "Morgan Pike",
+   "created_at": "2026-10-12T09:26:00+00:00",
+   "flagged": true,
+   "flags": [
+    "Trust: high risk",
+    "Trust: disposable email domain",
+    "Trust: many leads from one device"
+   ]
+  },
+  {
+   "id": "lead:mule-1",
+   "kind": "lead",
+   "label": "Avery Quinn",
+   "created_at": "2026-10-11T14:05:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:mule-2",
+   "kind": "lead",
+   "label": "Rowan Ellis",
+   "created_at": "2026-10-11T14:40:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "person:mule",
+   "kind": "client",
+   "label": "Dana Okoro",
+   "created_at": "2024-10-01T00:00:00+00:00",
+   "flagged": true,
+   "flags": [
+    "AML: money in and straight out"
+   ]
+  },
+  {
+   "id": "lead:dup-1",
+   "kind": "lead",
+   "label": "Kai Brennan",
+   "created_at": "2026-10-10T10:00:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:dup-2",
+   "kind": "lead",
+   "label": "K. Brennan",
+   "created_at": "2026-10-10T16:30:00+00:00",
+   "flagged": false,
+   "flags": [
+    "Trust: contact shared with another lead"
+   ]
+  },
+  {
+   "id": "lead:office-1",
+   "kind": "lead",
+   "label": "Priyanka Rao",
+   "created_at": "2026-10-12T09:30:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:office-2",
+   "kind": "lead",
+   "label": "Ethan Cole",
+   "created_at": "2026-10-12T10:30:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:office-3",
+   "kind": "lead",
+   "label": "Mia Laurent",
+   "created_at": "2026-10-12T11:30:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:office-4",
+   "kind": "lead",
+   "label": "Owen Park",
+   "created_at": "2026-10-12T12:30:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:office-5",
+   "kind": "lead",
+   "label": "Zara Ahmed",
+   "created_at": "2026-10-12T13:30:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:office-6",
+   "kind": "lead",
+   "label": "Lucas Brandt",
+   "created_at": "2026-10-12T14:30:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:office-7",
+   "kind": "lead",
+   "label": "Isla Murray",
+   "created_at": "2026-10-12T15:30:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:office-8",
+   "kind": "lead",
+   "label": "Felix Wong",
+   "created_at": "2026-10-12T16:30:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:office-9",
+   "kind": "lead",
+   "label": "Hannah Berg",
+   "created_at": "2026-10-12T17:30:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:office-10",
+   "kind": "lead",
+   "label": "Diego Silva",
+   "created_at": "2026-10-12T18:30:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:cafe-1",
+   "kind": "lead",
+   "label": "Lena Fischer",
+   "created_at": "2026-10-12T11:00:00+00:00",
+   "flagged": false,
+   "flags": []
+  },
+  {
+   "id": "lead:cafe-2",
+   "kind": "lead",
+   "label": "Tomás Ortega",
+   "created_at": "2026-10-12T11:20:00+00:00",
+   "flagged": false,
+   "flags": []
+  }
+ ],
+ "identifiers": [
+  {
+   "id": "device:farm",
+   "kind": "device",
+   "label": "Device dev-…7001"
+  },
+  {
+   "id": "ip:farm",
+   "kind": "ip",
+   "label": "Network …a1f3"
+  },
+  {
+   "id": "email:farm-1",
+   "kind": "email",
+   "label": "Email at yopmail.com"
+  },
+  {
+   "id": "email:farm-2",
+   "kind": "email",
+   "label": "Email at sharklasers.com"
+  },
+  {
+   "id": "email:farm-3",
+   "kind": "email",
+   "label": "Email at guerrillamail.com"
+  },
+  {
+   "id": "device:mule",
+   "kind": "device",
+   "label": "Device dev-…8001"
+  },
+  {
+   "id": "email:mule-1",
+   "kind": "email",
+   "label": "Email at example.com"
+  },
+  {
+   "id": "email:mule-2",
+   "kind": "email",
+   "label": "Email at example.net"
+  },
+  {
+   "id": "bank:mule",
+   "kind": "bank",
+   "label": "Bank account ending 4471"
+  },
+  {
+   "id": "phone:dup",
+   "kind": "phone",
+   "label": "Phone ending 0199"
+  },
+  {
+   "id": "document:dup",
+   "kind": "document",
+   "label": "Identity document (passport)"
+  },
+  {
+   "id": "email:dup-1",
+   "kind": "email",
+   "label": "Email at example.com"
+  },
+  {
+   "id": "email:dup-2",
+   "kind": "email",
+   "label": "Email at example.org"
+  },
+  {
+   "id": "device:dup-1",
+   "kind": "device",
+   "label": "Device dev-…3101"
+  },
+  {
+   "id": "device:dup-2",
+   "kind": "device",
+   "label": "Device dev-…3102"
+  },
+  {
+   "id": "device:office-1",
+   "kind": "device",
+   "label": "Device dev-…4101"
+  },
+  {
+   "id": "device:office-2",
+   "kind": "device",
+   "label": "Device dev-…4102"
+  },
+  {
+   "id": "device:office-3",
+   "kind": "device",
+   "label": "Device dev-…4103"
+  },
+  {
+   "id": "device:office-4",
+   "kind": "device",
+   "label": "Device dev-…4104"
+  },
+  {
+   "id": "device:office-5",
+   "kind": "device",
+   "label": "Device dev-…4105"
+  },
+  {
+   "id": "device:office-6",
+   "kind": "device",
+   "label": "Device dev-…4106"
+  },
+  {
+   "id": "device:office-7",
+   "kind": "device",
+   "label": "Device dev-…4107"
+  },
+  {
+   "id": "device:office-8",
+   "kind": "device",
+   "label": "Device dev-…4108"
+  },
+  {
+   "id": "device:office-9",
+   "kind": "device",
+   "label": "Device dev-…4109"
+  },
+  {
+   "id": "device:office-10",
+   "kind": "device",
+   "label": "Device dev-…4110"
+  },
+  {
+   "id": "ip:office",
+   "kind": "ip",
+   "label": "Network …c7d2"
+  },
+  {
+   "id": "phone:switchboard",
+   "kind": "phone",
+   "label": "Phone ending 0100"
+  },
+  {
+   "id": "ip:cafe",
+   "kind": "ip",
+   "label": "Network …5e09"
+  },
+  {
+   "id": "device:cafe-1",
+   "kind": "device",
+   "label": "Device dev-…5201"
+  },
+  {
+   "id": "device:cafe-2",
+   "kind": "device",
+   "label": "Device dev-…5202"
+  }
+ ],
+ "links": [
+  [
+   "lead:farm-1",
+   "device:farm"
+  ],
+  [
+   "lead:farm-2",
+   "device:farm"
+  ],
+  [
+   "lead:farm-3",
+   "device:farm"
+  ],
+  [
+   "lead:farm-1",
+   "ip:farm"
+  ],
+  [
+   "lead:farm-2",
+   "ip:farm"
+  ],
+  [
+   "lead:farm-3",
+   "ip:farm"
+  ],
+  [
+   "lead:farm-1",
+   "email:farm-1"
+  ],
+  [
+   "lead:farm-2",
+   "email:farm-2"
+  ],
+  [
+   "lead:farm-3",
+   "email:farm-3"
+  ],
+  [
+   "lead:mule-1",
+   "device:mule"
+  ],
+  [
+   "lead:mule-2",
+   "device:mule"
+  ],
+  [
+   "person:mule",
+   "device:mule"
+  ],
+  [
+   "lead:mule-1",
+   "email:mule-1"
+  ],
+  [
+   "lead:mule-2",
+   "email:mule-2"
+  ],
+  [
+   "person:mule",
+   "bank:mule"
+  ],
+  [
+   "lead:dup-1",
+   "phone:dup"
+  ],
+  [
+   "lead:dup-2",
+   "phone:dup"
+  ],
+  [
+   "lead:dup-1",
+   "document:dup"
+  ],
+  [
+   "lead:dup-2",
+   "document:dup"
+  ],
+  [
+   "lead:dup-1",
+   "email:dup-1"
+  ],
+  [
+   "lead:dup-2",
+   "email:dup-2"
+  ],
+  [
+   "lead:dup-1",
+   "device:dup-1"
+  ],
+  [
+   "lead:dup-2",
+   "device:dup-2"
+  ],
+  [
+   "lead:office-1",
+   "device:office-1"
+  ],
+  [
+   "lead:office-2",
+   "device:office-2"
+  ],
+  [
+   "lead:office-3",
+   "device:office-3"
+  ],
+  [
+   "lead:office-4",
+   "device:office-4"
+  ],
+  [
+   "lead:office-5",
+   "device:office-5"
+  ],
+  [
+   "lead:office-6",
+   "device:office-6"
+  ],
+  [
+   "lead:office-7",
+   "device:office-7"
+  ],
+  [
+   "lead:office-8",
+   "device:office-8"
+  ],
+  [
+   "lead:office-9",
+   "device:office-9"
+  ],
+  [
+   "lead:office-10",
+   "device:office-10"
+  ],
+  [
+   "lead:office-1",
+   "ip:office"
+  ],
+  [
+   "lead:office-2",
+   "ip:office"
+  ],
+  [
+   "lead:office-3",
+   "ip:office"
+  ],
+  [
+   "lead:office-4",
+   "ip:office"
+  ],
+  [
+   "lead:office-5",
+   "ip:office"
+  ],
+  [
+   "lead:office-6",
+   "ip:office"
+  ],
+  [
+   "lead:office-7",
+   "ip:office"
+  ],
+  [
+   "lead:office-8",
+   "ip:office"
+  ],
+  [
+   "lead:office-9",
+   "ip:office"
+  ],
+  [
+   "lead:office-10",
+   "ip:office"
+  ],
+  [
+   "lead:office-1",
+   "phone:switchboard"
+  ],
+  [
+   "lead:office-2",
+   "phone:switchboard"
+  ],
+  [
+   "lead:office-3",
+   "phone:switchboard"
+  ],
+  [
+   "lead:office-4",
+   "phone:switchboard"
+  ],
+  [
+   "lead:office-5",
+   "phone:switchboard"
+  ],
+  [
+   "lead:office-6",
+   "phone:switchboard"
+  ],
+  [
+   "lead:office-7",
+   "phone:switchboard"
+  ],
+  [
+   "lead:office-8",
+   "phone:switchboard"
+  ],
+  [
+   "lead:office-9",
+   "phone:switchboard"
+  ],
+  [
+   "lead:office-10",
+   "phone:switchboard"
+  ],
+  [
+   "lead:cafe-1",
+   "ip:cafe"
+  ],
+  [
+   "lead:cafe-2",
+   "ip:cafe"
+  ],
+  [
+   "lead:cafe-1",
+   "device:cafe-1"
+  ],
+  [
+   "lead:cafe-2",
+   "device:cafe-2"
+  ]
+ ]
+}

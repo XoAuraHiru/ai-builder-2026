@@ -282,6 +282,11 @@ def _in_narration(reference: str, description: str) -> bool:
 def normalise(db: Session, llm: LLM, statement_id: str, lines: list[RawLine]) -> tuple[list[LineReading], str]:
     """One Gemini call reads every narration; rules fill any line it skipped and replace any reference it invented."""
     rules = [rule_reading(n, line.description) for n, line in enumerate(lines, start=1)]
+    from app.governance.breakers import breaker_message
+
+    paused = breaker_message(db, "narration_reader")
+    if paused:  # switched off: the rules read every line
+        return rules, f"paused: {paused}"
     listing = "\n".join(f"{n}. {line.value_date.isoformat()} {line.amount:+,.2f} {line.description}"
                         for n, line in enumerate(lines, start=1))
     prompt = NORMALISE_PROMPT.format(lines=listing)
@@ -317,6 +322,11 @@ def ingest_statement(db: Session, *, data: bytes, filename: str, mime_type: str,
     if kind in ("text/csv", "application/vnd.ms-excel") or name.endswith(".csv"):
         extraction = parse_csv(data)
     elif kind == "application/pdf" or name.endswith(".pdf"):
+        from app.governance.breakers import breaker_message
+
+        paused = breaker_message(db, "statement_reader")
+        if paused:  # switched off: statements are read as CSV only
+            raise StatementError(f"{paused} Upload the CSV version of the statement.")
         if reader is None:
             raise StatementError("Document AI is not configured here, so PDF statements cannot be read. Upload the CSV "
                                  "version of the statement.")
@@ -335,8 +345,13 @@ def ingest_statement(db: Session, *, data: bytes, filename: str, mime_type: str,
     db.add(statement)
     db.flush()
     readings, read_by = normalise(db, llm, statement.id, extraction.lines)
-    statement.notes = [*statement.notes, f"Narrations read by {read_by}." if read_by != "rules"
-                       else "Gemini was unavailable, so rules read the narrations."]
+    if read_by.startswith("paused: "):
+        note = f"{read_by.removeprefix('paused: ')} Rules read the narrations."
+    elif read_by == "rules":
+        note = "Gemini was unavailable, so rules read the narrations."
+    else:
+        note = f"Narrations read by {read_by}."
+    statement.notes = [*statement.notes, note]
     for n, (raw, reading) in enumerate(zip(extraction.lines, readings), start=1):
         keep = raw.amount > 0 and reading.channel != "INTEREST"
         db.add(StatementLine(statement_id=statement.id, line_no=n, value_date=raw.value_date, amount=raw.amount,

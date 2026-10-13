@@ -1,0 +1,2286 @@
+{
+ "text": "ATRIUM DEMO IDENTITY CARD\nPHOTO\nNAME\nEmma Walsh\nDATE OF BIRTH\n1984-05-12\nDOCUMENT NO.\nAT-1029384\nEXPIRES\n2030-08-31\nSPECIMEN - NOT A REAL DOCUMENT\n",
+ "pages": [
+  {
+   "pageNumber": 1,
+   "dimension": {
+    "width": 900,
+    "height": 560,
+    "unit": "pixels"
+   },
+   "layout": {
+    "textAnchor": {
+     "textSegments": [
+      {
+       "endIndex": "147"
+      }
+     ]
+    },
+    "boundingPoly": {
+     "vertices": [
+      {},
+      {
+       "x": 900
+      },
+      {
+       "x": 900,
+       "y": 560
+      },
+      {
+       "y": 560
+      }
+     ],
+     "normalizedVertices": [
+      {},
+      {
+       "x": 1
+      },
+      {
+       "x": 1,
+       "y": 1
+      },
+      {
+       "y": 1
+      }
+     ]
+    },
+    "orientation": "PAGE_UP"
+   },
+   "detectedLanguages": [
+    {
+     "languageCode": "en",
+     "confidence": 0.81
+    }
+   ],
+   "blocks": [
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "endIndex": "26"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 28,
+         "y": 32
+        },
+        {
+         "x": 570,
+         "y": 32
+        },
+        {
+         "x": 570,
+         "y": 60
+        },
+        {
+         "x": 28,
+         "y": 60
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "26",
+         "endIndex": "32"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 120,
+         "y": 285
+        },
+        {
+         "x": 219,
+         "y": 285
+        },
+        {
+         "x": 219,
+         "y": 306
+        },
+        {
+         "x": 120,
+         "y": 306
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "32",
+         "endIndex": "37"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 133
+        },
+        {
+         "x": 397,
+         "y": 132
+        },
+        {
+         "x": 397,
+         "y": 149
+        },
+        {
+         "x": 340,
+         "y": 150
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "37",
+         "endIndex": "48"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 341,
+         "y": 162
+        },
+        {
+         "x": 529,
+         "y": 162
+        },
+        {
+         "x": 529,
+         "y": 186
+        },
+        {
+         "x": 341,
+         "y": 186
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "48",
+         "endIndex": "62"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 213
+        },
+        {
+         "x": 490,
+         "y": 213
+        },
+        {
+         "x": 490,
+         "y": 230
+        },
+        {
+         "x": 340,
+         "y": 230
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "62",
+         "endIndex": "73"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 343,
+         "y": 242
+        },
+        {
+         "x": 504,
+         "y": 242
+        },
+        {
+         "x": 504,
+         "y": 265
+        },
+        {
+         "x": 343,
+         "y": 265
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "73",
+         "endIndex": "97"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 338,
+         "y": 292
+        },
+        {
+         "x": 518,
+         "y": 293
+        },
+        {
+         "x": 518,
+         "y": 347
+        },
+        {
+         "x": 338,
+         "y": 346
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "97",
+         "endIndex": "116"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 372
+        },
+        {
+         "x": 500,
+         "y": 371
+        },
+        {
+         "x": 500,
+         "y": 424
+        },
+        {
+         "x": 340,
+         "y": 425
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "116",
+         "endIndex": "147"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 60,
+         "y": 506
+        },
+        {
+         "x": 678,
+         "y": 506
+        },
+        {
+         "x": 678,
+         "y": 532
+        },
+        {
+         "x": 60,
+         "y": 532
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    }
+   ],
+   "paragraphs": [
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "endIndex": "26"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 28,
+         "y": 32
+        },
+        {
+         "x": 570,
+         "y": 32
+        },
+        {
+         "x": 570,
+         "y": 60
+        },
+        {
+         "x": 28,
+         "y": 60
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "26",
+         "endIndex": "32"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 120,
+         "y": 285
+        },
+        {
+         "x": 219,
+         "y": 285
+        },
+        {
+         "x": 219,
+         "y": 306
+        },
+        {
+         "x": 120,
+         "y": 306
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "32",
+         "endIndex": "37"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 133
+        },
+        {
+         "x": 397,
+         "y": 132
+        },
+        {
+         "x": 397,
+         "y": 149
+        },
+        {
+         "x": 340,
+         "y": 150
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "37",
+         "endIndex": "48"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 341,
+         "y": 162
+        },
+        {
+         "x": 529,
+         "y": 162
+        },
+        {
+         "x": 529,
+         "y": 186
+        },
+        {
+         "x": 341,
+         "y": 186
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "48",
+         "endIndex": "62"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 213
+        },
+        {
+         "x": 490,
+         "y": 213
+        },
+        {
+         "x": 490,
+         "y": 230
+        },
+        {
+         "x": 340,
+         "y": 230
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "62",
+         "endIndex": "73"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 343,
+         "y": 242
+        },
+        {
+         "x": 504,
+         "y": 242
+        },
+        {
+         "x": 504,
+         "y": 265
+        },
+        {
+         "x": 343,
+         "y": 265
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "73",
+         "endIndex": "86"
+        }
+       ]
+      },
+      "confidence": 0.97,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 341,
+         "y": 292
+        },
+        {
+         "x": 494,
+         "y": 293
+        },
+        {
+         "x": 494,
+         "y": 311
+        },
+        {
+         "x": 341,
+         "y": 310
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "86",
+         "endIndex": "97"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 338,
+         "y": 321
+        },
+        {
+         "x": 518,
+         "y": 321
+        },
+        {
+         "x": 518,
+         "y": 346
+        },
+        {
+         "x": 338,
+         "y": 346
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "97",
+         "endIndex": "105"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 372
+        },
+        {
+         "x": 424,
+         "y": 372
+        },
+        {
+         "x": 424,
+         "y": 390
+        },
+        {
+         "x": 340,
+         "y": 390
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "105",
+         "endIndex": "116"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 401
+        },
+        {
+         "x": 500,
+         "y": 400
+        },
+        {
+         "x": 500,
+         "y": 424
+        },
+        {
+         "x": 340,
+         "y": 425
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "116",
+         "endIndex": "147"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 60,
+         "y": 506
+        },
+        {
+         "x": 678,
+         "y": 506
+        },
+        {
+         "x": 678,
+         "y": 532
+        },
+        {
+         "x": 60,
+         "y": 532
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    }
+   ],
+   "lines": [
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "endIndex": "26"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 28,
+         "y": 32
+        },
+        {
+         "x": 570,
+         "y": 32
+        },
+        {
+         "x": 570,
+         "y": 60
+        },
+        {
+         "x": 28,
+         "y": 60
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "26",
+         "endIndex": "32"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 120,
+         "y": 285
+        },
+        {
+         "x": 219,
+         "y": 285
+        },
+        {
+         "x": 219,
+         "y": 306
+        },
+        {
+         "x": 120,
+         "y": 306
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "32",
+         "endIndex": "37"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 132
+        },
+        {
+         "x": 397,
+         "y": 132
+        },
+        {
+         "x": 397,
+         "y": 150
+        },
+        {
+         "x": 340,
+         "y": 150
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "37",
+         "endIndex": "48"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 341,
+         "y": 162
+        },
+        {
+         "x": 529,
+         "y": 162
+        },
+        {
+         "x": 529,
+         "y": 186
+        },
+        {
+         "x": 341,
+         "y": 186
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "48",
+         "endIndex": "62"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 213
+        },
+        {
+         "x": 490,
+         "y": 213
+        },
+        {
+         "x": 490,
+         "y": 230
+        },
+        {
+         "x": 340,
+         "y": 230
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "62",
+         "endIndex": "73"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 343,
+         "y": 242
+        },
+        {
+         "x": 504,
+         "y": 242
+        },
+        {
+         "x": 504,
+         "y": 265
+        },
+        {
+         "x": 343,
+         "y": 265
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "73",
+         "endIndex": "86"
+        }
+       ]
+      },
+      "confidence": 0.95,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 341,
+         "y": 292
+        },
+        {
+         "x": 494,
+         "y": 292
+        },
+        {
+         "x": 494,
+         "y": 311
+        },
+        {
+         "x": 341,
+         "y": 311
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "86",
+         "endIndex": "97"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 338,
+         "y": 321
+        },
+        {
+         "x": 518,
+         "y": 321
+        },
+        {
+         "x": 518,
+         "y": 346
+        },
+        {
+         "x": 338,
+         "y": 346
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "97",
+         "endIndex": "105"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 372
+        },
+        {
+         "x": 424,
+         "y": 372
+        },
+        {
+         "x": 424,
+         "y": 390
+        },
+        {
+         "x": 340,
+         "y": 390
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "105",
+         "endIndex": "116"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 400
+        },
+        {
+         "x": 500,
+         "y": 400
+        },
+        {
+         "x": 500,
+         "y": 425
+        },
+        {
+         "x": 340,
+         "y": 425
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "116",
+         "endIndex": "147"
+        }
+       ]
+      },
+      "confidence": 0.96,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 60,
+         "y": 506
+        },
+        {
+         "x": 678,
+         "y": 506
+        },
+        {
+         "x": 678,
+         "y": 532
+        },
+        {
+         "x": 60,
+         "y": 532
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     }
+    }
+   ],
+   "tokens": [
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "endIndex": "7"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 28,
+         "y": 32
+        },
+        {
+         "x": 167,
+         "y": 32
+        },
+        {
+         "x": 167,
+         "y": 60
+        },
+        {
+         "x": 28,
+         "y": 60
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "7",
+         "endIndex": "12"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 180,
+         "y": 32
+        },
+        {
+         "x": 284,
+         "y": 32
+        },
+        {
+         "x": 284,
+         "y": 60
+        },
+        {
+         "x": 180,
+         "y": 60
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "12",
+         "endIndex": "21"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 299,
+         "y": 32
+        },
+        {
+         "x": 459,
+         "y": 32
+        },
+        {
+         "x": 459,
+         "y": 60
+        },
+        {
+         "x": 299,
+         "y": 60
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "21",
+         "endIndex": "26"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 471,
+         "y": 32
+        },
+        {
+         "x": 570,
+         "y": 32
+        },
+        {
+         "x": 570,
+         "y": 60
+        },
+        {
+         "x": 471,
+         "y": 60
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "WIDE_SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "26",
+         "endIndex": "32"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 120,
+         "y": 285
+        },
+        {
+         "x": 219,
+         "y": 285
+        },
+        {
+         "x": 219,
+         "y": 306
+        },
+        {
+         "x": 120,
+         "y": 306
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "WIDE_SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "32",
+         "endIndex": "37"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 133
+        },
+        {
+         "x": 397,
+         "y": 132
+        },
+        {
+         "x": 397,
+         "y": 149
+        },
+        {
+         "x": 340,
+         "y": 150
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "WIDE_SPACE"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "37",
+         "endIndex": "42"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 341,
+         "y": 162
+        },
+        {
+         "x": 432,
+         "y": 162
+        },
+        {
+         "x": 432,
+         "y": 186
+        },
+        {
+         "x": 341,
+         "y": 186
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "42",
+         "endIndex": "48"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 440,
+         "y": 162
+        },
+        {
+         "x": 529,
+         "y": 162
+        },
+        {
+         "x": 529,
+         "y": 186
+        },
+        {
+         "x": 440,
+         "y": 186
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "WIDE_SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "48",
+         "endIndex": "53"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 213
+        },
+        {
+         "x": 392,
+         "y": 213
+        },
+        {
+         "x": 392,
+         "y": 230
+        },
+        {
+         "x": 340,
+         "y": 230
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "53",
+         "endIndex": "56"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 398,
+         "y": 213
+        },
+        {
+         "x": 427,
+         "y": 213
+        },
+        {
+         "x": 427,
+         "y": 230
+        },
+        {
+         "x": 398,
+         "y": 230
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "56",
+         "endIndex": "62"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 432,
+         "y": 213
+        },
+        {
+         "x": 490,
+         "y": 213
+        },
+        {
+         "x": 490,
+         "y": 230
+        },
+        {
+         "x": 432,
+         "y": 230
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "WIDE_SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "62",
+         "endIndex": "73"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 343,
+         "y": 242
+        },
+        {
+         "x": 504,
+         "y": 242
+        },
+        {
+         "x": 504,
+         "y": 265
+        },
+        {
+         "x": 343,
+         "y": 265
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "WIDE_SPACE"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "73",
+         "endIndex": "82"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 341,
+         "y": 292
+        },
+        {
+         "x": 454,
+         "y": 293
+        },
+        {
+         "x": 454,
+         "y": 311
+        },
+        {
+         "x": 341,
+         "y": 310
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "82",
+         "endIndex": "84"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 461,
+         "y": 293
+        },
+        {
+         "x": 489,
+         "y": 293
+        },
+        {
+         "x": 489,
+         "y": 310
+        },
+        {
+         "x": 461,
+         "y": 310
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "84",
+         "endIndex": "86"
+        }
+       ]
+      },
+      "confidence": 0.88,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 490,
+         "y": 293
+        },
+        {
+         "x": 494,
+         "y": 293
+        },
+        {
+         "x": 494,
+         "y": 310
+        },
+        {
+         "x": 490,
+         "y": 310
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "WIDE_SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "86",
+         "endIndex": "88"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 338,
+         "y": 321
+        },
+        {
+         "x": 380,
+         "y": 321
+        },
+        {
+         "x": 380,
+         "y": 346
+        },
+        {
+         "x": 338,
+         "y": 346
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "88",
+         "endIndex": "89"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 381,
+         "y": 321
+        },
+        {
+         "x": 390,
+         "y": 321
+        },
+        {
+         "x": 390,
+         "y": 346
+        },
+        {
+         "x": 381,
+         "y": 346
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "89",
+         "endIndex": "97"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 395,
+         "y": 321
+        },
+        {
+         "x": 518,
+         "y": 321
+        },
+        {
+         "x": 518,
+         "y": 346
+        },
+        {
+         "x": 395,
+         "y": 346
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "WIDE_SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "97",
+         "endIndex": "105"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 372
+        },
+        {
+         "x": 424,
+         "y": 372
+        },
+        {
+         "x": 424,
+         "y": 390
+        },
+        {
+         "x": 340,
+         "y": 390
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "WIDE_SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "105",
+         "endIndex": "116"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 340,
+         "y": 401
+        },
+        {
+         "x": 500,
+         "y": 400
+        },
+        {
+         "x": 500,
+         "y": 424
+        },
+        {
+         "x": 340,
+         "y": 425
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "WIDE_SPACE"
+     }
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "116",
+         "endIndex": "125"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 60,
+         "y": 506
+        },
+        {
+         "x": 237,
+         "y": 506
+        },
+        {
+         "x": 237,
+         "y": 532
+        },
+        {
+         "x": 60,
+         "y": 532
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "125",
+         "endIndex": "127"
+        }
+       ]
+      },
+      "confidence": 0.85,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 248,
+         "y": 506
+        },
+        {
+         "x": 259,
+         "y": 506
+        },
+        {
+         "x": 259,
+         "y": 532
+        },
+        {
+         "x": 248,
+         "y": 532
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "127",
+         "endIndex": "131"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 269,
+         "y": 506
+        },
+        {
+         "x": 340,
+         "y": 506
+        },
+        {
+         "x": 340,
+         "y": 532
+        },
+        {
+         "x": 269,
+         "y": 532
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "131",
+         "endIndex": "133"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 349,
+         "y": 506
+        },
+        {
+         "x": 373,
+         "y": 506
+        },
+        {
+         "x": 373,
+         "y": 532
+        },
+        {
+         "x": 349,
+         "y": 532
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "133",
+         "endIndex": "138"
+        }
+       ]
+      },
+      "confidence": 0.98,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 383,
+         "y": 506
+        },
+        {
+         "x": 471,
+         "y": 506
+        },
+        {
+         "x": 471,
+         "y": 532
+        },
+        {
+         "x": 383,
+         "y": 532
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    },
+    {
+     "layout": {
+      "textAnchor": {
+       "textSegments": [
+        {
+         "startIndex": "138",
+         "endIndex": "147"
+        }
+       ]
+      },
+      "confidence": 0.99,
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 482,
+         "y": 506
+        },
+        {
+         "x": 678,
+         "y": 506
+        },
+        {
+         "x": 678,
+         "y": 532
+        },
+        {
+         "x": 482,
+         "y": 532
+        }
+       ]
+      },
+      "orientation": "PAGE_UP"
+     },
+     "detectedBreak": {
+      "type": "WIDE_SPACE"
+     },
+     "detectedLanguages": [
+      {
+       "languageCode": "en"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "entities": [
+  {
+   "type": "fraud_signals_is_identity_document",
+   "mentionText": "NOT_AN_ID",
+   "pageAnchor": {
+    "pageRefs": [
+     {}
+    ]
+   },
+   "id": "0",
+   "normalizedValue": {
+    "text": "NOT_AN_ID"
+   }
+  },
+  {
+   "type": "fraud_signals_suspicious_words",
+   "mentionText": "SUSPICIOUS_WORDS_FOUND",
+   "pageAnchor": {
+    "pageRefs": [
+     {}
+    ]
+   },
+   "id": "1",
+   "normalizedValue": {
+    "text": "SUSPICIOUS_WORDS_FOUND"
+   }
+  },
+  {
+   "type": "evidence_suspicious_word",
+   "mentionText": "SPECIMEN",
+   "pageAnchor": {
+    "pageRefs": [
+     {
+      "boundingPoly": {
+       "vertices": [
+        {
+         "x": 60,
+         "y": 506
+        },
+        {
+         "x": 237,
+         "y": 506
+        },
+        {
+         "x": 237,
+         "y": 532
+        },
+        {
+         "x": 60,
+         "y": 532
+        }
+       ],
+       "normalizedVertices": [
+        {
+         "x": 0.06666667,
+         "y": 0.9035714
+        },
+        {
+         "x": 0.26333332,
+         "y": 0.9035714
+        },
+        {
+         "x": 0.26333332,
+         "y": 0.95
+        },
+        {
+         "x": 0.06666667,
+         "y": 0.95
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "id": "2"
+  },
+  {
+   "type": "fraud_signals_image_manipulation",
+   "mentionText": "POSSIBLE_IMAGE_MANIPULATION",
+   "pageAnchor": {
+    "pageRefs": [
+     {}
+    ]
+   },
+   "id": "3",
+   "normalizedValue": {
+    "text": "POSSIBLE_IMAGE_MANIPULATION"
+   }
+  },
+  {
+   "type": "fraud_signals_online_duplicate",
+   "mentionText": "PASS",
+   "pageAnchor": {
+    "pageRefs": [
+     {}
+    ]
+   },
+   "id": "4",
+   "normalizedValue": {
+    "text": "PASS"
+   }
+  }
+ ]
+}

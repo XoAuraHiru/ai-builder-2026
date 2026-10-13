@@ -1,0 +1,90 @@
+{
+  "about": "Five synthetic alerts for Gemini's case review: the four AML stories (structuring, money in and straight out, a payment from someone else, money moved between accounts on one bank account) and one benign burst of activity from the client's own monthly plans. Each is built with the rows its linked entities read. A review passes when its triage is one the why allows, every citation is an evidence id, every figure is in the inputs, every person named is in the inputs, and the narrative mentions each required fact. Each answer is a correct review, used to test the grader.",
+  "cases": [
+    {
+      "id": "structuring",
+      "why": "Three subscriptions of $9,400, $9,750 and $9,900 within five days, each just under the $10,000 reporting threshold, is the textbook pattern of structuring: escalate. The narrative must name Arjun Mehta and the amounts.",
+      "person": {"full_name": "Arjun Mehta", "country": "US", "account": "ACC-0201"},
+      "alert": {"scenario": "structuring", "title": "Possible structuring", "severity": "high", "score": 0.9,
+                "summary": "3 subscriptions between $8,500.00 and $10,000.00 within 5 days, $29,050.00 in all: each just under the $10,000.00 reporting threshold."},
+      "evidence": [
+        {"kind": "instruction", "id": "ev-s1", "date": "2026-10-06", "amount": "9400.00", "detail": "Subscription of $9,400.00 on October 6"},
+        {"kind": "instruction", "id": "ev-s2", "date": "2026-10-08", "amount": "9750.00", "detail": "Subscription of $9,750.00 on October 8"},
+        {"kind": "instruction", "id": "ev-s3", "date": "2026-10-10", "amount": "9900.00", "detail": "Subscription of $9,900.00 on October 10"}
+      ],
+      "expect": {"triage_in": ["escalate"], "facts": ["Arjun Mehta", "9,400"]},
+      "answer": {"triage": "escalate", "triage_reason": "Three subscriptions just under the $10,000 reporting threshold within five days.",
+                 "narrative": [{"text": "Arjun Mehta subscribed $9,400.00 on October 6, $9,750.00 on October 8 and $9,900.00 on October 10.", "evidence": ["ev-s1", "ev-s2", "ev-s3"]},
+                               {"text": "The payments total $29,050.00 and each sits between $8,500.00 and $10,000.00, the pattern of keeping each one under the reporting threshold.", "evidence": ["ev-s1", "ev-s2", "ev-s3"]}],
+                 "questions": ["What is the source of the $29,050.00?"]}
+    },
+    {
+      "id": "money-in-and-straight-out",
+      "why": "$45,000 paid in and $42,000 taken out six days later, 93% of the inflow, is the pattern of an account used to pass money through: escalate.",
+      "person": {"full_name": "Sofia Rossi", "country": "US", "account": "ACC-0202"},
+      "alert": {"scenario": "rapid_in_out", "title": "Money in and straight out", "severity": "high", "score": 0.85,
+                "summary": "$45,000.00 paid in and $42,000.00 taken out 6 days later, 93% of what came in: the pattern of an account used to pass money through."},
+      "evidence": [
+        {"kind": "posting", "id": "ev-r1", "date": "2026-10-03", "amount": "45000.00", "detail": "Subscription of $45,000.00 into ATR-CASH"},
+        {"kind": "posting", "id": "ev-r2", "date": "2026-10-09", "amount": "42000.00", "detail": "Redemption of $42,000.00 from ATR-CASH"}
+      ],
+      "expect": {"triage_in": ["escalate"], "facts": ["Sofia Rossi", "42,000"]},
+      "answer": {"triage": "escalate", "triage_reason": "Most of a large payment left the account within a week.",
+                 "narrative": [{"text": "Sofia Rossi paid in $45,000.00 on October 3 and took out $42,000.00 on October 9, six days later.", "evidence": ["ev-r1", "ev-r2"]},
+                               {"text": "That is 93% of what came in, the pattern of an account used to pass money through.", "evidence": ["ev-r1", "ev-r2"]}],
+                 "questions": ["Why was the money withdrawn so soon after it arrived?"]}
+    },
+    {
+      "id": "paid-by-someone-else",
+      "why": "Grace Li's $6,000 subscription was paid by Marcus Okonkwo, a third party: escalate, or ask who the payer is first; closing it would ignore an unexplained payer.",
+      "person": {"full_name": "Grace Li", "country": "US", "account": "ACC-0203"},
+      "alert": {"scenario": "third_party_funding", "title": "Paid by someone else", "severity": "medium", "score": 0.6,
+                "summary": "A $6,000.00 subscription for Grace Li was paid by Marcus Okonkwo, not the account holder."},
+      "evidence": [
+        {"kind": "instruction", "id": "ev-t1", "date": "2026-10-07", "amount": "6000.00", "detail": "Subscription of $6,000.00 by Grace Li, account ACC-0203"},
+        {"kind": "statement_line", "id": "ev-t2", "date": "2026-10-07", "amount": "6000.00", "detail": "Bank credit from Marcus Okonkwo: ACH CREDIT MARCUS OKONKWO"}
+      ],
+      "payer": {"remitter": "Marcus Okonkwo", "description": "ACH CREDIT MARCUS OKONKWO", "instruction": "ev-t1", "line": "ev-t2"},
+      "expect": {"triage_in": ["escalate", "request_information"], "facts": ["Grace Li", "Marcus Okonkwo"]},
+      "answer": {"triage": "request_information", "triage_reason": "A third party paid for the subscription and the link to the client is unknown.",
+                 "narrative": [{"text": "Grace Li's $6,000.00 subscription was paid by Marcus Okonkwo, who is not the account holder.", "evidence": ["ev-t1", "ev-t2"]}],
+                 "questions": ["How does Grace Li know Marcus Okonkwo?"]}
+    },
+    {
+      "id": "linked-round-trip",
+      "why": "$8,000 left Noah Williams's account and $8,000 came into Aisha Khan's four days later, and both accounts are paid from the same bank account: money moving between linked accounts, escalate.",
+      "person": {"full_name": "Aisha Khan", "country": "US", "account": "ACC-0205"},
+      "linked": {"full_name": "Noah Williams", "account": "ACC-0204", "bank_last4": "4471"},
+      "alert": {"scenario": "linked_round_trip", "title": "Money moved between linked accounts", "severity": "high", "score": 0.8,
+                "summary": "$8,000.00 left Noah Williams's account and $8,000.00 came into Aisha Khan's 4 days later; both accounts are paid from the same bank account."},
+      "evidence": [
+        {"kind": "posting", "id": "ev-l1", "date": "2026-10-04", "amount": "8000.00", "detail": "Redemption of $8,000.00 by Noah Williams, account ACC-0204"},
+        {"kind": "instruction", "id": "ev-l2", "date": "2026-10-08", "amount": "8000.00", "detail": "Subscription of $8,000.00 by Aisha Khan, account ACC-0205"},
+        {"kind": "bank_link", "id": "ev-l3", "date": "2026-10-12", "amount": null, "detail": "Accounts ACC-0204 and ACC-0205 share the bank account ending 4471"}
+      ],
+      "expect": {"triage_in": ["escalate"], "facts": ["Noah Williams", "Aisha Khan"]},
+      "answer": {"triage": "escalate", "triage_reason": "The same money moved between two people's accounts that share a bank account.",
+                 "narrative": [{"text": "$8,000.00 left Noah Williams's account on October 4 and $8,000.00 came into Aisha Khan's account on October 8.", "evidence": ["ev-l1", "ev-l2"]},
+                               {"text": "Both accounts are paid from the bank account ending 4471.", "evidence": ["ev-l3"]}],
+                 "questions": ["Who holds the bank account ending 4471?"]}
+    },
+    {
+      "id": "monthly-plans-on-payday",
+      "why": "The burst is five $200 subscriptions from the client's own monthly recurring plans, all on the 1st as every month since January: an ordinary payday pattern, close.",
+      "person": {"full_name": "Lena Fischer", "country": "US", "account": "ACC-0206"},
+      "alert": {"scenario": "velocity", "title": "A burst of activity", "severity": "medium", "score": 0.5,
+                "summary": "5 instructions and orders within 24 hours, against an ordinary pace of a few a month."},
+      "evidence": [
+        {"kind": "instruction", "id": "ev-v1", "date": "2026-10-01", "amount": "200.00", "detail": "Subscribe instruction from Lena Fischer's monthly recurring plan into ATR-BAL, the same $200.00 on the 1st of every month since January"},
+        {"kind": "instruction", "id": "ev-v2", "date": "2026-10-01", "amount": "200.00", "detail": "Subscribe instruction from Lena Fischer's monthly recurring plan into ATR-GRW, the same $200.00 on the 1st of every month since January"},
+        {"kind": "instruction", "id": "ev-v3", "date": "2026-10-01", "amount": "200.00", "detail": "Subscribe instruction from Lena Fischer's monthly recurring plan into ATR-INC, the same $200.00 on the 1st of every month since January"},
+        {"kind": "instruction", "id": "ev-v4", "date": "2026-10-01", "amount": "200.00", "detail": "Subscribe instruction from Lena Fischer's monthly recurring plan into ATR-GLB, the same $200.00 on the 1st of every month since January"},
+        {"kind": "instruction", "id": "ev-v5", "date": "2026-10-01", "amount": "200.00", "detail": "Subscribe instruction from Lena Fischer's monthly recurring plan into ATR-DIV, the same $200.00 on the 1st of every month since January"}
+      ],
+      "expect": {"triage_in": ["close"], "facts": ["Lena Fischer"]},
+      "answer": {"triage": "close", "triage_reason": "The five subscriptions are the client's own monthly plans running together on the 1st.",
+                 "narrative": [{"text": "Lena Fischer's five $200.00 subscriptions on October 1 come from monthly recurring plans that run on the 1st of every month.", "evidence": ["ev-v1", "ev-v2", "ev-v3", "ev-v4", "ev-v5"]}],
+                 "questions": []}
+    }
+  ]
+}

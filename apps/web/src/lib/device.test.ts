@@ -18,3 +18,15 @@ describe("deviceId", () => {
     expect(deviceId({ getItem: () => { throw new Error("blocked"); }, setItem: () => {} })).toBeNull();
   });
 });
+
+describe("each demo person keeps their own device", () => {
+  it("gives every persona its own identifier in one browser, so switching person never looks like one shared device", () => {
+    const store = memory();
+    const tom = deviceId(store, "tom@atrium.demo");
+    const priya = deviceId(store, "priya@atrium.demo");
+    expect(tom).not.toBe(priya);
+    expect(deviceId(store, "TOM@atrium.demo")).toBe(tom);
+    expect(deviceId(store)).not.toBe(tom);  // real sign-in: one identifier for the browser
+  });
+});
+

@@ -1,0 +1,51 @@
+{
+  "about": "One case review shaped like Gemini's output for a structuring alert, and three copies with one planted fault each. The facts are the inputs review_alert gives the model (the alert, its evidence with amounts as written, and the linked entities); the only person in them is Arjun Mehta. The checkers must drop citations that are not evidence ids, report $ and % figures that appear in no input, and report people the inputs never name.",
+  "facts": {
+    "alert": {"title": "Possible structuring", "scenario": "structuring", "severity": "high",
+              "summary": "3 subscriptions between $8,500.00 and $10,000.00 within 3 days, $29,050.00 in all: each just under the $10,000.00 reporting threshold.",
+              "person": "Arjun Mehta", "country": "US", "risk_band": 3, "account": "ACC-0201"},
+    "evidence": [
+      {"kind": "instruction", "id": "ev-ins-1", "date": "2026-10-06", "amount": "$9,400.00", "detail": "Subscription of $9,400.00 on October 6"},
+      {"kind": "instruction", "id": "ev-ins-2", "date": "2026-10-07", "amount": "$9,750.00", "detail": "Subscription of $9,750.00 on October 7"},
+      {"kind": "instruction", "id": "ev-ins-3", "date": "2026-10-08", "amount": "$9,900.00", "detail": "Subscription of $9,900.00 on October 8"}
+    ],
+    "entities": ["person Arjun Mehta holds Account ACC-0201"]
+  },
+  "names": ["Arjun Mehta"],
+  "cases": [
+    {
+      "id": "clean-review",
+      "why": "Every citation is one of the three evidence ids, every figure ($9,400.00, $9,750.00, $9,900.00, $29,050.00, $8,500.00, $10,000) is in the inputs, and the only person named is Arjun Mehta: nothing to report.",
+      "review": {"triage": "escalate", "triage_reason": "Three subscriptions just under the $10,000 reporting threshold within three days.",
+                 "narrative": [{"text": "Arjun Mehta subscribed $9,400.00 on October 6, $9,750.00 on October 7 and $9,900.00 on October 8.", "evidence": ["ev-ins-1", "ev-ins-2", "ev-ins-3"]},
+                               {"text": "Together the payments total $29,050.00, each between $8,500.00 and $10,000.00, the pattern of keeping each payment under the reporting threshold.", "evidence": ["ev-ins-1", "ev-ins-2", "ev-ins-3"]}],
+                 "questions": ["What is the source of the $29,050.00 Arjun Mehta paid in?"]},
+      "expect": {"dropped_citations": [], "unsupported_figures": [], "unknown_names": []}
+    },
+    {
+      "id": "citation-not-in-evidence",
+      "why": "The second part cites ev-ins-4, which is not one of the alert's evidence ids: it must be dropped and reported.",
+      "review": {"triage": "escalate", "triage_reason": "Three subscriptions just under the $10,000 reporting threshold within three days.",
+                 "narrative": [{"text": "Arjun Mehta subscribed $9,400.00 on October 6, $9,750.00 on October 7 and $9,900.00 on October 8.", "evidence": ["ev-ins-1", "ev-ins-2", "ev-ins-3"]},
+                               {"text": "A fourth payment followed the same pattern.", "evidence": ["ev-ins-4"]}],
+                 "questions": []},
+      "expect": {"dropped_citations": ["ev-ins-4"], "unsupported_figures": [], "unknown_names": []}
+    },
+    {
+      "id": "invented-figure",
+      "why": "$1,000,000 appears nowhere in the alert, its evidence or its entities: the figure check must report it.",
+      "review": {"triage": "escalate", "triage_reason": "Three subscriptions just under the $10,000 reporting threshold within three days.",
+                 "narrative": [{"text": "Arjun Mehta has moved $1,000,000 through the account this year.", "evidence": ["ev-ins-1"]}],
+                 "questions": []},
+      "expect": {"dropped_citations": [], "unsupported_figures": ["$1,000,000"], "unknown_names": []}
+    },
+    {
+      "id": "person-not-in-inputs",
+      "why": "Victor Hale is named as arranging the payments, but no input mentions anyone but Arjun Mehta: the name check must report it.",
+      "review": {"triage": "escalate", "triage_reason": "Three subscriptions just under the $10,000 reporting threshold within three days.",
+                 "narrative": [{"text": "The payments were arranged by Victor Hale on behalf of Arjun Mehta.", "evidence": ["ev-ins-1", "ev-ins-2"]}],
+                 "questions": []},
+      "expect": {"dropped_citations": [], "unsupported_figures": [], "unknown_names": ["Victor Hale"]}
+    }
+  ]
+}

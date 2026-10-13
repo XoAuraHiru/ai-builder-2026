@@ -1,0 +1,175 @@
+{
+  "about": "A recorded reading of the pressure call with one real flag, quoted with digits where the transcript has words; one fabricated flag whose words were never said; and one near miss that flips what was said (\"usually\" became \"never\"). Grounding must keep the first and drop the other two.",
+  "lead": {
+    "source": "referral",
+    "full_name": "Ruth Alvarez",
+    "email": "ruth.alvarez@example.test",
+    "goals": "Keep my savings safe and leave something for my grandchildren",
+    "horizon_years": 10,
+    "investable_usd": "180000",
+    "monthly_usd": "0",
+    "source_of_funds": "inheritance",
+    "device_id": "dev-alva-0001"
+  },
+  "reading": {
+    "duration_s": 147.52,
+    "transcript": [
+      {
+        "start_s": 0.0,
+        "speaker": "Daniel",
+        "role": "advisor",
+        "text": "Hello, Mrs. Alvarez, it's Daniel from Atrium. Thank you for sending in your form. Is this still a good time?"
+      },
+      {
+        "start_s": 7.94,
+        "speaker": "Ruth",
+        "role": "client",
+        "text": "Oh, yes, hello. My nephew Kevin is here with me. He said he would help."
+      },
+      {
+        "start_s": 17.6,
+        "speaker": "Kevin",
+        "role": "third_party",
+        "text": "Hi, Daniel. I'm Kevin. I handle most of Aunt Ruth's paperwork these days, so you can talk to me."
+      },
+      {
+        "start_s": 22.94,
+        "speaker": "Daniel",
+        "role": "advisor",
+        "text": "Nice to meet you, Kevin. Mrs. Alvarez, your form says you'd like to keep your savings safe and leave something for your grandchildren. Is that right?"
+      },
+      {
+        "start_s": 32.75,
+        "speaker": "Kevin",
+        "role": "third_party",
+        "text": "That was before. She wants it all in the tech fund, right, Aunt Ruth?"
+      },
+      {
+        "start_s": 36.8,
+        "speaker": "Ruth",
+        "role": "client",
+        "text": "Well, I, I'm not sure. I don't really understand these funds."
+      },
+      {
+        "start_s": 46.06,
+        "speaker": "Daniel",
+        "role": "advisor",
+        "text": "That's all right. Can I ask what matters most to you about this money?"
+      },
+      {
+        "start_s": 51.16,
+        "speaker": "Ruth",
+        "role": "client",
+        "text": "My husband left it to me when he passed. I just don't want to lose it. I'm seventy-four, and I may need some of it for the house."
+      },
+      {
+        "start_s": 66.3,
+        "speaker": "Kevin",
+        "role": "third_party",
+        "text": "She worries too much. Put the whole hundred and eighty thousand in the tech fund, and send the papers to me. I'll get her to sign."
+      },
+      {
+        "start_s": 74.11,
+        "speaker": "Daniel",
+        "role": "advisor",
+        "text": "We usually go through the documents with the client directly. But I hear you. Honestly, um, the growth fund basically guarantees eight percent a year, so it would grow nicely for the grandchildren."
+      },
+      {
+        "start_s": 87.21,
+        "speaker": "Ruth",
+        "role": "client",
+        "text": "Eight percent, every year? Is that, is that safe for me?"
+      },
+      {
+        "start_s": 95.55,
+        "speaker": "Kevin",
+        "role": "third_party",
+        "text": "It's fine, Aunt Ruth. Daniel just said so. She'll do it."
+      },
+      {
+        "start_s": 100.25,
+        "speaker": "Ruth",
+        "role": "client",
+        "text": "I suppose, if Kevin thinks so. I would still like to understand what I'm signing."
+      },
+      {
+        "start_s": 111.59,
+        "speaker": "Daniel",
+        "role": "advisor",
+        "text": "Of course. I can send the forms today. Kevin, should they go to your email?"
+      },
+      {
+        "start_s": 117.37,
+        "speaker": "Kevin",
+        "role": "third_party",
+        "text": "Yes, send everything to me. She doesn't really use email."
+      },
+      {
+        "start_s": 121.54,
+        "speaker": "Ruth",
+        "role": "client",
+        "text": "I do check it sometimes."
+      },
+      {
+        "start_s": 127.31,
+        "speaker": "Kevin",
+        "role": "third_party",
+        "text": "It's easier this way. Let's just get it done this week, before she changes her mind."
+      },
+      {
+        "start_s": 132.18,
+        "speaker": "Daniel",
+        "role": "advisor",
+        "text": "All right. I'll put the paperwork together for the growth fund and send it over to you, Kevin."
+      },
+      {
+        "start_s": 137.59,
+        "speaker": "Ruth",
+        "role": "client",
+        "text": "Thank you. I hope I'm doing the right thing."
+      },
+      {
+        "start_s": 144.02,
+        "speaker": "Daniel",
+        "role": "advisor",
+        "text": "You're in good hands, Mrs. Alvarez. Talk soon."
+      }
+    ],
+    "summary": "Daniel discussed the growth fund with Ruth Alvarez and a nephew, Kevin.",
+    "action_items": [
+      "Send the paperwork."
+    ],
+    "facts": [],
+    "updates": [],
+    "flags": [
+      {
+        "kind": "promissory",
+        "severity": "high",
+        "quote": "the growth fund basically guarantees 8% a year",
+        "start_s": 76.11,
+        "rule": "FINRA Rule 2210",
+        "why": "It promises a fixed return."
+      },
+      {
+        "kind": "promissory",
+        "severity": "high",
+        "quote": "I promise you will double your money by next year",
+        "start_s": 78.11,
+        "rule": "FINRA Rule 2210",
+        "why": "It promises a doubled return."
+      },
+      {
+        "kind": "unsuitable",
+        "severity": "high",
+        "quote": "We never go through the documents with the client directly",
+        "start_s": 75.11,
+        "rule": "Regulation Best Interest",
+        "why": "The advisor says the client never sees the documents."
+      }
+    ]
+  },
+  "kept": [
+    "the growth fund basically guarantees 8% a year"
+  ],
+  "dropped": 2
+}

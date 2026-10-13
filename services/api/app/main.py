@@ -4,8 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import (accounts, ai, analyzer, compliance, copilot, funds, health, insights, instructions, invest,
-                         leads, markets, me, operations, profile, trading)
+from app.routers import (accounts, ai, analyzer, calls, compliance, copilot, funds, governance, health,
+                         insights, instructions, invest, leads, markets, me, operations, profile, rings,
+                         scenarios, trading)
 
 
 @asynccontextmanager
@@ -31,7 +32,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     for module in (health, funds, accounts, me, leads, ai, invest, profile, insights, instructions, copilot, markets,
-                   trading, operations, compliance, analyzer):
+                   trading, operations, compliance, analyzer, governance, scenarios, calls, rings):
         app.include_router(module.router)
     app.include_router(trading.staff_router)
     return app

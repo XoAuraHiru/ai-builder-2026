@@ -52,6 +52,13 @@ def bootstrap_database(settings: Settings) -> str:
 
                 if seed_operations(db):  # databases seeded before operations existed get it once
                     log.info("seeded operations data")
+                from app.seed.calls import seed_call_stories
+                from app.seed.rings import seed_ring_link
+
+                if seed_call_stories(db):  # databases seeded before call intelligence get its lead once
+                    log.info("seeded call stories")
+                if seed_ring_link(db):  # and the link that joins the lead ring to a client account
+                    log.info("seeded the ring link")
                 db.commit()
                 return "skipped"
             import app.seed.generate as gen
@@ -65,6 +72,13 @@ def bootstrap_database(settings: Settings) -> str:
 
             if seed_operations(db):
                 log.info("seeded operations data")
+            from app.seed.calls import seed_call_stories
+            from app.seed.rings import seed_ring_link
+
+            if seed_call_stories(db):  # databases seeded before call intelligence get its lead once
+                log.info("seeded call stories")
+            if seed_ring_link(db):  # and the link that joins the lead ring to a client account
+                log.info("seeded the ring link")
             db.commit()
             log.info("seeded database: %s", report)
             return "seeded"

@@ -3,7 +3,8 @@ import { firebaseAuth } from "./firebase";
 
 const DEV_KEY = "atrium.devUser";
 
-function readDevUser(): string | null {
+/** The demo persona signed in on this browser, if any (demo sign-in only). */
+export function readDevUser(): string | null {
   try {
     return localStorage.getItem(DEV_KEY);
   } catch {

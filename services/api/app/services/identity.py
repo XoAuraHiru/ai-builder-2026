@@ -56,6 +56,41 @@ _ENTITY_FIELDS = {"fraud_signals_is_identity_document": "is_identity_document",
                   "fraud_signals_suspicious_words": "suspicious_words",
                   "fraud_signals_image_manipulation": "image_manipulation",
                   "fraud_signals_online_duplicate": "online_duplicate"}
+# The printed labels on a card, and the ExtractedId field the line after each label fills.
+_CARD_LABELS = {"name": "full_name", "full name": "full_name", "date of birth": "date_of_birth", "dob": "date_of_birth",
+                "document no.": "document_number", "document no": "document_number",
+                "document number": "document_number", "expires": "expiry_date", "expiry date": "expiry_date",
+                "date of expiry": "expiry_date"}
+_CARD_DATES = ("%Y-%m-%d", "%m/%d/%Y", "%d %b %Y", "%b %d, %Y")
+
+
+def _card_date(text: str) -> str | None:
+    from datetime import datetime
+
+    for fmt in _CARD_DATES:
+        try:
+            return datetime.strptime(text.strip(), fmt).date().isoformat()
+        except ValueError:
+            continue
+    return None
+
+
+def fields_from_document(document) -> tuple[ExtractedId, FraudSignals]:
+    """Map an ID Proofing response: the fraud signals from its entities, and the card's printed fields from the text
+    Document AI read (the line after each label). Gemini's reading stays the one the product uses; this mapping is
+    what lets the saved and live Document AI outputs be checked without a model."""
+    values = {_ENTITY_FIELDS[e.type_]: e.mention_text for e in document.entities if e.type_ in _ENTITY_FIELDS}
+    lines = [line.strip() for line in (getattr(document, "text", "") or "").splitlines() if line.strip()]
+    fields: dict[str, str] = {}
+    for label, value in zip(lines, lines[1:]):
+        key = _CARD_LABELS.get(label.lower())
+        if key and key not in fields and value.lower() not in _CARD_LABELS:
+            fields[key] = _card_date(value) if key in ("date_of_birth", "expiry_date") else value
+    read = sum(1 for v in fields.values() if v)
+    extracted = ExtractedId(document_type="other", full_name=fields.get("full_name"),
+                            date_of_birth=fields.get("date_of_birth"), document_number=fields.get("document_number"),
+                            expiry_date=fields.get("expiry_date"), confidence=read / 4)
+    return extracted, FraudSignals(**values)
 
 
 class DocumentAIProofing:
@@ -71,16 +106,17 @@ class DocumentAIProofing:
                 client_options=ClientOptions(api_endpoint=f"{settings.docai_location}-documentai.googleapis.com"))
         self._client = client
 
-    def proof(self, data: bytes, mime_type: str) -> FraudSignals:
+    def read(self, data: bytes, mime_type: str) -> tuple[ExtractedId, FraudSignals]:
         from google.cloud import documentai
 
         name = self._client.processor_path(self.settings.gcp_project, self.settings.docai_location,
                                            self.settings.docai_proofing_processor)
         request = documentai.ProcessRequest(name=name,
                                             raw_document=documentai.RawDocument(content=data, mime_type=mime_type))
-        document = self._client.process_document(request=request).document
-        values = {_ENTITY_FIELDS[e.type_]: e.mention_text for e in document.entities if e.type_ in _ENTITY_FIELDS}
-        return FraudSignals(**values)
+        return fields_from_document(self._client.process_document(request=request).document)
+
+    def proof(self, data: bytes, mime_type: str) -> FraudSignals:
+        return self.read(data, mime_type)[1]
 
 
 def get_proofing() -> ProofingClient | None:
@@ -118,7 +154,8 @@ def _finding(code: str, label: str, weight: int, evidence: str, source: str, blo
 
 def identity_findings(lead: Lead, extracted: ExtractedId, signals: FraudSignals | None, today: date) -> list[dict]:
     out: list[dict] = []
-    docai_says_not_id = bool(signals and signals.is_identity_document == "FAIL")
+    # Document AI answers NOT_AN_ID (seen in the saved golden outputs); FAIL is kept as a synonym.
+    docai_says_not_id = bool(signals and signals.is_identity_document in ("NOT_AN_ID", "FAIL"))
     if extracted.document_type == "not_an_identity_document" or docai_says_not_id:
         out.append(_finding("I00", "Not an identity document", -30,
                             "The upload was not recognised as a government identity document",

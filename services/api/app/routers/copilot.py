@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.agents.runtime import AgentUnavailable, get_agent_model
 from app.auth import CurrentUser, assert_account_access, get_current_user
 from app.db import get_db
+from app.governance.breakers import BreakerOpen, ensure_closed
 from app.knowledge.search import get_fund_search
 from app.routers.accounts import account_or_404
 from app.schemas.copilot import CopilotIn, CopilotOut
@@ -20,6 +21,10 @@ def ask_copilot(account_id: str, body: CopilotIn, request: Request, db: Session 
 
     account = account_or_404(db, account_id)
     assert_account_access(user, account)
+    try:
+        ensure_closed(db, "investor_copilot")
+    except BreakerOpen as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
     try:
         out = answer_question(db, account, body.question, [(t.role, t.text) for t in body.history], search, model,
                               device_hash=device_hash(request.headers.get("X-Device-Id")))

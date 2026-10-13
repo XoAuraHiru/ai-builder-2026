@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     gemini_flash_output_usd_per_m: float = 3.75
     gemini_pro_input_usd_per_m: float = 2.0
     gemini_pro_output_usd_per_m: float = 12.0
+    search_usd_per_query: float = 0.014     # Grounding with Google Search, list price beyond the free 5,000 a month
     docai_location: str = "us"
     docai_proofing_processor: str = ""      # Document AI ID Proofing processor id; empty disables fraud signals
     docai_statement_processor: str = ""     # Document AI Bank Statement Parser id; empty means CSV statements only
@@ -35,6 +36,8 @@ class Settings(BaseSettings):
     lead_capture_global_per_hour: int = 60  # all public submissions together: caps AI spend if identifiers are forged
     analyzer_limit_per_hour: int = 30       # public return analyzer, per device and per IP hash
     analyzer_global_per_hour: int = 600     # all analyzer runs together, whatever identifiers a caller sends
+    evals_job: str = ""                     # projects/<p>/locations/<r>/jobs/atrium-evals; empty runs the free tier here
+    monitoring_trips: bool = True           # false: monitoring reports agreement but never pauses a model (judging)
 
     market_data_provider: str = "fake"      # fake | yfinance | alpaca
     market_cache_dir: str = "data/cache"

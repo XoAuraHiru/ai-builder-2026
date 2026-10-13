@@ -336,7 +336,11 @@ def run_monitoring(db: Session, today: date | None = None, model: AmlModel | Non
     db.flush()  # sessions do not autoflush: rows the caller added must be visible to the scenarios
     today = today or ny_date(utcnow())
     model = model or AmlModel.load()
-    findings = [f for scenario in SCENARIOS for f in scenario(db, today)] + anomalies(db, today, model)
+    from app.governance.breakers import breaker_open
+
+    findings = [f for scenario in SCENARIOS for f in scenario(db, today)]
+    if not breaker_open(db, "aml_anomaly"):  # switched off: the scenarios alone raise alerts
+        findings += anomalies(db, today, model)
     raised: list[AmlAlert] = []
     for f in findings:
         mark = fingerprint(f)

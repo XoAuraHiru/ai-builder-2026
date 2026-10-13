@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.ai.llm import LLM, LLMError, get_llm
 from app.auth import CurrentUser, assert_account_access, get_current_user, require_roles
 from app.db import get_db
+from app.governance.breakers import BreakerOpen
 from app.markets.broker import Broker, broker_dep
 from app.markets.quotes import CommittedQuotes, quote_book
 from app.markets.universe import CASH, instrument
@@ -203,6 +204,8 @@ def review_note(order_id: str, db: Session = Depends(get_db), llm: LLM = Depends
         raise HTTPException(status_code=409, detail="Only an order waiting for an advisor gets a review note.")
     try:
         write_review_note(db, llm, order)
+    except BreakerOpen as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except LLMError as e:
         raise HTTPException(status_code=503, detail=REVIEW_BUSY) from e
     db.commit()

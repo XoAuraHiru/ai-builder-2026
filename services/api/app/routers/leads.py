@@ -11,6 +11,7 @@ from app.auth import CurrentUser, require_roles
 from app.config import get_settings
 from app.db import get_db
 from app.events import emit
+from app.governance.breakers import BreakerOpen
 from app.models import AIDecision, Analysis, Lead, Proposal
 from app.models.base import utcnow
 from app.knowledge.search import get_fund_search
@@ -178,6 +179,8 @@ def generate_proposal(lead_id: str, db: Session = Depends(get_db), llm: LLM = De
         row = build_proposal(db, lead, llm, search, user.email)
     except ProposalBlocked as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
+    except BreakerOpen as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except LLMError as e:
         db.rollback()
         raise HTTPException(status_code=503, detail=PROPOSAL_BUSY) from e

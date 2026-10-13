@@ -61,6 +61,11 @@ def build_enrichment_prompt(lead: Lead, funds: list[Fund]) -> str:
 
 
 def enrich_lead(db: Session, lead: Lead, llm: LLM) -> Enrichment:
+    from app.ai.offline import offline_llm
+    from app.governance.breakers import breaker_open
+
+    if breaker_open(db, "lead_enrichment"):  # switched off: the offline rules read the form instead
+        llm = offline_llm()
     funds = list(db.scalars(select(Fund).order_by(Fund.risk_band, Fund.code)).all())
     prompt = build_enrichment_prompt(lead, funds)
     result = llm.generate_json(purpose="lead_enrichment", prompt=prompt, schema=Enrichment)

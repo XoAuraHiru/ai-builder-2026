@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.events import emit
 from app.ml.lead_features import PHONE_RE
-from app.models import IdentityCheck, Lead
+from app.models import IdentityCheck, Lead, LeadCall, Person, RingFlag
 
 DISPOSABLE_DOMAINS = frozenset({
     "mailinator.com", "guerrillamail.com", "10minutemail.com", "tempmail.com", "temp-mail.org", "yopmail.com",
@@ -104,13 +104,52 @@ def _identity_signals(identity: IdentityCheck | None) -> list[TrustSignal]:
             for f in identity.findings]
 
 
+def _ring_signals(db: Session, lead: Lead) -> list[TrustSignal]:
+    """T09: a compliance person flagged the lead as part of a fraud ring (one signal, however many rings)."""
+    flag = db.scalar(select(RingFlag).where(RingFlag.lead_id == lead.id).order_by(RingFlag.created_at).limit(1))
+    if flag is None:
+        return []
+    who = db.get(Person, flag.flagged_by)
+    day = flag.created_at
+    return [TrustSignal("T09", "Part of a fraud ring", -25,
+                        f"Flagged by {who.full_name if who else 'compliance'} on {day:%B} {day.day}, {day.year}",
+                        "rings", False)]
+
+
+def _call_signals(db: Session, lead: Lead) -> list[TrustSignal]:
+    """T08: a recorded call in which a third party directed the client (a kept, high-severity flag)."""
+    from app.services.calls import clock, third_party_flag
+
+    calls = db.scalars(select(LeadCall).where(LeadCall.lead_id == lead.id)
+                       .order_by(LeadCall.created_at.desc())).all() if lead.id else []
+    for call in calls:
+        found = third_party_flag(call.reading)
+        if found:
+            # -25, not -20: from a clean 100, -20 lands exactly on "clear"; possible exploitation always earns a review.
+            return [TrustSignal("T08", "A third party directed the client on a call", -25,
+                                f"“{found['quote']}” at {clock(found['start_s'])} in {call.filename}", "call")]
+    return []
+
+
 def assess_trust(db: Session, lead: Lead, enrichment: dict | None, identity: IdentityCheck | None) -> TrustReport:
-    signals = _contact_signals(db, lead) + _enrichment_signals(enrichment) + _identity_signals(identity)
+    signals = (_contact_signals(db, lead) + _enrichment_signals(enrichment) + _identity_signals(identity)
+               + _ring_signals(db, lead)
+               + _call_signals(db, lead))
     signals.sort(key=lambda s: (s.code[0] != "T", int(s.code[1:]), s.evidence))
     score = max(0, min(100, 100 + sum(s.weight for s in signals)))
     blocked = any(s.blocking for s in signals)
-    band = "blocked" if blocked else "clear" if score >= 80 else "review" if score >= 50 else "high_risk"
-    return TrustReport(score=score, band=band, signals=signals, blocked=blocked)
+    return TrustReport(score=score, band=band_for(score, blocked), signals=signals, blocked=blocked)
+
+
+def band_for(score: int, blocked: bool) -> str:
+    return "blocked" if blocked else "clear" if score >= 80 else "review" if score >= 50 else "high_risk"
+
+
+def band_without(signals: list[dict], codes: set[str]) -> str:
+    """The band a lead's stored signals would give without some of them (the ring radar leaves out its own T09)."""
+    kept = [s for s in signals if s.get("code") not in codes]
+    score = max(0, min(100, 100 + sum(int(s.get("weight", 0)) for s in kept)))
+    return band_for(score, any(s.get("blocking") for s in kept))
 
 
 def latest_identity_check(db: Session, lead: Lead) -> IdentityCheck | None:

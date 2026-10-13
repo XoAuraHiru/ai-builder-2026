@@ -98,6 +98,9 @@ def _passages(search, funds: dict[str, Fund], mix: dict[str, float]) -> tuple[li
 
 
 def build_proposal(db: Session, lead: Lead, llm: LLM, search, staff_email: str) -> Proposal:
+    from app.governance.breakers import ensure_closed
+
+    ensure_closed(db, "proposal_writer")  # paused: no proposal is written until it is reset
     if lead.trust_band in ("high_risk", "blocked"):
         raise ProposalBlocked("Resolve the trust review before preparing a proposal.")
     funds = {f.code: f for f in db.scalars(select(Fund)).all()}

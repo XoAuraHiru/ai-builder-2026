@@ -15,14 +15,18 @@ https://atrium-web-1070337126396.us-central1.run.app opens on Atrium's front doo
 | Persona | What to open |
 |---|---|
 | Anyone, no sign-in | The front door's analyzer: pick an Atrium fund (unit trust) or one of 46 shares and ETFs, a one-time amount (plus a monthly amount for a fund) and a duration, and see 10,000 simulated futures over real history since 2007, the S&P 500 beside a share, and a fund's unit price since 2007. "Talk to an advisor about this plan" opens the application with the analysis attached; an investor gets "Invest in…" or "Buy N shares" instead |
-| Priya Raman (investor) | Overview, What-if Studio (10,000 simulated futures over real history since 2007), Portfolio X-ray, Risk (the mix has drifted above the risk profile), fund pages with a cited reading, the risk-profile conversation, Fund orders, the Copilot agent, and Markets: checking 60 NVIDIA shares shows the Pre-trade Guardian holding the order for an advisor |
-| Lucas Moreau (investor) | The X-ray (about a tenth of the portfolio is one company, through six ETFs), then buying more NVIDIA: the Guardian counts the shares held through his funds |
+| Priya Raman (investor) | Overview, What-if Studio (10,000 simulated futures over real history since 2007), Portfolio X-ray, Risk (the mix has drifted above the risk profile), fund pages with a cited reading, the risk-profile conversation, Fund orders, the Copilot agent, Markets: checking 60 NVIDIA shares shows the Pre-trade Guardian holding the order for an advisor, and Scenarios: replay 2008, 2020 and 2022 on what you hold, or describe a scenario in plain English and adjust every shock Gemini proposes |
+| Lucas Moreau (investor) | The X-ray (about a tenth of the portfolio is one company, through six ETFs), then buying more NVIDIA: the Guardian counts the shares held through funds |
 | Tom Becker (investor) | Selling all 120 Tesla shares from your browser: Atrium has never seen it, so the Guardian holds the sale as a possible account takeover |
 | Hana Sato (investor) | Buying back PepsiCo, sold at a loss less than three weeks ago: the wash-sale warning |
-| Daniel Okafor (advisor) | The lead pipeline with three fraud stories, identity checks, AI replies, proposals by Gemini Pro, and Held orders: a Gemini Pro review note, then release or reject |
-| Mei Tanaka (operations) | Reconciliation: read the sample bank statement (a PDF read by Document AI), let the agent find matches for the typo, the missing reference and the split payment, and accept them; then the day-end, and ask for the draft prices to be published |
+| Daniel Okafor (advisor) | The lead pipeline with three fraud stories, identity checks, AI replies, proposals by Gemini Pro, the pressure call on Ruth Alvarez's page (Gemini listens to the recording and flags a guarantee and a nephew directing a 74-year-old client, each with the second it was said), and Held orders: a Gemini Pro review note, then release or reject |
+| Mei Tanaka (operations) | Reconciliation: read the sample bank statement (CSV by default; upload the sample PDF to have Document AI read it), let the agent find matches for the typo, the missing reference and the split payment, and accept them; then the day-end, and ask for the draft prices to be published |
 | Sam Ortiz (operations) | Approvals: Mei's requests, approved with the six-digit code from the demo authenticator; you cannot approve your own |
-| Omar Haddad (compliance) | Alerts: structuring just under $10,000, money in and straight out, a payment from a stranger, and two accounts sharing one bank account; each with its evidence rows, a linked-entity graph and a Gemini Pro case review |
+| Omar Haddad (compliance) | Alerts: structuring just under $10,000, money in and straight out, a payment from a stranger, and two accounts sharing one bank account; each with its evidence rows, a linked-entity graph and a Gemini Pro case review. Fraud rings: one graph across leads and clients finds the device ring that also signs in to Sofia Rossi's account. Models: all 18 models with their golden cases, red-team attacks, fair-lending checks, monitoring and circuit breakers |
+
+## The Model Risk Office
+
+Atrium governs its AI the way US banks govern models under the Federal Reserve's SR 11-7 guidance. Every model, from the Lead Score to the case reviewer, is in one inventory with its owner, risk tier, human gate, fallback, known limits and a version taken from the hash of its prompt and code. Before every deploy, `infra/deploy.sh` runs the free tier of the evaluation suites (`python -m app.governance.evals --tier free`) and stops on any failure. After every deploy, the Cloud Run job `atrium-evals` runs the live tier: golden cases against Gemini and the ADK agent, a red-team agent that writes fresh prompt injections against Atrium's own models, a fair-lending check that swaps names and countries, and a Flash-against-Pro challenger on case reviews. Monitoring compares each model with people's decisions. A high-risk model that misses its bar trips a circuit breaker: its feature falls back to the deterministic engine until a compliance officer resets it with a reason and a one-time code.
 
 Every AI paragraph is set in a serif face beside a gold rule and says which model wrote it. Every dollar and percentage figure it writes is checked against the engine that produced it, and claims about funds cite the fact-sheet section they come from.
 
@@ -107,6 +111,10 @@ AI is pay-per-use. Measured on the live system (Gemini 3.8 Flash on the global e
 | Find matches (ADK reconciliation agent, Gemini Flash) | $0.004 to $0.014, about 10 to 20 seconds |
 | AML case review (Gemini Pro, citations and figures checked) | $0.018 to $0.024, about 16 to 21 seconds |
 | Day-end run with its morning brief (Cloud Run job + Gemini Flash) | $0.0008; the job's few seconds of compute and the one Cloud Scheduler job are inside the free tiers |
+| Live model checks (Cloud Run job `atrium-evals`: golden cases, red team, fair lending, challenger) | estimated $0.15 to $0.30 per run; measured on each run and shown on the Models page |
+| Map a scenario (Gemini Flash grounded with Google Search, then a structured proposal) | about $0.003; search queries are free under 5,000 a month |
+| Analyse a recorded client call (Gemini Flash audio) | about $0.005 for three minutes |
+| Explain a fraud ring (Gemini Flash, citations checked) | about $0.002 |
 
 Vertex AI Search (the fund documents) is billed per query at the Enterprise list price of $4 per 1,000; its index is a few kilobytes, inside the free storage tier. At demo volumes (100 leads, 30 drafts, 30 questions and 20 identity checks, plus 150 Invest explanations and readings, 80 Copilot questions and 20 proposals a month, plus 100 order explanations and 10 held-order review notes) AI adds about $4.90, so the system ran at roughly $14.50 a month before the Operate release. Operate adds about $23.30 at demo volumes (30 statement PDFs, 30 reconciliations, 20 case reviews and 22 day-end runs a month), almost all of it Document AI's $0.75 per statement, for roughly $37.80 a month in all. Reading statements as CSV instead costs $0.002 each and brings the total back to about $15, so the sample statement reads as CSV by default; set `SAMPLE_STATEMENT_FORMAT=pdf` on the API, or upload the sample PDF, to have Document AI read it. Live quotes come from Yahoo Finance at no charge. The front-door analyzer uses no AI for visitors, and is limited to 30 runs an hour per device or network and 600 an hour in all (`ANALYZER_LIMIT_PER_HOUR`, `ANALYZER_GLOBAL_PER_HOUR`). Every call is listed with its cost under `GET /ai/usage` and on each lead's AI activity panel, and lands in BigQuery (`atrium.events`).
 
@@ -120,7 +128,7 @@ API_MIN_INSTANCES=1 WEB_MIN_INSTANCES=1 bash infra/deploy.sh
 
 | Path | What |
 |---|---|
-| `services/api` | FastAPI core: ledger, leads, risk profiles, what-if engine, risk and X-ray analytics, fund documents and search, instructions, ADK agents |
+| `services/api` | FastAPI core: ledger, leads, risk profiles, what-if engine, risk and X-ray analytics, scenarios, call analysis, fraud rings, fund documents and search, instructions, ADK agents, and model governance (`app/governance`) |
 | `apps/web` | Next.js workspaces on the Atrium design system: investor, advisor, operations and compliance |
 | `infra` | GCP setup, deploy and preflight scripts |
 | `docs` | Blueprint, implementation plans, diagrams |

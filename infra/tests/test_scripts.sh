@@ -61,7 +61,14 @@ case "$*" in
 esac
 FAKE
 printf '#!/usr/bin/env bash\nexit 1\n' > "$WORK/bin/firebase"
-chmod +x "$WORK/bin/gcloud" "$WORK/bin/firebase" "$WORK/bin/bq" "$WORK/bin/curl"
+# The deploy gate runs the free evaluation suites through uv; FAKE_GATE_FAILS=1 makes it fail.
+cat > "$WORK/bin/uv" <<'FAKE'
+#!/usr/bin/env bash
+echo "uv $*" >> "$FAKE_LOG"
+[ -n "${FAKE_GATE_FAILS:-}" ] && exit 1
+exit 0
+FAKE
+chmod +x "$WORK/bin/gcloud" "$WORK/bin/firebase" "$WORK/bin/bq" "$WORK/bin/curl" "$WORK/bin/uv"
 export PATH="$WORK/bin:$PATH"
 
 FAILS=0
@@ -136,6 +143,22 @@ check "web scales to zero by default" 'echo "$WEB_DEPLOY" | grep -q -- "--min-in
 check "both services use startup CPU boost" 'echo "$API_DEPLOY" | grep -q -- "--cpu-boost" && echo "$WEB_DEPLOY" | grep -q -- "--cpu-boost"'
 
 check "API source upload leaves out the local virtualenv and tests" 'grep -qx ".venv/" services/api/.gcloudignore && grep -qx "tests/" services/api/.gcloudignore'
+line_of() { grep -n -m1 -- "$1" "$FAKE_LOG" | cut -d: -f1; }
+check "runs the free evaluation gate before deploying anything" '[ -n "$(line_of "app.governance.evals --tier free")" ] && [ "$(line_of "app.governance.evals --tier free")" -lt "$(line_of "run deploy atrium-api")" ]'
+check "API knows the evals job" 'echo "$API_DEPLOY" | grep -q "EVALS_JOB=projects/atrium-cup-2026/locations/us-central1/jobs/atrium-evals"'
+check "deploys the evals job from the API image" 'grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q -- "--image" && grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q "app.governance.evals,--tier,live,--store,--trigger,deploy"'
+check "the evals job never retries and stops after 45 minutes" 'grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q -- "--max-retries 0" && grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q -- "--task-timeout 2700"'
+check "monitoring is report-only unless asked" 'grep "run deploy atrium-api" "$FAKE_LOG" | grep -q "MONITORING_TRIPS=false"'
+check "the evals job records the commit it checked" 'grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q "GIT_SHA="'
+check "lets the API start the evals job" 'grep "run jobs add-iam-policy-binding atrium-evals" "$FAKE_LOG" | grep -q "serviceAccount:atrium-api@atrium-cup-2026.iam.gserviceaccount.com" && grep "run jobs add-iam-policy-binding atrium-evals" "$FAKE_LOG" | grep -q "roles/run.invoker"'
+check "starts the live checks after the web deploys, without waiting" '[ "$(line_of "run jobs execute atrium-evals")" -gt "$(line_of "run deploy atrium-web")" ] && grep "run jobs execute atrium-evals" "$FAKE_LOG" | grep -q -- "--async"'
+
+echo "deploy.sh when a free evaluation suite fails"
+: > "$FAKE_LOG"; rm -f "$FAKE_LOG.web" "$FAKE_LOG.datastore"
+FAKE_GATE_FAILS=1 FAKE_WEB_EXISTS=1 bash infra/deploy.sh > "$WORK/deploy-gate.out" 2>&1
+STATUS=$?
+check "stops with an error (was $STATUS)" '[ "$STATUS" -ne 0 ]'
+check "deploys nothing" '! grep -q "run deploy" "$FAKE_LOG"'
 
 echo "deploy.sh with warm instances for the judging window"
 : > "$FAKE_LOG"; rm -f "$FAKE_LOG.web" "$FAKE_LOG.datastore"

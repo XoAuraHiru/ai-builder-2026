@@ -1,6 +1,6 @@
 export type IconName =
   | "home" | "portfolio" | "markets" | "funds" | "plan" | "leads" | "held" | "form" | "today" | "reconcile" | "approvals"
-  | "blotter" | "alerts" | "log";
+  | "blotter" | "alerts" | "log" | "models" | "rings";
 export type NavTab = { href: string; label: string };
 /** A rail item. Its tabs (if any) are shown at the top of each of its pages; `also` lists other paths it owns. */
 export type NavSection = { key: string; label: string; href: string; icon: IconName; tabs?: NavTab[]; also?: string[] };
@@ -13,7 +13,8 @@ export const WORKSPACES: Record<WorkspaceKey, Workspace> = {
     sections: [
       { key: "home", label: "Home", href: "/investor", icon: "home" },
       { key: "portfolio", label: "Portfolio", href: "/investor/xray", icon: "portfolio",
-        tabs: [{ href: "/investor/xray", label: "X-ray" }, { href: "/investor/risk", label: "Risk" }, { href: "/investor/profile", label: "Risk profile" }] },
+        tabs: [{ href: "/investor/xray", label: "X-ray" }, { href: "/investor/risk", label: "Risk" },
+               { href: "/investor/scenarios", label: "Scenarios" }, { href: "/investor/profile", label: "Risk profile" }] },
       { key: "markets", label: "Markets", href: "/investor/markets", icon: "markets",
         tabs: [{ href: "/investor/markets", label: "Markets" }, { href: "/investor/trades", label: "Your trades" }] },
       { key: "funds", label: "Funds", href: "/investor/funds", icon: "funds",
@@ -42,6 +43,8 @@ export const WORKSPACES: Record<WorkspaceKey, Workspace> = {
     key: "compliance", label: "Compliance", home: "/compliance",
     sections: [
       { key: "alerts", label: "Alerts", href: "/compliance", icon: "alerts", also: ["/compliance/alerts"] },
+      { key: "rings", label: "Fraud rings", href: "/compliance/rings", icon: "rings" },
+      { key: "models", label: "Models", href: "/compliance/models", icon: "models" },
       { key: "log", label: "Decision log", href: "/compliance/log", icon: "log" },
     ],
   },

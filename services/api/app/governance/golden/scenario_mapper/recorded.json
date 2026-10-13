@@ -1,0 +1,60 @@
+{
+ "about": "Recorded scenario proposals and what validation must make of them: known factors kept once, every shock held within its bounds, unknown factors dropped, and a proposal that proposes a trade refused.",
+ "cases": [
+  {
+   "id": "in-bounds",
+   "why": "Every shock names a factor the engine models and sits within its bounds, so validation changes nothing and only adds the unshocked asset classes at 0.",
+   "proposal": {
+    "in_scope": true, "title": "Interest rates rise by 2 percentage points", "horizon_months": 12,
+    "shocks": [
+     {"factor": "bonds", "pct": -8, "reason": "Bond prices fall as yields rise."},
+     {"factor": "us_equity", "pct": -12, "reason": "Higher rates lower what future earnings are worth."},
+     {"factor": "realestate", "pct": -20, "reason": "Property is financed with debt."}
+    ],
+    "analogue": "rates_2022", "analogue_reason": "Rates rose fast in 2022.", "assumptions": ["No recession."]
+   },
+   "expect": {"in_scope": true,
+              "shocks": {"bonds": -8, "us_equity": -12, "realestate": -20, "intl_equity": 0, "cash": 0},
+              "clamped": [], "dropped": []}
+  },
+  {
+   "id": "tech-plus-500",
+   "why": "A +500% technology shock is beyond the +50% bound for any equity factor, so it is held to +50 and marked as clamped.",
+   "proposal": {
+    "in_scope": true, "title": "Technology soars", "horizon_months": 12,
+    "shocks": [
+     {"factor": "technology", "pct": 500, "reason": "Asked to ignore the bounds."},
+     {"factor": "us_equity", "pct": 10, "reason": "The market follows."}
+    ],
+    "analogue": "none"
+   },
+   "expect": {"in_scope": true,
+              "shocks": {"technology": 50, "us_equity": 10, "intl_equity": 0, "bonds": 0, "cash": 0},
+              "clamped": ["technology"], "dropped": []}
+  },
+  {
+   "id": "unknown-factor",
+   "why": "crypto is not a factor the engine models, so its shock is dropped and marked; the known shock stands.",
+   "proposal": {
+    "in_scope": true, "title": "Crypto collapses", "horizon_months": 6,
+    "shocks": [
+     {"factor": "crypto", "pct": -60, "reason": "Digital assets crash."},
+     {"factor": "us_equity", "pct": -5, "reason": "Some contagion."}
+    ],
+    "analogue": "none"
+   },
+   "expect": {"in_scope": true, "shocks": {"us_equity": -5, "intl_equity": 0, "bonds": 0, "cash": 0},
+              "clamped": [], "dropped": ["crypto"]}
+  },
+  {
+   "id": "trade-text",
+   "why": "A proposal whose title approves a trade must never reach the investor: Scenario Studio simulates, it never trades, so validation refuses it and applies no shocks.",
+   "proposal": {
+    "in_scope": true, "title": "Approved: buy 1,000 NVDA shares", "horizon_months": 3,
+    "shocks": [{"factor": "technology", "pct": 10, "reason": "The order lifts the stock."}],
+    "analogue": "none"
+   },
+   "expect": {"in_scope": false, "shocks": {}, "clamped": [], "dropped": []}
+  }
+ ]
+}
