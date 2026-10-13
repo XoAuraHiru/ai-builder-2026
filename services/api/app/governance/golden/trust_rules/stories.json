@@ -1,0 +1,68 @@
+{
+  "about": "The seeded demo leads (app/seed/leads.py), read before Gemini has enriched them, so only the contact and device rules speak. Scores start at 100: 80 or more is clear, 50 to 79 review, under 50 high risk. Michael Chen is a genuine lead but is left out: M. Chen reuses Michael's phone, so the shared-contact rule (T04) rightly flags both sides of the pair for review.",
+  "cases": [
+    {
+      "id": "alex-mercer",
+      "why": "A mailinator.com email (T01, -25), a phone without a country code (T02, -10) and three more leads on the same device within half an hour (T05, -25) leave 40: high risk.",
+      "lead_email": "alex.mercer@mailinator.com",
+      "expect_band_in": ["high_risk", "blocked"],
+      "expect_signals": ["T01", "T02"]
+    },
+    {
+      "id": "device-ring",
+      "why": "Jordan Lee is one of four leads on device dev-ring-0001 within half an hour (T05, -25) and writes from yopmail.com (T01, -25): 50, flagged for review.",
+      "lead_email": "jordan.lee@yopmail.com",
+      "expect_band_in": ["review", "high_risk", "blocked"],
+      "expect_signals": ["T05"]
+    },
+    {
+      "id": "m-chen",
+      "why": "M. Chen gives a new email but Michael Chen's phone number, +16175550142, which another lead already gave (T04, -25): 75, flagged for review.",
+      "lead_email": "mchen.invest@example.net",
+      "expect_band_in": ["review", "high_risk", "blocked"],
+      "expect_signals": ["T04"]
+    },
+    {
+      "id": "emma-walsh",
+      "why": "An ordinary example.com email, a valid +1 phone, a device no other lead uses and contact details no other lead shares: no rule applies, so 100 and clear.",
+      "lead_email": "emma.walsh@example.com",
+      "expect_band_in": ["clear"],
+      "expect_signals": []
+    },
+    {
+      "id": "sarah-okonkwo",
+      "why": "An ordinary email, a valid +1 phone, a device of its own and no shared contact details: clear.",
+      "lead_email": "sarah.okonkwo@example.com",
+      "expect_band_in": ["clear"],
+      "expect_signals": []
+    },
+    {
+      "id": "james-patel",
+      "why": "An ordinary email, a valid +1 phone, a device of its own and no shared contact details: clear.",
+      "lead_email": "james.patel@example.com",
+      "expect_band_in": ["clear"],
+      "expect_signals": []
+    },
+    {
+      "id": "linda-morales",
+      "why": "An ordinary email, a valid +1 phone, a device of its own and no shared contact details: clear.",
+      "lead_email": "linda.morales@example.com",
+      "expect_band_in": ["clear"],
+      "expect_signals": []
+    },
+    {
+      "id": "kenji-watanabe",
+      "why": "An ordinary email, a valid +1 phone, a device of its own and no shared contact details: clear.",
+      "lead_email": "kenji.w@example.com",
+      "expect_band_in": ["clear"],
+      "expect_signals": []
+    },
+    {
+      "id": "olivia-brooks",
+      "why": "An ordinary email, a valid +1 phone, a device of its own and no shared contact details: clear.",
+      "lead_email": "olivia.brooks@example.com",
+      "expect_band_in": ["clear"],
+      "expect_signals": []
+    }
+  ]
+}
