@@ -77,12 +77,12 @@ export function FanChart({ scenarios, active, goal, colors }:
         </defs>
         {geo.ticks.map((t) => (
           <g key={t}>
-            <line x1={M.left} x2={W - M.right} y1={geo.y(t)} y2={geo.y(t)} stroke="var(--color-line)" strokeWidth={1} />
-            <text x={M.left - 8} y={geo.y(t)} dy="0.32em" textAnchor="end" className="num fill-muted text-[11px]">{compactUsd(t)}</text>
+            <line x1={M.left} x2={W - M.right} y1={geo.y(t)} y2={geo.y(t)} stroke="var(--color-sand-200)" strokeWidth={1} />
+            <text x={M.left - 8} y={geo.y(t)} dy="0.32em" textAnchor="end" className="num fill-ink-500 text-[11px]">{compactUsd(t)}</text>
           </g>
         ))}
         {xTicks.map((t) => (
-          <text key={t} x={geo.x(t)} y={H - 8} textAnchor="middle" className="num fill-muted text-[11px]">{t === 0 ? "Now" : `${t}y`}</text>
+          <text key={t} x={geo.x(t)} y={H - 8} textAnchor="middle" className="num fill-ink-500 text-[11px]">{t === 0 ? "Now" : `${t}y`}</text>
         ))}
         <g key={years} clipPath={`url(#${clip})`}>
           <motion.path initial={false} d={geo.outer} animate={{ d: geo.outer }} transition={morph} fill={color} fillOpacity={0.1} />
@@ -90,35 +90,35 @@ export function FanChart({ scenarios, active, goal, colors }:
           {geo.others.map((d, i) => d && (
             <motion.path key={i} initial={false} d={d} animate={{ d }} transition={morph} fill="none" stroke={colors[i]} strokeWidth={1.25} strokeOpacity={0.8} />
           ))}
-          <motion.path initial={false} d={geo.paid} animate={{ d: geo.paid }} transition={morph} fill="none" stroke="var(--color-ink-2)" strokeWidth={1} strokeDasharray="3 4" />
+          <motion.path initial={false} d={geo.paid} animate={{ d: geo.paid }} transition={morph} fill="none" stroke="var(--color-ink-700)" strokeWidth={1} strokeDasharray="3 4" />
           <motion.path initial={false} d={geo.median} animate={{ d: geo.median }} transition={morph} fill="none" stroke={color} strokeWidth={2.25} strokeLinejoin="round" />
         </g>
         {goal !== null && geo.y(goal) > M.top && (
           <g>
-            <line x1={M.left} x2={W - M.right} y1={geo.y(goal)} y2={geo.y(goal)} stroke="var(--color-gain)" strokeWidth={1} strokeDasharray="6 4" />
-            <text x={M.left + 6} y={geo.y(goal) - 6} className="num fill-gain text-[11px] font-medium">Goal {compactUsd(goal)}</text>
+            <line x1={M.left} x2={W - M.right} y1={geo.y(goal)} y2={geo.y(goal)} stroke="var(--color-green-700)" strokeWidth={1} strokeDasharray="6 4" />
+            <text x={M.left + 6} y={geo.y(goal) - 6} className="num fill-green-700 text-[11px] font-medium">Goal {compactUsd(goal)}</text>
           </g>
         )}
         <motion.g key={`labels-${years}`} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }}
           transition={{ delay: reduce ? 0 : 0.9, duration: 0.3 }}>
           {([["p90", "Upper 10%"], ["p50", "Middle"], ["p10", "Lower 10%"]] as const).map(([key, name]) => (
             <g key={key} transform={`translate(${W - M.right + 12}, ${labels[key]})`}>
-              <text className="fill-muted text-[10.5px]" dy="-0.25em">{name}</text>
-              <text className={`num wide text-[13.5px] font-semibold ${key === "p50" ? "fill-ink" : "fill-ink-2"}`} dy="1em">{compactUsd(last[key])}</text>
+              <text className="fill-ink-500 text-[10.5px]" dy="-0.25em">{name}</text>
+              <text className={`num wide text-[13.5px] font-semibold ${key === "p50" ? "fill-ink-900" : "fill-ink-700"}`} dy="1em">{compactUsd(last[key])}</text>
             </g>
           ))}
         </motion.g>
-        {point && <line x1={geo.x(point.year)} x2={geo.x(point.year)} y1={M.top} y2={H - M.bottom} stroke="var(--color-ink)" strokeOpacity={0.35} />}
+        {point && <line x1={geo.x(point.year)} x2={geo.x(point.year)} y1={M.top} y2={H - M.bottom} stroke="var(--color-sand-300)" />}
         <rect x={M.left} y={M.top} width={plotWidth} height={H - M.top - M.bottom} fill="transparent"
           onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={() => setHover(null)} />
       </svg>
       {point && (
-        <div className="pointer-events-none absolute top-2 z-10 rounded-control border border-line bg-surface px-3 py-2 text-xs shadow-[0_8px_24px_-12px_rgba(23,32,42,0.35)]"
+        <div className="pointer-events-none absolute top-2 z-10 rounded-control border border-sand-200 bg-white px-3 py-2 text-xs shadow-float"
           style={{ left: `${(geo.x(point.year) / W) * 100}%`, transform: geo.x(point.year) > W * 0.55 ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
           <p className="font-medium">{point.year === 0 ? "Today" : `After ${point.year} year${point.year === 1 ? "" : "s"}`}</p>
-          <p className="num mt-1 text-ink">Middle {formatUsd(point.p50, 0)}</p>
-          <p className="num text-ink-2">Range {formatUsd(point.p10, 0)} to {formatUsd(point.p90, 0)}</p>
-          <p className="num text-muted">Paid in {formatUsd(point.contributed, 0)}</p>
+          <p className="num mt-1 text-ink-900">Middle {formatUsd(point.p50, 0)}</p>
+          <p className="num text-ink-700">Range {formatUsd(point.p10, 0)} to {formatUsd(point.p90, 0)}</p>
+          <p className="num text-ink-500">Paid in {formatUsd(point.contributed, 0)}</p>
         </div>
       )}
     </div>

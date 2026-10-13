@@ -16,8 +16,8 @@ export function YearBars({ years }: { years: { year: number; return_pct: number;
       aria-label={years.map((r) => `${r.year}: ${r.return_pct}%`).join("; ")}>
       {niceTicks(lo, hi, 3).map((t) => (
         <g key={t}>
-          <line x1={M.left} x2={W - M.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--color-ink-2)" : "var(--color-line)"} />
-          <text x={M.left - 6} y={y(t)} dy="0.32em" textAnchor="end" className="num fill-muted text-[10.5px]">{t}%</text>
+          <line x1={M.left} x2={W - M.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? "var(--color-ink-400)" : "var(--color-sand-200)"} />
+          <text x={M.left - 6} y={y(t)} dy="0.32em" textAnchor="end" className="num fill-ink-500 text-[10.5px]">{t}%</text>
         </g>
       ))}
       {years.map((r, i) => {
@@ -25,12 +25,12 @@ export function YearBars({ years }: { years: { year: number; return_pct: number;
         const bottom = y(Math.min(r.return_pct, 0));
         return (
           <g key={r.year}>
-            <rect x={M.left + i * band + band * 0.18} width={band * 0.64} y={top} height={Math.max(1, bottom - top)}
-              fill={r.return_pct >= 0 ? "var(--color-gain)" : "var(--color-loss)"} fillOpacity={r.months === 12 ? 0.85 : 0.4}>
+            <rect x={M.left + i * band + band * 0.18} width={band * 0.64} y={top} height={Math.max(1, bottom - top)} rx={2}
+              fill={r.return_pct >= 0 ? "var(--color-green-500)" : "var(--color-coral-500)"} fillOpacity={r.months === 12 ? 1 : 0.45}>
               <title>{`${r.year}${r.months < 12 ? ` (${r.months} months)` : ""}: ${r.return_pct > 0 ? "+" : ""}${r.return_pct}%`}</title>
             </rect>
             {i % 2 === 0 && (
-              <text x={M.left + i * band + band / 2} y={H - 8} textAnchor="middle" className="num fill-muted text-[10.5px]">
+              <text x={M.left + i * band + band / 2} y={H - 8} textAnchor="middle" className="num fill-ink-500 text-[10.5px]">
                 {`'${String(r.year).slice(2)}`}
               </text>
             )}
