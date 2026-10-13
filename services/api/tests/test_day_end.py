@@ -38,7 +38,9 @@ def test_a_run_drafts_prices_waits_to_allocate_and_writes_a_brief(db, priced, ac
                        state="accepted", requested_at=datetime(2026, 10, 9, 14, tzinfo=timezone.utc)))
     run = run_day_end(db, now=NOW, triggered_by="test", llm=offline_llm(), closes=closes(), model=QUIET)
     steps = {s["step"]: s for s in run.steps}
-    assert list(steps) == ["Prices", "Monthly plans", "Allocation", "Monitoring", "Exceptions", "Morning brief"]
+    assert list(steps) == ["Prices", "Monthly plans", "Allocation", "Monitoring", "Model monitoring", "Exceptions",
+                           "Morning brief"]
+    assert steps["Model monitoring"]["ok"] and steps["Model monitoring"]["facts"] == {"tripped": []}
     assert run.as_of == AS_OF and run.status == "ok" and steps["Prices"]["facts"]["drafted"] == 7
     assert "waiting" in steps["Allocation"]["detail"].lower() and "1 subscription" in steps["Exceptions"]["detail"]
     assert run.summary["headline"] and db.scalar(select(OpsRun.id)) == run.id

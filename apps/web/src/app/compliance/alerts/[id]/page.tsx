@@ -47,6 +47,7 @@ function Review({ review, labels }: { review: CaseReview; labels: Record<string,
   const problems = [
     review.unsupported_figures.length ? `${review.unsupported_figures.join(", ")} did not come from the evidence` : "",
     review.dropped_citations.length ? `${review.dropped_citations.length} citation${review.dropped_citations.length === 1 ? "" : "s"} to rows that are not in the evidence were removed` : "",
+    review.unknown_names?.length ? `${review.unknown_names.join(", ")} ${review.unknown_names.length === 1 ? "is" : "are"} not named in the alert or its linked accounts` : "",
   ].filter(Boolean);
   return (
     <AiProse caption={`Written by ${review.model} from the alert, its evidence and the linked accounts. A suggestion only: you decide.`}
@@ -111,7 +112,9 @@ export default function AlertPage() {
               <h2 className="text-[17px] font-semibold">Case review</h2>
               {alert.ai_review?.verified && <Badge tone="gain">Figures and citations checked</Badge>}
             </div>
-            {alert.ai_review ? <Review review={alert.ai_review} labels={labels} /> : (
+            {alert.ai_review ? <Review review={alert.ai_review} labels={labels} /> : alert.review_paused ? (
+              <Notice tone="caution" title="Decide from the evidence">{alert.review_paused}</Notice>
+            ) : (
               <div className="space-y-3">
                 <p className="text-sm text-ink-2">Gemini Pro reads the alert, its evidence and the linked accounts, and suggests what to do. It takes about half a minute.</p>
                 <Button variant="secondary" busy={busy === "review"} disabled={Boolean(busy)}

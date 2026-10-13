@@ -19,6 +19,31 @@ def print_report(report: RunReport) -> None:
           f"AI cost ${report.cost_usd:.4f}")
 
 
+ADOPT_TRIES, ADOPT_WAIT_S = 3, 3
+
+
+def adopt(db, args):
+    """On Cloud Run, the execution started by the button finds the run the button wrote (the API records the
+    execution's name just after starting it, so this looks a few times); an execution started by a deploy finds none
+    and starts its own."""
+    import os
+    import time
+
+    from sqlalchemy import select
+
+    from app.models import EvalRun
+
+    execution = os.environ.get("CLOUD_RUN_EXECUTION")
+    if execution:
+        for _ in range(ADOPT_TRIES):
+            db.expire_all()
+            running = db.scalars(select(EvalRun).where(EvalRun.status == "running", EvalRun.trigger == "button")).all()
+            if any((r.summary or {}).get("execution") == execution for r in running):
+                break
+            time.sleep(ADOPT_WAIT_S)
+    return adopt_or_start(db, tier=args.tier, trigger=args.trigger, execution=execution)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.governance.evals")
     parser.add_argument("--tier", choices=("free", "live"), default="free")
@@ -36,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
 
     init_db()
     with SessionLocal() as db:
-        run = adopt_or_start(db, tier=args.tier, trigger=args.trigger)
+        run = adopt(db, args)
         db.commit()
         try:
             llm = agent_model = None
@@ -47,6 +72,9 @@ def main(argv: list[str] | None = None) -> int:
                 llm, agent_model = get_llm(), get_agent_model()
             report = run_evals(args.tier, llm=llm, agent_model=agent_model, with_documents=args.with_documents)
             store_run(db, report, run)
+            from app.governance import monitoring
+
+            monitoring.apply_monitoring_breakers(db)  # people's decisions are evidence too
             db.commit()
         except Exception as e:
             db.rollback()

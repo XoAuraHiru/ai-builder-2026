@@ -1,0 +1,62 @@
+{
+  "about": "Twin leads for the Lead Score. Each pair is identical except for the features its why names; every feature that differs has a positive weight in ml/lead_model.json, so the stronger twin must score higher. Synthetic leads only.",
+  "cases": [
+    {
+      "id": "more-to-invest",
+      "why": "Identical leads except $250,000 against $20,000 to invest; log_investable has a positive weight.",
+      "stronger": {"source": "web", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "250000", "monthly_usd": "500", "phone": "+14155550101", "email": "twin.a@example.test", "source_of_funds": "salary"},
+      "weaker": {"source": "web", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "20000", "monthly_usd": "500", "phone": "+14155550101", "email": "twin.b@example.test", "source_of_funds": "salary"},
+      "enrichment": {"goal_category": "growth", "suggested_funds": ["ATR-GRW"]}
+    },
+    {
+      "id": "more-each-month",
+      "why": "Identical leads except $2,000 against $100 a month; log_monthly has a positive weight.",
+      "stronger": {"source": "web", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "60000", "monthly_usd": "2000", "phone": "+14155550102", "email": "twin.c@example.test", "source_of_funds": "salary"},
+      "weaker": {"source": "web", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "60000", "monthly_usd": "100", "phone": "+14155550102", "email": "twin.d@example.test", "source_of_funds": "salary"},
+      "enrichment": {"goal_category": "growth", "suggested_funds": ["ATR-GRW"]}
+    },
+    {
+      "id": "longer-horizon",
+      "why": "Identical leads except a 25-year against a 3-year horizon; horizon (years over 30, capped) has a positive weight.",
+      "stronger": {"source": "web", "goals": "Grow savings for the long run", "horizon_years": 25, "investable_usd": "60000", "monthly_usd": "500", "phone": "+14155550103", "email": "twin.e@example.test", "source_of_funds": "salary"},
+      "weaker": {"source": "web", "goals": "Grow savings for the long run", "horizon_years": 3, "investable_usd": "60000", "monthly_usd": "500", "phone": "+14155550103", "email": "twin.f@example.test", "source_of_funds": "salary"},
+      "enrichment": {"goal_category": "growth", "suggested_funds": ["ATR-GRW"]}
+    },
+    {
+      "id": "came-by-referral",
+      "why": "Identical leads except one came by referral and the other through the website; referral has a positive weight.",
+      "stronger": {"source": "referral", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "60000", "monthly_usd": "500", "phone": "+14155550104", "email": "twin.g@example.test", "source_of_funds": "salary"},
+      "weaker": {"source": "web", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "60000", "monthly_usd": "500", "phone": "+14155550104", "email": "twin.h@example.test", "source_of_funds": "salary"},
+      "enrichment": {"goal_category": "growth", "suggested_funds": ["ATR-GRW"]}
+    },
+    {
+      "id": "valid-phone",
+      "why": "Identical leads except one phone is in +<country><number> form and the other has no country code; both are filled in, so completeness is the same and only has_phone (a positive weight) differs.",
+      "stronger": {"source": "web", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "60000", "monthly_usd": "500", "phone": "+14155550105", "email": "twin.i@example.test", "source_of_funds": "salary"},
+      "weaker": {"source": "web", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "60000", "monthly_usd": "500", "phone": "4155550105", "email": "twin.j@example.test", "source_of_funds": "salary"},
+      "enrichment": {"goal_category": "growth", "suggested_funds": ["ATR-GRW"]}
+    },
+    {
+      "id": "more-complete",
+      "why": "Identical leads except one wrote notes of 20 characters or more and the other wrote none: four of four optional fields against three of four; completeness has a positive weight.",
+      "stronger": {"source": "web", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "60000", "monthly_usd": "500", "phone": "+14155550106", "email": "twin.k@example.test", "source_of_funds": "salary", "notes": "My accountant suggested I talk to an advisor this month."},
+      "weaker": {"source": "web", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "60000", "monthly_usd": "500", "phone": "+14155550106", "email": "twin.l@example.test", "source_of_funds": "salary"},
+      "enrichment": {"goal_category": "growth", "suggested_funds": ["ATR-GRW"]}
+    },
+    {
+      "id": "goals-fit-the-funds",
+      "why": "Identical leads; the enrichment suggests a house fund for one and none for the other, so only goal_fit (a positive weight) differs.",
+      "stronger": {"source": "web", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "60000", "monthly_usd": "500", "phone": "+14155550107", "email": "twin.m@example.test", "source_of_funds": "salary"},
+      "weaker": {"source": "web", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "60000", "monthly_usd": "500", "phone": "+14155550107", "email": "twin.n@example.test", "source_of_funds": "salary"},
+      "enrichment": {"goal_category": "growth", "suggested_funds": ["ATR-GRW"]},
+      "weaker_enrichment": {"goal_category": "growth", "suggested_funds": []}
+    },
+    {
+      "id": "bigger-and-referred",
+      "why": "Identical leads except $150,000 against $30,000 to invest and a referral against the website: two features, both with positive weights, both favour the stronger twin.",
+      "stronger": {"source": "referral", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "150000", "monthly_usd": "500", "phone": "+14155550108", "email": "twin.o@example.test", "source_of_funds": "salary"},
+      "weaker": {"source": "web", "goals": "Retirement in 20 years", "horizon_years": 20, "investable_usd": "30000", "monthly_usd": "500", "phone": "+14155550108", "email": "twin.p@example.test", "source_of_funds": "salary"},
+      "enrichment": {"goal_category": "growth", "suggested_funds": ["ATR-GRW"]}
+    }
+  ]
+}

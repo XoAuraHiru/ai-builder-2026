@@ -18,6 +18,7 @@ from app.agents.runtime import DATA_RULE, AgentUnavailable, fast_config, model_n
 from app.ai.decisions import record_decision
 from app.ai.llm import LLMResult, price_usd
 from app.config import get_settings
+from app.governance.breakers import breaker_message
 from app.services.reconciliation import (busy_instruction_ids, candidates, fallback_proposals, name_similarity,
                                          open_receipts, propose, propose_by_rules, score, unmatched_deposits)
 
@@ -117,8 +118,12 @@ def reconcile(db: Session, model, now: datetime) -> dict:
     proposals: list[dict] = []
     trace: list[dict] = []
     used_agent, summary = False, "Nothing was left for the agent."
+    paused = breaker_message(db, "reconciler_agent")
     if lines and receipts:
-        if model_name(model) == "offline-agent":
+        if paused:  # switched off: the scorer stands in, and the summary says why
+            proposals = fallback_proposals(lines, receipts)
+            summary = f"{paused} The scorer proposed the strongest matches."
+        elif model_name(model) == "offline-agent":
             proposals = fallback_proposals(lines, receipts)
             summary = "Gemini is not connected here, so the scorer proposed the strongest remaining matches."
         else:

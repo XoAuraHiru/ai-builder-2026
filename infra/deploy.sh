@@ -15,6 +15,9 @@ WEB_MIN_INSTANCES="${WEB_MIN_INSTANCES:-0}"
 export CLOUDSDK_CORE_PROJECT="$PROJECT_ID"
 cd "$(dirname "$0")/.."
 bash infra/preflight.sh
+# The deploy gate: every free-tier evaluation suite (golden sets, fixed red-team attacks, fair lending) must pass on
+# the committed code. It needs no network; a failing suite exits 1, and set -e stops the deploy here.
+(cd services/api && uv run python -m app.governance.evals --tier free)
 
 CONN="$(gcloud sql instances describe atrium-db --format='value(connectionName)')"
 SA="atrium-api@${PROJECT_ID}.iam.gserviceaccount.com"
@@ -44,6 +47,8 @@ API_ENV="${API_ENV}@CORS_ORIGINS=${CORS}"
 API_ENV="${API_ENV}@LLM_PROVIDER=gemini@GEMINI_LOCATION=global@GOOGLE_GENAI_USE_ENTERPRISE=true"
 API_ENV="${API_ENV}@GOOGLE_CLOUD_PROJECT=${PROJECT_ID}@GOOGLE_CLOUD_LOCATION=global@DOCAI_LOCATION=us"
 API_ENV="${API_ENV}@FUND_SEARCH_ENGINE=atrium-fund-search@FUND_SEARCH_LOCATION=global"
+# The Models page's "Run the live checks" button starts this job with the API's own identity.
+API_ENV="${API_ENV}@EVALS_JOB=projects/${PROJECT_ID}/locations/${REGION}/jobs/atrium-evals"
 
 gcloud run deploy atrium-api --source services/api --region "$REGION" --allow-unauthenticated --quiet \
   --service-account "$SA" --add-cloudsql-instances "$CONN" \
@@ -70,6 +75,21 @@ else
 fi
 echo "day-end job: atrium-day-end, weekdays 5:15 pm America/New_York"
 
+# The live checks (app/governance/evals) run as a job from the same image: Gemini, the ADK agent and the red team
+# against the golden sets, results stored for the Models page. It also gets the ID proofing processor so a run with
+# --with-documents can read the specimen cards. GIT_SHA records which commit was checked.
+GIT_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+EVALS_SECRETS="${SECRETS},DOCAI_PROOFING_PROCESSOR=atrium-docai-proofing-processor:latest"
+gcloud run jobs deploy atrium-evals --image "$IMAGE" --region "$REGION" --quiet \
+  --service-account "$SA" --set-cloudsql-instances "$CONN" --set-secrets "$EVALS_SECRETS" \
+  --set-env-vars "${API_ENV}@GIT_SHA=${GIT_SHA}" \
+  --command python --args=-m,app.governance.evals,--tier,live,--store,--trigger,deploy \
+  --max-retries 0 --task-timeout 1200 --memory 1Gi --cpu 1 >/dev/null
+# The API runs as $SA; the button starts the job through the Cloud Run Admin API, which needs roles/run.invoker.
+gcloud run jobs add-iam-policy-binding atrium-evals --region "$REGION" \
+  --member "serviceAccount:${SA}" --role roles/run.invoker --quiet >/dev/null
+echo "evals job: atrium-evals (live checks after each deploy and from the Models page)"
+
 gcloud run deploy atrium-web --source apps/web --region "$REGION" --allow-unauthenticated --quiet \
   --set-env-vars "API_URL=${API_URL},AUTH_MODE=${AUTH_MODE},FIREBASE_PROJECT_ID=${PROJECT_ID},FIREBASE_API_KEY=${FIREBASE_API_KEY:-},FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-},FIREBASE_APP_ID=${FIREBASE_APP_ID:-}" \
   --min-instances "$WEB_MIN_INSTANCES" --max-instances 3 --memory 512Mi --cpu-boost
@@ -83,3 +103,7 @@ if [ "$WEB_ORIGINS" != "$PREV_WEB_ORIGINS" ]; then
 fi
 echo "API: $API_URL"
 echo "WEB: $WEB_URL"
+
+# Start the live checks against what was just deployed, without waiting: about ten minutes and $0.15 of Gemini.
+gcloud run jobs execute atrium-evals --region "$REGION" --async --quiet >/dev/null
+echo "Live checks started (atrium-evals); results appear on /compliance/models in about ten minutes."

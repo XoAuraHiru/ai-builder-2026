@@ -120,6 +120,18 @@ def run_day_end(db: Session, *, now: datetime, triggered_by: str, llm: LLM, clos
     except Exception as e:
         log.exception("day-end monitoring failed")
         record("Monitoring", False, f"Monitoring failed: {e}")
+    try:
+        from app.governance.inventory import MODELS
+        from app.governance.monitoring import apply_monitoring_breakers
+
+        tripped = apply_monitoring_breakers(db, now)
+        record("Model monitoring", True,
+               ("Paused " + ", ".join(MODELS[k].name for k in tripped) + ": people disagreed with most of its "
+                "suggestions in the last 30 days.") if tripped
+               else "People's decisions agree well enough with every model they decide on.", {"tripped": tripped})
+    except Exception as e:
+        log.exception("day-end model monitoring failed")
+        record("Model monitoring", False, f"Model monitoring failed: {e}")
     receipts = open_receipts(db)
     stale = [r for r in receipts if (today - r.requested_on).days > STALE_RECEIPT_DAYS]
     unmatched = db.scalar(select(func.count()).select_from(StatementLine).where(

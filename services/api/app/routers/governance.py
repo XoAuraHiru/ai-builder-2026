@@ -1,11 +1,12 @@
 """The Model Risk Office (SR 11-7): the model inventory with each model's validation status, its card with the
 evidence behind that status, and its circuit breaker."""
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth import CurrentUser, require_roles
+from app.config import get_settings
 from app.db import get_db
 from app.governance.breakers import BreakerError, breaker_message, reset, trip
 from app.governance.evals.framework import models_with_suites
@@ -106,9 +107,12 @@ def model_card(key: str, db: Session = Depends(get_db), user: CurrentUser = Depe
     run = runs.get(key)
     cases = db.scalars(select(EvalCase).where(EvalCase.run_id == run.id, EvalCase.model_key == key)
                        .order_by(EvalCase.created_at)).all() if run else []
+    def mine(c: EvalCase, s: dict) -> bool:  # one model can have two suites of a kind and tier: the ids tell them apart
+        return c.suite == s["kind"] and c.tier == s["tier"] and ("case_ids" not in s or c.case_id in s["case_ids"])
+
     suites = [{**s, "cases": [{"case_id": c.case_id, "outcome": c.outcome, "expected": c.expected, "actual": c.actual,
                                "detail": c.detail, "cost_usd": str(c.cost_usd), "latency_ms": c.latency_ms}
-                              for c in cases if c.suite == s["kind"] and c.tier == s["tier"]]}
+                              for c in cases if mine(c, s)]}
               for s in _suites_for(run, key)]
     return {**_row(db, key, runs, models_with_suites()), "purpose": spec.purpose, "human_gate": spec.human_gate,
             "limitations": list(spec.limitations), "sources_missing": missing_sources(spec), "suites": suites,
@@ -124,6 +128,58 @@ def open_breaker(key: str, body: ReasonIn, db: Session = Depends(get_db), user: 
         raise HTTPException(status_code=422, detail=str(e)) from e
     db.commit()
     return breaker_out(db, key)
+
+
+@router.get("/runs")
+def list_runs(limit: int = Query(10, ge=1, le=50), db: Session = Depends(get_db), user: CurrentUser = Depends(mro)):
+    return [run_out(r) for r in db.scalars(select(EvalRun).order_by(EvalRun.started_at.desc()).limit(limit)).all()]
+
+
+@router.get("/runs/{run_id}")
+def get_run(run_id: str, db: Session = Depends(get_db), user: CurrentUser = Depends(mro)):
+    run = db.get(EvalRun, run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="Atrium has no evaluation run by that id.")
+    return {**run_out(run), "suites": (run.summary or {}).get("suites", [])}
+
+
+@router.post("/evals/run", status_code=202)
+def start_live_checks(db: Session = Depends(get_db), user: CurrentUser = Depends(mro)):
+    """Start the live checks through the atrium-evals job: one at a time and one an hour. With no job configured
+    (local development) the free tier runs here, at once."""
+    from app.governance import launcher
+    from app.governance.evals.runner import finish_failed, run_blocker, run_evals, start_run, store_run
+    from app.governance.monitoring import apply_monitoring_breakers
+
+    settings = get_settings()
+    person = me(db, user).full_name
+    if not settings.evals_job:
+        run = start_run(db, tier="free", trigger="local", requested_by=person)
+        store_run(db, run_evals("free"), run)
+        apply_monitoring_breakers(db)
+        db.commit()
+        return run_out(run)
+    blocker = run_blocker(db)
+    if blocker:
+        raise HTTPException(status_code=409, detail=blocker)
+    run = start_run(db, tier="live", trigger="button", requested_by=person)
+    db.commit()  # the blocker sees this run at once, so a second click is refused while the job starts
+    try:
+        execution = launcher.launch_job(settings.evals_job)
+    except launcher.LaunchError as e:
+        finish_failed(db, run, e)
+        db.commit()
+        raise HTTPException(status_code=503, detail=f"The live checks could not be started: {e}") from e
+    run.summary = {**(run.summary or {}), "execution": execution.rsplit("/", 1)[-1]}  # the job adopts only this run
+    db.commit()
+    return run_out(run)
+
+
+@router.get("/monitoring")
+def get_monitoring(db: Session = Depends(get_db), user: CurrentUser = Depends(mro)):
+    from app.governance.monitoring import monitoring
+
+    return monitoring(db)
 
 
 @router.post("/breakers/{key}/reset")

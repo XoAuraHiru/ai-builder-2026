@@ -134,6 +134,9 @@ def test_an_unreachable_model_is_an_error_not_a_fail():
 
 
 def test_a_run_trips_only_high_risk_models_with_a_fallback_that_missed_their_bar(db, registry):
+    keys = {"case_reviewer", "lead_enrichment", "reconciler_agent", "narration_reader"}
+    framework.SUITES[:] = [s for s in framework.SUITES if s.model_key not in keys]  # only this test's suites for these
+
     @suite("case_reviewer", tier="live")
     def failing_high(ctx):
         emit("SomethingInsideACase", {"x": 1})  # must not reach the live event stream

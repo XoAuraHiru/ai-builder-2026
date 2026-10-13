@@ -16,6 +16,7 @@ from app.agents.runtime import (DATA_RULE, AgentUnavailable, fast_config, get_ag
 from app.ai.decisions import record_decision
 from app.ai.llm import LLM, LLMResult, price_usd
 from app.config import get_settings
+from app.governance.breakers import breaker_message
 from app.models import Fund, Lead
 from app.services.compliance import check_compliance
 
@@ -45,6 +46,7 @@ def _snapshot(db: Session, lead: Lead) -> dict:
     funds = db.scalars(select(Fund).order_by(Fund.risk_band, Fund.code)).all()
     enrichment = lead.enrichment or {}
     return {
+        "compliance_paused": breaker_message(db, "draft_compliance"),  # read now: the agent's tools cannot
         "profile": {
             "full_name": lead.full_name, "source": lead.source, "country": lead.country,
             "horizon_years": lead.horizon_years, "investable_usd": str(lead.investable_usd),
@@ -84,7 +86,7 @@ def build_agents(snapshot: dict, llm: LLM, model, collector: list | None = None,
 
     def check_draft_compliance(text: str) -> dict:
         """Check a draft client message for marketing-rule problems. Returns ok and a list of findings."""
-        return check_compliance(text, llm, collect=collector).model_dump()
+        return check_compliance(text, llm, collect=collector, paused=snapshot.get("compliance_paused")).model_dump()
 
     common = {"model": model, "generate_content_config": fast_config(), "after_model_callback": usage_tracker(usage)}
     lead_intel = Agent(name="lead_intelligence", description="Plans next steps and drafts replies for a lead.",

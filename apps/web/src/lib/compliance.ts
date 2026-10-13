@@ -10,7 +10,7 @@ export type GraphEdge = { source: string; target: string; label: string; strong?
 export type CaseReview = {
   triage: "escalate" | "close" | "request_information"; triage_reason: string;
   narrative: { text: string; evidence: string[] }[]; questions: string[]; unsupported_figures: string[];
-  dropped_citations: string[]; verified: boolean; model: string; written_at: string;
+  dropped_citations: string[]; unknown_names?: string[]; verified: boolean; model: string; written_at: string;
 };
 export type Alert = {
   id: string; scenario: string; title: string; severity: "high" | "medium" | "low"; score: number;
@@ -18,7 +18,10 @@ export type Alert = {
   summary: string; evidence_count: number; state: "open" | "escalated" | "closed"; raised_at: string;
   decided_by: string | null; decided_at: string | null; decision_note: string | null;
 };
-export type AlertDetail = Alert & { evidence: EvidenceRow[]; ai_review: CaseReview | null; graph: { nodes: GraphNode[]; edges: GraphEdge[] } };
+export type AlertDetail = Alert & {
+  evidence: EvidenceRow[]; ai_review: CaseReview | null; graph: { nodes: GraphNode[]; edges: GraphEdge[] };
+  review_paused?: string | null;  // the case reviewer's breaker message while it is switched off
+};
 export type AiDecisionRow = {
   id: string; agent: string; purpose: string; model: string; subject_type: string; subject_id: string;
   confidence: number | null; tokens_in: number; tokens_out: number; latency_ms: number; cost_usd: string; created_at: string;

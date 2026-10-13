@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.ai.llm import LLM, LLMError, get_llm
 from app.auth import CurrentUser, require_roles
 from app.db import get_db
+from app.governance.breakers import BreakerOpen, breaker_message
 from app.models import Account, AIDecision, AmlAlert, Approval, Person
 from app.models.base import utcnow
 from app.ops.locks import serialise_operations
@@ -38,7 +39,8 @@ def alert_out(db: Session, a: AmlAlert, detail: bool = False) -> dict:
            "evidence_count": len(a.evidence), "state": a.state, "raised_at": a.created_at,
            "decided_by": name_of(db, a.decided_by), "decided_at": a.decided_at, "decision_note": a.decision_note}
     if detail:
-        out |= {"evidence": a.evidence, "ai_review": a.ai_review, "graph": linked_entities(db, a)}
+        out |= {"evidence": a.evidence, "ai_review": a.ai_review, "graph": linked_entities(db, a),
+                "review_paused": breaker_message(db, "case_reviewer")}
     return out
 
 
@@ -63,6 +65,8 @@ def review(alert_id: str, db: Session = Depends(get_db), llm: LLM = Depends(get_
     row = found(db.get(AmlAlert, alert_id), "alert")
     try:
         review_alert(db, llm, row)
+    except BreakerOpen as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except LLMError as e:
         raise HTTPException(status_code=503, detail=REVIEW_BUSY) from e
     db.commit()
