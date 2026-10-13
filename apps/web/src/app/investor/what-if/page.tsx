@@ -9,7 +9,7 @@ import { useMe } from "@/lib/session-context";
 import { FanChart } from "@/components/fan-chart";
 import { NarrativeView } from "@/components/ai-prose";
 import { WhyPanel } from "@/components/why-panel";
-import { Button, Field, Loading, MoneyInput, Notice, PageHeader, Panel, RiskBand, Section, tableStyles } from "@/components/ui";
+import { Button, Field, Loading, MoneyInput, Notice, PageHeader, Panel, RiskBand, Section, Sparkle, tableStyles } from "@/components/ui";
 
 const message = (e: unknown) => (e instanceof ApiError ? e.message : "Atrium could not reach its server. Try again.");
 
@@ -24,15 +24,15 @@ function OutcomeTable({ result, active, onSelect }: { result: WhatIf; active: nu
   rows.push([`Fees over ${result.years} years`, (s) => `${formatUsd(s.fee_cost, 0)} (${formatPct(s.fee_bps / 100, 2)} a year)`]);
   return (
     <Section title={`After ${result.years} year${result.years === 1 ? "" : "s"}`} description={`You pay in ${formatUsd(result.contributed, 0)} in total.`}>
-      <div className={tableStyles.wrap}>
-        <table className={tableStyles.table}>
+      <Panel className={`${tableStyles.wrap} px-6 py-2`}>
+        <table className={`${tableStyles.table} min-w-[480px]`}>
           <thead className={tableStyles.head}>
             <tr>
               <th className={tableStyles.th}><span className="sr-only">Measure</span></th>
               {result.scenarios.map((s, i) => (
                 <th key={i} className={`${tableStyles.th} text-right`}>
                   <button type="button" onClick={() => onSelect(i)} aria-pressed={i === active}
-                    className={`inline-flex items-center gap-1.5 ${i === active ? "text-ink" : "hover:text-ink"}`}>
+                    className={`inline-flex items-center gap-1.5 ${i === active ? "text-ink-900" : "hover:text-ink-900"}`}>
                     <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ background: SERIES[i] }} />{s.label}
                   </button>
                 </th>
@@ -42,7 +42,7 @@ function OutcomeTable({ result, active, onSelect }: { result: WhatIf; active: nu
           <tbody>
             {rows.map(([label, value]) => (
               <tr key={label} className={tableStyles.row}>
-                <td className={`${tableStyles.td} text-ink-2`}>{label}</td>
+                <td className={`${tableStyles.td} text-ink-700`}>{label}</td>
                 {result.scenarios.map((s, i) => (
                   <td key={i} className={`${tableStyles.td} num text-right ${i === active ? "font-semibold" : ""}`}>{value(s)}</td>
                 ))}
@@ -50,7 +50,7 @@ function OutcomeTable({ result, active, onSelect }: { result: WhatIf; active: nu
             ))}
           </tbody>
         </table>
-      </div>
+      </Panel>
     </Section>
   );
 }
@@ -73,6 +73,7 @@ export default function WhatIfStudio() {
   const [explaining, setExplaining] = useState(false);
   const [explainError, setExplainError] = useState("");
   const latest = useRef(0);
+  const [profile, setProfile] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -91,6 +92,8 @@ export default function WhatIfStudio() {
         setError(message(e));
       }
     })();
+    // Each fund's meter is measured against the investor's own profile, as on Markets.
+    if (account) api<{ current_band: number | null }>("/me/risk-profile").then((p) => setProfile(p.current_band)).catch(() => setProfile(null));
   }, [account]);
 
   const payload = useCallback(() => ({
@@ -148,7 +151,7 @@ export default function WhatIfStudio() {
       <PageHeader title="What-if Studio"
         description="Choose an amount, a monthly habit and a time frame. Atrium simulates 10,000 futures from real market history since 2007, crashes included." />
       <div className="grid gap-8 lg:grid-cols-[290px_minmax(0,1fr)]">
-        <Panel className="h-fit space-y-5 p-5 lg:sticky lg:top-8">
+        <Panel className="h-fit space-y-5 p-6 lg:sticky lg:top-8">
           <Field label="Start with"><MoneyInput value={initial} onChange={setInitial} /></Field>
           <Field label="Add every month"><MoneyInput value={monthly} onChange={setMonthly} /></Field>
           <div>
@@ -156,26 +159,26 @@ export default function WhatIfStudio() {
               <span>For</span><span className="num">{years} year{years === 1 ? "" : "s"}</span>
             </label>
             <input id="years" type="range" min={1} max={40} value={years} onChange={(e) => setYears(Number(e.target.value))}
-              className="mt-2 w-full accent-[var(--color-ink)]" />
+              className="mt-2 w-full accent-green-500" />
           </div>
           <Field label="Goal" hint="Optional: the amount you hope to reach."><MoneyInput value={goal} onChange={setGoal} placeholder="No goal set" /></Field>
           <fieldset>
             <legend className="text-sm font-medium">Compare</legend>
-            <p className="text-xs text-muted">Choose up to three.</p>
+            <p className="text-xs text-ink-500">Choose up to three.</p>
             <ul className="mt-2 space-y-1">
               {options.map((o) => {
                 const on = selected.has(scenarioKey(o.scenario));
                 return (
                   <li key={o.name}>
                     <button type="button" aria-pressed={on} onClick={() => setScenarios((list) => toggleScenario(list ?? [], o.scenario))}
-                      className={`flex w-full items-center justify-between gap-2 rounded-control border px-2.5 py-1.5 text-left text-sm ${on ? "border-ink bg-ground" : "border-transparent hover:border-line-strong"}`}>
+                      className={`flex min-h-10 w-full items-center justify-between gap-2 rounded-control px-2.5 py-1.5 text-left text-sm ${on ? "bg-green-100 font-medium text-green-900" : "hover:bg-fill"}`}>
                       <span className="flex items-center gap-2">
-                        <span aria-hidden="true" className={`flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border ${on ? "border-ink bg-ink" : "border-line-strong"}`}>
+                        <span aria-hidden="true" className={`flex h-4 w-4 items-center justify-center rounded-[4px] border-[1.5px] ${on ? "border-green-500 bg-green-500" : "border-sand-300 bg-white"}`}>
                           {on && <svg viewBox="0 0 14 14" className="h-3 w-3 text-white"><path d="M3 7.5 6 10l5-6" fill="none" stroke="currentColor" strokeWidth="1.75" /></svg>}
                         </span>
                         {o.name}
                       </span>
-                      {o.band !== null && <RiskBand band={o.band} showLabel={false} />}
+                      {o.band !== null && <RiskBand band={o.band} profile={profile} showLabel={false} />}
                     </button>
                   </li>
                 );
@@ -187,26 +190,26 @@ export default function WhatIfStudio() {
           {error && <Notice tone="error">{error}</Notice>}
           {!result ? <Loading label="Simulating 10,000 futures" /> : (
             <>
-              <section aria-label="Projection">
-                <div className="mb-3 flex flex-wrap items-center gap-2">
+              <section aria-label="Projection" className="rounded-panel border border-sand-200 bg-white p-4 sm:p-6">
+                <div className="mb-4 flex flex-wrap items-center gap-2">
                   {result.scenarios.map((s, i) => (
                     <button key={`${s.label}-${i}`} type="button" aria-pressed={i === active} onClick={() => setActive(i)}
-                      className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${i === active ? "border-ink text-ink" : "border-line text-ink-2 hover:border-line-strong"}`}>
+                      className={`flex min-h-9 items-center gap-2 rounded-full px-3.5 text-[13px] ${i === active ? "bg-green-100 font-semibold text-green-800" : "border border-sand-200 bg-white font-medium text-ink-700 hover:bg-fill"}`}>
                       <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ background: SERIES[i] }} />{s.label}
                     </button>
                   ))}
-                  {running && <span role="status" className="text-xs text-muted">Updating…</span>}
+                  {running && <span role="status" className="text-xs text-ink-500">Updating…</span>}
                 </div>
                 <FanChart scenarios={result.scenarios} active={active} goal={result.goal_usd} colors={SERIES} />
-                <p className="mt-2 text-xs text-muted">
+                <p className="mt-2 text-xs text-ink-500">
                   Shaded: the middle 50% and 80% of simulated outcomes. Dashed: what you pay in. Point at the chart to read any year.
                 </p>
               </section>
               <OutcomeTable result={result} active={active} onSelect={setActive} />
               <Section title="What this means for you" description="Gemini reads the figures above and explains them. It cannot change them.">
                 {narrative ? <NarrativeView narrative={narrative} /> : (
-                  <Button variant="secondary" busy={explaining} onClick={explain}>
-                    {explaining ? "Gemini is reading the figures" : "Explain these results"}
+                  <Button variant="ai" busy={explaining} onClick={explain}>
+                    {!explaining && <Sparkle />}{explaining ? "Gemini is reading the figures" : "Explain these results"}
                   </Button>
                 )}
                 {explainError && <div className="mt-3"><Notice tone="caution">{explainError}</Notice></div>}

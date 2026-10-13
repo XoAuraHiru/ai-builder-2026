@@ -90,7 +90,7 @@ export default function RiskPage() {
             </div>
           </Panel>
         </Section>
-        <div className="grid gap-x-4 gap-y-12 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-4 gap-y-12 xl:grid-cols-2">
           <Section title="Where the risk comes from" description="A fund can be a small share of your money and a large share of the swings.">
             <Panel className="p-6">
               <p className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-700">

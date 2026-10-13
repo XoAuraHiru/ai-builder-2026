@@ -106,7 +106,7 @@ function ShockSlider({ row, onChange }: { row: SliderRow; onChange: (pct: number
       </div>
       <input id={id} type="range" min={row.min} max={row.max} step={1} value={row.pct}
         aria-valuetext={formatShock(row.pct)} onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-2 w-full accent-[var(--color-green-500)]" />
+        className="mt-2 w-full accent-green-500" />
       <div className="flex justify-between text-[11px] text-ink-500" aria-hidden="true">
         <span>{formatShock(row.min)}</span><span>{formatShock(row.max)}</span>
       </div>
