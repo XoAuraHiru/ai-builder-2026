@@ -41,10 +41,12 @@ Lead:
 
 Return JSON for the schema:
 1. goal_category and a goals_summary of one or two sentences.
-2. suggested_funds: up to three codes whose risk band suits the horizon and the risk appetite the lead implies.
+2. suggested_funds: up to three codes whose objective serves the stated goal and whose risk band suits the horizon
+   and the risk appetite below; a thematic fund only when the goals name its theme; fewer than three is better than
+   a poor fit.
 3. stated_risk_appetite, by this rubric and nothing else: low when the goal is to keep capital safe or to draw an
-   income, or the horizon is under three years; high only for growth, international or technology goals with a
-   horizon of ten years or more; medium otherwise.
+   income, or the horizon is under three years; high only when the lead asks for aggressive growth or a single theme
+   such as technology, with a horizon of ten years or more; medium otherwise, long-horizon growth included.
 4. consistency_issues: contradictions between answers. Examples: a monthly contribution out of proportion to stated assets;
    a horizon under two years with aggressive growth goals; source of funds "unspecified" with more than $250,000.
    Severity high only for contradictions an advisor must resolve before onboarding.

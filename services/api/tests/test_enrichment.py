@@ -50,6 +50,8 @@ def test_the_model_never_sees_the_name_and_reads_risk_appetite_by_a_stated_rubri
     assert "Mei Lin Chen" not in prompt and "full_name" not in prompt  # a name is no reason for any reading
     text = " ".join(prompt.split())
     assert "low when the goal is to keep capital safe or to draw an income, or the horizon is under three years" in text
-    assert "high only for growth, international or technology goals with a horizon of ten years or more" in text
+    assert "high only when the lead asks for aggressive growth or a single theme such as technology, with a horizon of ten years or more" in text
+    assert "a thematic fund only when the goals name its theme" in text
+    assert "fewer than three is better than a poor fit" in text
     assert "medium otherwise" in text
 
