@@ -72,17 +72,17 @@ const BAND_NAME: Record<number, string> = { 1: "Preserve", 2: "Cautious", 3: "Ba
  *  pale green when it sits below it (or there is no profile to compare with). Each marked band has a chip above it. */
 export type ScaleMark = {
   band: number; label: string; fill: "profile" | "above" | "calm" | "none";
-  chip: { text: string; tone: "gain" | "caution" | "neutral" } | null;
+  chip: { text: string; short: string; tone: "gain" | "caution" | "neutral" } | null;
 };
 
 export function scaleMarks(profile: number | null, portfolio: number): ScaleMark[] {
   return BANDS.map((band) => {
     const label = `${band} ${BAND_NAME[band]}`;
-    if (band === profile && band === portfolio) return { band, label, fill: "profile", chip: { text: "Your profile and portfolio", tone: "gain" } };
-    if (band === profile) return { band, label, fill: "profile", chip: { text: "Your profile", tone: "gain" } };
+    if (band === profile && band === portfolio) return { band, label, fill: "profile", chip: { text: "Your profile and portfolio", short: "Both", tone: "gain" } };
+    if (band === profile) return { band, label, fill: "profile", chip: { text: "Your profile", short: "Profile", tone: "gain" } };
     if (band === portfolio) {
       const above = profile !== null && portfolio > profile;
-      return { band, label, fill: above ? "above" : "calm", chip: { text: "Your portfolio now", tone: above ? "caution" : "neutral" } };
+      return { band, label, fill: above ? "above" : "calm", chip: { text: "Your portfolio now", short: "Now", tone: above ? "caution" : "neutral" } };
     }
     return { band, label, fill: "none", chip: null };
   });

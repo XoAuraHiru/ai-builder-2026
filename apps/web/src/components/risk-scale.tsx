@@ -22,7 +22,7 @@ export function RiskScale({ profile, portfolio }: { profile: number | null; port
         <span key={`chip-${m.band}`} aria-hidden="true" className="flex min-h-6.5 min-w-0 items-end">
           {m.chip && (
             <span className={`inline-flex min-h-6.5 max-w-full items-center rounded-[13px] px-2 py-1 text-[11px] font-semibold leading-3.5 sm:px-2.5 sm:text-xs sm:leading-4 ${CHIP[m.chip.tone]}`}>
-              {m.chip.text}
+              <span className="sm:hidden">{m.chip.short}</span><span className="hidden sm:inline">{m.chip.text}</span>
             </span>
           )}
         </span>

@@ -18,8 +18,8 @@ describe("scaleMarks", () => {
   it("fills the profile's band green and a portfolio above it amber, each with a chip", () => {
     const marks = scaleMarks(3, 4);
     expect(marks.map((m) => m.fill)).toEqual(["none", "none", "profile", "above", "none"]);
-    expect(marks[2].chip).toEqual({ text: "Your profile", tone: "gain" });
-    expect(marks[3].chip).toEqual({ text: "Your portfolio now", tone: "caution" });
+    expect(marks[2].chip).toEqual({ text: "Your profile", short: "Profile", tone: "gain" });
+    expect(marks[3].chip).toEqual({ text: "Your portfolio now", short: "Now", tone: "caution" });
     expect(marks[4].label).toBe("5 Adventurous");
   });
   it("marks one band when they match, and a calmer portfolio or a missing profile without amber", () => {
