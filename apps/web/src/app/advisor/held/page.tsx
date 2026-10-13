@@ -1,14 +1,27 @@
 "use client";
 
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { formatDate, formatUsd } from "@/lib/format";
 import { describeOrder, type ReviewNote, type TradeOrder } from "@/lib/trading";
+import { HeldSkeleton } from "@/components/advisor-skeletons";
 import { AiProse } from "@/components/ai-prose";
+import { AiThinking } from "@/components/ai-thinking";
 import { CardSection } from "@/components/card-section";
+import { Confirmed } from "@/components/form-feedback";
 import { CheckList } from "@/components/guardian-panel";
+import { EASE, Reveal } from "@/components/motion";
 import { TrustBadge, TrustScoreCard } from "@/components/score-badge";
-import { Button, EmptyState, Field, inputClass, Loading, Notice, PageHeader, Sparkle } from "@/components/ui";
+import { Button, EmptyState, Field, inputClass, Notice, PageHeader, Sparkle } from "@/components/ui";
+
+// The review note is one Gemini Pro call over the Guardian's report; its figures are then checked against that report.
+const NOTE_STEPS = [
+  "Gemini Pro is reading the Guardian's report",
+  "Weighing the checks against the client's risk profile",
+  "Writing questions for the client and a suggestion",
+  "Checking every figure against the Guardian's report",
+];
 
 const SUGGESTION: Record<ReviewNote["suggestion"], string> = {
   release: "release the order", reject: "reject the order", call_client: "call the client before deciding",
@@ -112,55 +125,63 @@ export default function HeldOrdersPage() {
     <PageHeader title="Held orders"
       description="Orders the Pre-trade Guardian held for a person to decide: far outside a client's risk profile, too concentrated, or a possible account takeover. Nothing is bought or sold until you release it." />
   );
-  if (!orders) return <>{header}{error ? <Notice tone="error">{error}</Notice> : <Loading label="Loading held orders" />}</>;
+  if (!orders) return <>{header}{error ? <Notice tone="error">{error}</Notice> : <HeldSkeleton />}</>;
   return (
     <>
       {header}
-      {done && <div className="mb-6"><Notice tone="success" title="Decision recorded">{done}</Notice></div>}
+      {done && <div className="mb-6"><Confirmed key={done} title="Decision recorded">{done}</Confirmed></div>}
       {orders.length === 0 ? <EmptyState title="Nothing is waiting">When the Guardian holds an order, it appears here with every check it made.</EmptyState> : (
-        <ul className="space-y-6">
-          {orders.map((o) => {
-            const open = o.id === selected;
-            const trust = o.guardian?.trust;
-            return (
-              <li key={o.id} className="space-y-4">
-                <HoldBanner order={o} open={open} onOpen={() => { setSelected(o.id); setDone(""); setNote(""); setError(""); }} />
-                {open && (
-                  <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-                    <div className="min-w-0 space-y-4">
-                      <CardSection title="What the Guardian checked" description="The checks as the client saw them when placing the order.">
-                        <CheckList checks={o.guardian?.checks ?? []} />
-                      </CardSection>
-                      <TrustScoreCard title="Account trust" score={trust?.score ?? o.trust_score} band={trust?.band ?? o.trust_band}
-                        signals={trust?.signals ?? null} evidence />
-                    </div>
-                    <div className="min-w-0 space-y-4">
-                      <CardSection title="Review note" description="Gemini Pro reads the Guardian's report and suggests; it takes about half a minute.">
-                        {o.ai_review ? <Review note={o.ai_review} /> : (
-                          <Button variant="ai" busy={busy === "note"} onClick={reviewNote}>
-                            {busy !== "note" && <Sparkle />}Ask Gemini Pro for a review note
-                          </Button>
-                        )}
-                      </CardSection>
-                      <CardSection title="Your decision" description="Saved with the decision and shown to the client.">
-                        <div className="space-y-4">
-                          <Field label="Your note">
-                            <textarea className={`${inputClass} min-h-24`} value={note} maxLength={500} onChange={(e) => setNote(e.target.value)}
-                              placeholder="For example: Called the client, who confirmed the order and understands the risk." />
-                          </Field>
-                          {error && <Notice tone="error">{error}</Notice>}
-                          <div className="flex flex-wrap gap-2">
-                            <Button busy={busy === "release"} disabled={Boolean(busy) && busy !== "release"} onClick={() => decide("release")}>Release the order</Button>
-                            <Button variant="danger" busy={busy === "reject"} disabled={Boolean(busy) && busy !== "reject"} onClick={() => decide("reject")}>Reject the order</Button>
-                          </div>
+        // The orders arrive in order; one that is released or rejected fades, then its space closes.
+        <ul>
+          <AnimatePresence>
+            {orders.map((o, i) => {
+              const open = o.id === selected;
+              const trust = o.guardian?.trust;
+              return (
+                <motion.li key={o.id} className="overflow-hidden [&:last-child>div]:pb-0"
+                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0, transition: { duration: 0.28, delay: Math.min(i, 8) * 0.06, ease: EASE } }}
+                  exit={{ opacity: 0, height: 0, transition: { opacity: { duration: 0.2 }, height: { duration: 0.32, delay: 0.14, ease: EASE } } }}>
+                  <div className="space-y-4 pb-6">
+                    <HoldBanner order={o} open={open} onOpen={() => { setSelected(o.id); setDone(""); setNote(""); setError(""); }} />
+                    {open && (
+                      <Reveal className="grid gap-4 lg:grid-cols-2 lg:items-start">
+                        <div className="min-w-0 space-y-4">
+                          <CardSection title="What the Guardian checked" description="The checks as the client saw them when placing the order.">
+                            <CheckList checks={o.guardian?.checks ?? []} />
+                          </CardSection>
+                          <TrustScoreCard title="Account trust" score={trust?.score ?? o.trust_score} band={trust?.band ?? o.trust_band}
+                            signals={trust?.signals ?? null} evidence />
                         </div>
-                      </CardSection>
-                    </div>
+                        <div className="min-w-0 space-y-4">
+                          <CardSection title="Review note" description="Gemini Pro reads the Guardian's report and suggests; you decide.">
+                            {o.ai_review ? <Review note={o.ai_review} />
+                              : busy === "note" ? <AiThinking steps={NOTE_STEPS} usually="about 16 s" /> : (
+                                <Button variant="ai" disabled={Boolean(busy)} onClick={reviewNote}>
+                                  <Sparkle />Ask Gemini Pro for a review note
+                                </Button>
+                              )}
+                          </CardSection>
+                          <CardSection title="Your decision" description="Saved with the decision and shown to the client.">
+                            <div className="space-y-4">
+                              <Field label="Your note">
+                                <textarea className={`${inputClass} min-h-24`} value={note} maxLength={500} onChange={(e) => setNote(e.target.value)}
+                                  placeholder="For example: Called the client, who confirmed the order and understands the risk." />
+                              </Field>
+                              {error && <Notice tone="error">{error}</Notice>}
+                              <div className="flex flex-wrap gap-2">
+                                <Button busy={busy === "release"} disabled={Boolean(busy) && busy !== "release"} onClick={() => decide("release")}>Release the order</Button>
+                                <Button variant="danger" busy={busy === "reject"} disabled={Boolean(busy) && busy !== "reject"} onClick={() => decide("reject")}>Reject the order</Button>
+                              </div>
+                            </div>
+                          </CardSection>
+                        </div>
+                      </Reveal>
+                    )}
                   </div>
-                )}
-              </li>
-            );
-          })}
+                </motion.li>
+              );
+            })}
+          </AnimatePresence>
         </ul>
       )}
     </>

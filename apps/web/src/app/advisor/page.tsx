@@ -4,19 +4,24 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { formatUsd } from "@/lib/format";
-import { attentionHeadline, sourceLabel, STAGE_LABEL, timeAgo, topSignals, triage, type Lead } from "@/lib/leads";
+import { attentionHeadline, SCORING_STEPS, sourceLabel, STAGE_LABEL, timeAgo, topSignals, triage, type Lead } from "@/lib/leads";
 import { initials } from "@/lib/personas";
 import { useMe } from "@/lib/session-context";
+import { LEAD_ROW, LeadsSkeleton } from "@/components/advisor-skeletons";
+import { AiThinking } from "@/components/ai-thinking";
+import { Stagger, StaggerItem } from "@/components/motion";
 import { TrustBadge, TrustMeter, TrustScoreCard } from "@/components/score-badge";
-import { Button, KeyMoment, Loading, Notice, PageHeader, Section } from "@/components/ui";
+import { Button, KeyMoment, Notice, PageHeader, Section } from "@/components/ui";
 
-const ROW = "md:grid md:grid-cols-[minmax(0,2.2fr)_110px_minmax(170px,1.3fr)_120px] md:items-center md:gap-6";
+// Rows past the first dozen are below the fold: they show at once rather than queue behind the ones in view.
+const STAGGERED = 12;
 
-function LeadRow({ lead }: { lead: Lead }) {
+function LeadRow({ lead, staggered }: { lead: Lead; staggered: boolean }) {
   const scored = lead.lead_score !== null;
+  const Row = staggered ? StaggerItem : PlainItem;
   return (
-    <li className="border-t border-sand-100 first:border-t-0">
-      <Link href={`/advisor/leads/${lead.id}`} className={`${ROW} flex flex-col gap-3 px-5 py-4 hover:bg-fill sm:px-6`}>
+    <Row as="li" className="border-t border-sand-100 first:border-t-0">
+      <Link href={`/advisor/leads/${lead.id}`} className={`${LEAD_ROW} flex flex-col gap-3 px-5 py-4 hover:bg-fill sm:px-6`}>
         <span className="flex min-w-0 items-center gap-3">
           <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sand-100 text-xs font-semibold">
             {initials(lead.full_name)}
@@ -54,17 +59,22 @@ function LeadRow({ lead }: { lead: Lead }) {
           </span>
         </span>
       </Link>
-    </li>
+    </Row>
   );
 }
 
+function PlainItem({ className, children }: { as: "li"; className: string; children: React.ReactNode }) {
+  return <li className={className}>{children}</li>;
+}
+
+/** The rows arrive one after another when the list first appears; a lead that moves into it later simply arrives. */
 function LeadList({ leads }: { leads: Lead[] }) {
   return (
     <div className="overflow-hidden rounded-panel border border-sand-200 bg-white">
-      <div aria-hidden="true" className={`${ROW} hidden border-b border-sand-100 px-6 py-2.5 text-xs font-medium text-ink-500`}>
+      <div aria-hidden="true" className={`${LEAD_ROW} hidden border-b border-sand-100 px-6 py-2.5 text-xs font-medium text-ink-500`}>
         <span>Lead</span><span>Lead Score</span><span>Trust Score</span><span className="text-right">Amount</span>
       </div>
-      <ul>{leads.map((l) => <LeadRow key={l.id} lead={l} />)}</ul>
+      <Stagger as="ul">{leads.map((l, i) => <LeadRow key={l.id} lead={l} staggered={i < STAGGERED} />)}</Stagger>
     </div>
   );
 }
@@ -112,11 +122,12 @@ export default function Leads() {
 
   if (!staff) return <Notice tone="caution" title="Leads are for Atrium staff">Choose Daniel on the front page.</Notice>;
   if (error && !leads) return <Notice tone="error" title="Could not load the leads">{error}</Notice>;
-  if (!leads) return <Loading label="Loading the leads" />;
+  if (!leads) return <LeadsSkeleton />;
   const t = triage(leads);
-  const scoreButton = t.unscored.length > 0 && (
-    <Button busy={busy} onClick={scorePending}>
-      {busy ? `Scoring with Gemini${progress ? `, ${progress}` : ""}` : `Score ${t.unscored.length} new lead${t.unscored.length > 1 ? "s" : ""}`}
+  // While scoring, the button only holds its place (with how many are left); the violet panel below says what is happening.
+  const scoreButton = (t.unscored.length > 0 || busy) && (
+    <Button disabled={busy} onClick={scorePending}>
+      {busy ? `Scoring${progress ? `, ${progress}` : ""}` : `Score ${t.unscored.length} new lead${t.unscored.length > 1 ? "s" : ""}`}
     </Button>
   );
   const best = t.call[0];
@@ -128,11 +139,12 @@ export default function Leads() {
         actions={scoreButton || undefined} />
       {error && <div className="mb-6"><Notice tone="error">{error}</Notice></div>}
       <div className="space-y-12">
+        {busy && <AiThinking compact steps={SCORING_STEPS} usually="a few seconds a lead" />}
         {t.attention.length > 0 ? (
           <KeyMoment tone="alert" label="Look at these first" title={attentionHeadline(t.attention)}>
-            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <Stagger as="ul" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {t.attention.map((l) => (
-                <li key={l.id}>
+                <StaggerItem as="li" key={l.id} className="min-w-0">
                   <Link href={`/advisor/leads/${l.id}`} aria-label={`${l.full_name}, Trust Score ${l.trust_score ?? "not scored"}. Open the lead`}
                     className="group block h-full rounded-panel">
                     <TrustScoreCard score={l.trust_score} band={l.trust_band} signals={topSignals(l)} fit={l.lead_score} limit={3}
@@ -140,9 +152,9 @@ export default function Leads() {
                       className="h-full transition-colors group-hover:border-sand-300 group-hover:bg-fill"
                       footer={<p className="num mt-auto text-[13px] text-ink-700">{formatUsd(l.investable_usd, 0)} to invest</p>} />
                   </Link>
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </Stagger>
           </KeyMoment>
         ) : t.unscored.length > 0 ? (
           <KeyMoment tone="attention" label="New leads"

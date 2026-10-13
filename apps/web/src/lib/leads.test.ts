@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  applicationErrors, attentionHeadline, deviceId, groupByStage, scoreTone, signedWeight, sourceLabel, STAGES, strongestSignal, timeAgo, topSignals, triage,
+  applicationErrors, attentionHeadline, deviceId, groupByStage, meterSegments, scoreTone, signedWeight, sourceLabel, STAGES, strongestSignal, timeAgo, topSignals, triage,
   TRUST_SEGMENTS, trustMeter, trustTone, type Lead,
 } from "./leads";
 
@@ -83,6 +83,20 @@ describe("trust meter", () => {
     expect(trustMeter(0, "blocked")).toEqual({ filled: 0, tone: "coral" });
     expect(trustMeter(null, null)).toEqual({ filled: 0, tone: "none" });
     expect(trustMeter(140, "clear").filled).toBe(20);
+  });
+});
+
+describe("meterSegments", () => {
+  it("lists the 20 segments in the order they fill, the filled ones in the band's tone", () => {
+    const segments = meterSegments(23, "high_risk");
+    expect(segments).toHaveLength(20);
+    expect(segments.slice(0, 5)).toEqual(["coral", "coral", "coral", "coral", "coral"]);
+    expect(segments.slice(5).every((s) => s === null)).toBe(true);
+    expect(meterSegments(100, "clear").every((s) => s === "green")).toBe(true);
+  });
+  it("is empty before scoring and for a zero", () => {
+    expect(meterSegments(null, null).every((s) => s === null)).toBe(true);
+    expect(meterSegments(0, "blocked").every((s) => s === null)).toBe(true);
   });
 });
 
