@@ -11,7 +11,10 @@ import { AllocationBar, type Slice } from "@/components/allocation-bar";
 import { TickerTile } from "@/components/market-bits";
 import { RiskScale } from "@/components/risk-scale";
 import { WhyPanel } from "@/components/why-panel";
-import { ButtonLink, ChangeChip, EmptyState, KeyMoment, Loading, Notice, Panel, Section, Sparkle, tableStyles } from "@/components/ui";
+import { CountUp, GrowBar } from "@/components/motion";
+import { Skeleton } from "@/components/skeleton";
+import { ButtonLink, ChangeChip, EmptyState, KeyMoment, Notice, Panel, Section, Sparkle, tableStyles } from "@/components/ui";
+import { AiLinesSkeleton, BarRowsSkeleton, LoadingRegion, MomentSkeleton, ScaleSkeleton, SectionTitleSkeleton } from "./_parts/shapes";
 
 const ASSET: Record<string, string> = { equity: "Stocks", bond: "Bonds", cash: "Cash and T-bills" };
 const REGION: Record<string, string> = { US: "United States", DM_ex_US: "Developed outside the US", EM: "Emerging markets", Global: "Global" };
@@ -72,17 +75,18 @@ function WhereMoneySits({ xray, failed }: { xray: XRay | null; failed: boolean }
       </div>
       {xray ? (
         <ul className="flex flex-col gap-3">
-          {rows.map((r) => (
+          {rows.map((r, i) => (
             <li key={r.name} className="grid grid-cols-[minmax(0,120px)_minmax(0,1fr)_48px] items-center gap-3 text-[13px]">
               <span className="truncate" title={r.name}>{r.name}</span>
               <span aria-hidden="true" className="h-2 rounded-[4px] bg-sand-100">
-                <span className="block h-2 rounded-[4px] bg-green-400" style={{ width: `${r.width}%` }} />
+                <GrowBar pct={r.width} delay={0.05 * i} className="bg-green-400" />
               </span>
               <span className="num text-right">{formatPct(r.pct)}</span>
             </li>
           ))}
         </ul>
-      ) : <p className="text-[13px] text-ink-500" role="status">{failed ? "The X-ray is unavailable right now." : "Looking through your funds…"}</p>}
+      ) : failed ? <p className="text-[13px] text-ink-500">The X-ray is unavailable right now.</p>
+        : <LoadingRegion label="Looking through your funds"><BarRowsSkeleton rows={4} /></LoadingRegion>}
       {caption && <p className="text-xs leading-[18px] text-ink-500">{caption}</p>}
     </Panel>
   );
@@ -104,6 +108,74 @@ function AskAtrium({ questions }: { questions: string[] }) {
       </ul>
       <p className="text-xs leading-[18px] text-ai-700">Answers come from your own figures.</p>
     </section>
+  );
+}
+
+/** The drift card while the risk check runs: its chip, title, the five-band scale, a sentence and two buttons. */
+function RiskMomentSkeleton() {
+  return (
+    <MomentSkeleton actions={2}>
+      <ScaleSkeleton />
+      <Skeleton className="h-3.5 w-[min(440px,90%)]" />
+    </MomentSkeleton>
+  );
+}
+
+/** Home while the portfolio is valued: the balance, the drift card, the right column and the holdings. */
+function HomeSkeleton() {
+  return (
+    <LoadingRegion label="Valuing your portfolio" className="space-y-12">
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-end justify-between gap-6 pt-1 sm:px-2 sm:pt-3">
+          <div className="flex min-w-0 flex-col gap-2.5">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-12 w-[min(360px,78vw)] rounded-[12px] sm:h-[60px]" />
+            <span className="flex flex-wrap items-center gap-2.5">
+              <Skeleton className="h-[26px] w-36 rounded-full" />
+              <Skeleton className="h-3.5 w-[min(300px,60vw)]" />
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-11 w-40 rounded-full" />
+            <Skeleton className="h-11 w-32 rounded-full" />
+          </div>
+        </div>
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
+          <RiskMomentSkeleton />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 rounded-panel border border-sand-200 bg-white p-6">
+              <span className="flex items-center justify-between"><Skeleton className="h-4 w-40" /><Skeleton className="h-3.5 w-16" /></span>
+              <BarRowsSkeleton rows={4} />
+              <Skeleton className="h-3 w-3/4" />
+            </div>
+            <div className="flex flex-col gap-3.5 rounded-panel bg-ai-50 px-6 py-[22px]">
+              <span className="skeleton-ai block h-4 w-28 rounded-[8px]" />
+              <AiLinesSkeleton lines={2} />
+              <span className="skeleton-ai block h-3 w-48 rounded-[8px]" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <SectionTitleSkeleton />
+        <div className="rounded-panel border border-sand-200 bg-white px-6 pb-2 pt-6">
+          <Skeleton className="h-3 rounded-full" />
+          <div className="mt-4 flex flex-col">
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="flex items-center justify-between gap-4 border-b border-sand-100 py-3.5 last:border-b-0">
+                <span className="flex min-w-0 flex-1 items-center gap-3">
+                  <Skeleton className="h-7 w-10 shrink-0 rounded-tile" />
+                  <span className="flex min-w-0 flex-1 flex-col gap-2"><Skeleton className="h-3.5 w-40 max-w-full" /><Skeleton className="h-3 w-24" /></span>
+                </span>
+                <Skeleton className="hidden h-3.5 w-16 sm:block" />
+                <Skeleton className="h-3.5 w-20" />
+                <Skeleton className="h-3.5 w-16" />
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </LoadingRegion>
   );
 }
 
@@ -137,7 +209,7 @@ export default function InvestorHome() {
 
   if (!account) return <EmptyState title="No investment account yet">Choose an investor on the front page to see a portfolio.</EmptyState>;
   if (error) return <Notice tone="error" title="Could not load your portfolio">{error}</Notice>;
-  if (!portfolio) return <Loading label="Valuing your portfolio" />;
+  if (!portfolio) return <HomeSkeleton />;
 
   const total = Number(portfolio.total_value);
   const pnl = Number(portfolio.pnl);
@@ -154,7 +226,7 @@ export default function InvestorHome() {
           <div className="flex min-w-0 flex-col gap-2.5">
             <h1 className="text-sm font-medium text-ink-700">Your portfolio</h1>
             <p className="num text-[44px] font-medium leading-[48px] tracking-[-0.03em] sm:text-[60px] sm:leading-[60px] sm:tracking-[-0.035em]">
-              {formatUsd(portfolio.total_value)}
+              <CountUp text={formatUsd(portfolio.total_value)} />
             </p>
             <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
               <ChangeChip size="md" value={pnl}>
@@ -177,7 +249,7 @@ export default function InvestorHome() {
               actions={<ButtonLink href="/investor/risk" variant="secondary">Open your risk report</ButtonLink>}>
               <p className="text-[15px] text-ink-700">{riskError}</p>
             </KeyMoment>
-          ) : <Panel className="p-7"><Loading label="Checking your mix against your risk profile" /></Panel>}
+          ) : <LoadingRegion label="Checking your mix against your risk profile"><RiskMomentSkeleton /></LoadingRegion>}
           <div className="flex flex-col gap-4">
             <WhereMoneySits xray={xray} failed={xrayFailed} />
             <AskAtrium questions={questions} />
