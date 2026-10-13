@@ -11,7 +11,7 @@ from app.models import Fund, Person
 from app.schemas.invest import ExplainedWhatIf, WhatIfIn, WhatIfOut
 from app.knowledge.docs import month_name
 from app.services.narrative import write_narrative
-from app.services.whatif import Plan, WhatIfError, simulate
+from app.services.whatif import Plan, WhatIfError, WhatIfResult, simulate
 
 router = APIRouter(prefix="/invest", tags=["invest"])
 
@@ -40,9 +40,14 @@ def run_what_if(db: Session, body: WhatIfIn) -> WhatIfOut:
     method = (f"{result.paths:,} simulated paths, each stitched from 12-month blocks of real monthly returns between "
               f"{result.window_start} and {result.window_end}. The Atrium fee is deducted monthly; ETF costs are "
               f"already in the prices. A simulation, not a forecast.")
-    return WhatIfOut(initial_usd=body.initial_usd, monthly_usd=body.monthly_usd, years=body.years,
-                     goal_usd=body.goal_usd, contributed=result.contributed, window_start=result.window_start,
-                     window_end=result.window_end, months=result.months, paths=result.paths, method=method,
+    return what_if_out(result, method)
+
+
+def what_if_out(result: WhatIfResult, method: str) -> WhatIfOut:
+    plan = result.plan
+    return WhatIfOut(initial_usd=plan.initial, monthly_usd=plan.monthly, years=plan.years, goal_usd=plan.goal,
+                     contributed=result.contributed, window_start=result.window_start, window_end=result.window_end,
+                     months=result.months, paths=result.paths, method=method,
                      scenarios=[asdict(s) for s in result.scenarios])
 
 

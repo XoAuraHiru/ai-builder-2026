@@ -26,9 +26,12 @@ function Placed({ order }: { order: TradeOrder }) {
   );
 }
 
-export function OrderTicket({ accountId, symbol, price, held, onPlaced }:
-  { accountId: string; symbol: string; price: string; held: number; onPlaced: () => void }) {
-  const [draft, setDraft] = useState<Draft>({ symbol, side: "buy", order_type: "market", quantity: "1", limit_price: "" });
+/** `initialQuantity` and `analysisId` come from the front-door analyzer: the purchase records the analysis, once. */
+export function OrderTicket({ accountId, symbol, price, held, onPlaced, initialQuantity, analysisId }:
+  { accountId: string; symbol: string; price: string; held: number; onPlaced: () => void; initialQuantity?: number;
+    analysisId?: string }) {
+  const [draft, setDraft] = useState<Draft>({ symbol, side: "buy", order_type: "market", quantity: String(initialQuantity ?? 1), limit_price: "" });
+  const [linked, setLinked] = useState(Boolean(analysisId));
   const [report, setReport] = useState<GuardianReport | null>(null);
   const [narrative, setNarrative] = useState<Narrative | null>(null);
   const [explainError, setExplainError] = useState("");
@@ -85,10 +88,13 @@ export function OrderTicket({ accountId, symbol, price, held, onPlaced }:
       setError(built.error);
       return;
     }
+    const fromAnalysis = linked && analysisId && draft.side === "buy";
     setBusy("place");
     setError("");
     try {
-      const order = await api<TradeOrder>(`/accounts/${accountId}/orders`, { method: "POST", body: JSON.stringify(built.body) });
+      const order = await api<TradeOrder>(`/accounts/${accountId}/orders`, { method: "POST",
+        body: JSON.stringify(fromAnalysis ? { ...built.body, analysis_id: analysisId } : built.body) });
+      if (fromAnalysis) setLinked(false);
       reset();
       setPlaced(order);
       onPlaced();
@@ -121,6 +127,9 @@ export function OrderTicket({ accountId, symbol, price, held, onPlaced }:
             </Field>
           )}
           <p className="text-sm text-ink-2">{estimate !== null ? `About ${formatUsd(estimate)}, before the spread.` : "Enter how many shares."}</p>
+          {linked && analysisId && draft.side === "buy" && (
+            <p className="text-xs text-muted">Filled in from your analysis: the whole shares your amount buys at the latest price. The order records the analysis.</p>
+          )}
           <Button type="submit" variant="secondary" busy={busy === "check"} className="w-full">Check order</Button>
         </form>
       </Panel>

@@ -27,6 +27,7 @@ class Instruction(IdMixin, Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     to_fund_code: Mapped[str | None] = mapped_column(ForeignKey("fund.code"), nullable=True)  # target of a switch
     acknowledged_risk: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    analysis_id: Mapped[str | None] = mapped_column(ForeignKey("analysis.id"), nullable=True)  # analyzer run
 
 
 class InstructionStep(IdMixin, Base):
@@ -50,3 +51,4 @@ class RecurringPlan(IdMixin, Base):
     day_of_month: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(12), nullable=False, default="active")  # active | cancelled
     acknowledged_risk: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    analysis_id: Mapped[str | None] = mapped_column(ForeignKey("analysis.id"), nullable=True)  # analyzer run

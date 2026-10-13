@@ -10,6 +10,14 @@ export type TrustSignal = {
   code: string; label: string; weight: number; evidence: string; source: string; blocking: boolean;
 };
 export type TrustBand = "clear" | "review" | "high_risk" | "blocked";
+/** The front-door analysis a prospect ran before applying (its headline figures, as saved). */
+export type LeadAnalysis = {
+  id: string; created_at: string; kind: "unit_trust" | "share"; code: string; name: string; initial_usd: string;
+  monthly_usd: string; years: number;
+  summary: { median_usd: number; p10_usd: number; p90_usd: number; contributed_usd: number; prob_loss_pct: number;
+    window_start: string; window_end: string; comparison_median_usd: number | null };
+};
+
 export type Lead = {
   id: string; created_at: string; source: string; stage: Stage; full_name: string; email: string;
   phone: string | null; country: string; goals: string; horizon_years: number; investable_usd: string;
@@ -23,6 +31,7 @@ export type Lead = {
   trust_score: number | null; trust_band: TrustBand | null; trust_signals: TrustSignal[] | null;
   next_best_action: string | null; scored_at: string | null; scoring_error: string | null;
   converted_person_id: string | null;
+  analysis?: LeadAnalysis | null;
 };
 
 export function groupByStage(leads: Lead[]): Record<Stage, Lead[]> {

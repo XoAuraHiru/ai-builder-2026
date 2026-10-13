@@ -1,6 +1,7 @@
 """SQLAlchemy models. Importing this package registers every table on Base.metadata."""
 
 from app.models.account import Account
+from app.models.analysis import ANALYSIS_KINDS, Analysis
 from app.models.ai_decision import AIDecision
 from app.models.fund import FUND_CATEGORIES, Fund, FundConstituent
 from app.models.instruction import (INSTRUCTION_STATES, INSTRUCTION_TYPES, STEP_STATES, Instruction, InstructionStep,
@@ -17,7 +18,7 @@ from app.models.risk_profile import RiskProfile
 from app.models.trading import ORDER_SIDES, ORDER_STATES, ORDER_TYPES, VERDICTS, AccountDevice, TradeOrder, WatchItem
 
 __all__ = [
-    "AIDecision", "Account", "Fund", "FundConstituent", "FUND_CATEGORIES", "Instruction", "INSTRUCTION_STATES",
+    "AIDecision", "Account", "Analysis", "ANALYSIS_KINDS", "Fund", "FundConstituent", "FUND_CATEGORIES", "Instruction", "INSTRUCTION_STATES",
     "INSTRUCTION_TYPES", "InstructionStep", "RecurringPlan", "STEP_STATES", "IdentityCheck", "Lead", "LeadConversion", "LEAD_SOURCES", "LEAD_STAGES", "Lot", "Posting",
     "POSTING_TYPES", "INSTRUMENT_TYPES", "Person", "PERSON_KINDS", "Price", "PRICE_STATUSES", "Proposal", "RiskProfile",
     "AccountDevice", "ORDER_SIDES", "ORDER_STATES", "ORDER_TYPES", "TradeOrder", "VERDICTS", "WatchItem",

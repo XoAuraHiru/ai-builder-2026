@@ -8,6 +8,7 @@ import { compactCount, priceSource, type MarketDetail } from "@/lib/markets";
 import { useMe } from "@/lib/session-context";
 import { SessionDot, WatchButton } from "@/components/market-bits";
 import { OrderTicket } from "@/components/order-ticket";
+import { readShareOrder } from "@/lib/analyzer";
 import { PriceChart } from "@/components/price-chart";
 import { EmptyState, Figure, Loading, Notice, PageHeader, RiskBand, Section } from "@/components/ui";
 
@@ -18,6 +19,11 @@ export default function SymbolPage() {
   const [detail, setDetail] = useState<MarketDetail | null>(null);
   const [held, setHeld] = useState<{ units: number; value: string }>({ units: 0, value: "0" });
   const [error, setError] = useState("");
+  const [fromAnalysis, setFromAnalysis] = useState<{ analysis: string; qty: number } | null>(null);
+
+  useEffect(() => {
+    setFromAnalysis(readShareOrder(new URLSearchParams(window.location.search)));
+  }, [symbol]);
 
   const loadHolding = useCallback(async () => {
     if (!account) return;
@@ -73,8 +79,9 @@ export default function SymbolPage() {
         </div>
         <div className="min-w-0 max-w-[460px] 2xl:col-start-2 2xl:row-span-2 2xl:row-start-1 2xl:max-w-none">
           {account
-            ? <OrderTicket key={detail.symbol} accountId={account.id} symbol={detail.symbol} price={q.price} held={held.units}
-                onPlaced={() => { loadHolding().catch(() => {}); }} />
+            ? <OrderTicket key={`${detail.symbol}-${fromAnalysis?.analysis ?? ""}`} accountId={account.id} symbol={detail.symbol}
+                price={q.price} held={held.units} onPlaced={() => { loadHolding().catch(() => {}); }}
+                initialQuantity={fromAnalysis?.qty} analysisId={fromAnalysis?.analysis} />
             : <EmptyState title="No investment account yet">Choose an investor on the front page to trade.</EmptyState>}
           <p className="mt-4 text-xs text-muted">Paper trading at real prices: no real money moves. Nothing here is investment advice.</p>
         </div>

@@ -8,6 +8,7 @@ import { entryRoute, workspaceFor } from "@/lib/nav";
 import { initials, PERSONAS, personaFor, personasByAct, type Persona } from "@/lib/personas";
 import { setDevUser } from "@/lib/session";
 import { useSession } from "@/lib/session-context";
+import { Analyzer } from "@/components/analyzer";
 import { PlanDiagram } from "@/components/plan-diagram";
 import { Footer, Wordmark } from "@/components/shell";
 
@@ -85,6 +86,7 @@ export default function FrontDoor() {
         <div className="mx-auto flex h-[72px] max-w-[1240px] items-center justify-between gap-4 px-4 sm:px-8">
           <Wordmark href="/" />
           <nav aria-label="Sections" className="flex items-center gap-3 sm:gap-7">
+            <a href="#analyze" className="flex min-h-11 items-center text-[15px] text-ink-2 hover:text-ink">Analyze</a>
             <a href="#how" className="hidden min-h-11 items-center text-[15px] text-ink-2 hover:text-ink sm:flex">How it works</a>
             <a href="#journeys" className="flex min-h-11 items-center text-[15px] text-ink-2 hover:text-ink">Journeys</a>
             {me && space
@@ -135,6 +137,15 @@ export default function FrontDoor() {
               ))}
             </div>
           </div>
+        </section>
+
+        <section id="analyze" className="mx-auto max-w-[1240px] scroll-mt-4 px-4 pt-16 sm:px-8 lg:pt-24">
+          <h2 className="wide text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] sm:text-[34px]">See what your money could become</h2>
+          <p className="mt-3 max-w-[40em] text-[17px] text-ink-2">
+            Pick an Atrium fund or a share, an amount and a number of years. No sign-in needed: the figures come from real
+            prices since 2007, and you can turn them into an investment or a conversation with an advisor.
+          </p>
+          <div className="mt-10"><Analyzer /></div>
         </section>
 
         <section id="journeys" className="mx-auto max-w-[1240px] scroll-mt-4 px-4 py-16 sm:px-8 lg:py-24">

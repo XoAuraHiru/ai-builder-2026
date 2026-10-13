@@ -33,3 +33,16 @@ class PriceOut(BaseModel):
     nav: Decimal
     units_in_issue: Decimal
     status: str
+
+
+class UnitPoint(BaseModel):
+    date: date
+    price: float
+    backtest: bool
+
+
+class UnitHistoryOut(BaseModel):
+    code: str
+    name: str
+    inception_on: date
+    points: list[UnitPoint]

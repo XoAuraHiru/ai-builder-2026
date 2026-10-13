@@ -154,6 +154,25 @@ export default function LeadDetail() {
             </div>
           )}
         </Section>
+        {lead.analysis && (
+          <Section title="Their analysis" description={`Run on the front page on ${formatDate(lead.analysis.created_at)}, before they applied. The figures are a simulation, not a promise they were given.`}>
+            <Panel className="p-5">
+              <p className="text-sm text-ink-2">
+                {formatUsd(lead.analysis.initial_usd, 0)}{Number(lead.analysis.monthly_usd) > 0 ? ` plus ${formatUsd(lead.analysis.monthly_usd, 0)} a month` : ""} in{" "}
+                <span className="font-semibold text-ink">{lead.analysis.name}</span> ({lead.analysis.kind === "share" ? "shares" : "unit trust"}) for {lead.analysis.years} years
+              </p>
+              <div className="mt-4 grid gap-6 sm:grid-cols-3">
+                <Figure label="Middle outcome" value={formatUsd(lead.analysis.summary.median_usd, 0)} />
+                <Figure label="Likely range" value={`${formatUsd(lead.analysis.summary.p10_usd, 0)} to ${formatUsd(lead.analysis.summary.p90_usd, 0)}`} />
+                <Figure label="Paid in" value={formatUsd(lead.analysis.summary.contributed_usd, 0)}
+                  detail={`${lead.analysis.summary.prob_loss_pct}% of futures end below it.`} />
+              </div>
+              {lead.analysis.summary.comparison_median_usd !== null && (
+                <p className="mt-3 text-sm text-ink-2">The S&amp;P 500 on the same simulated months: middle outcome {formatUsd(lead.analysis.summary.comparison_median_usd, 0)}.</p>
+              )}
+            </Panel>
+          </Section>
+        )}
         <Section title="Identity document" description="Gemini reads the fields; Document AI screens for tampering. The image is never stored.">
           <p className="mb-3 text-sm text-ink-2">
             Try a <a className="underline underline-offset-4" href="/demo/specimen-match.png" download>matching sample card</a> or a{" "}

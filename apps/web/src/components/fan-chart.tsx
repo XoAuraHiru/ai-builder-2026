@@ -85,13 +85,13 @@ export function FanChart({ scenarios, active, goal, colors }:
           <text key={t} x={geo.x(t)} y={H - 8} textAnchor="middle" className="num fill-muted text-[11px]">{t === 0 ? "Now" : `${t}y`}</text>
         ))}
         <g key={years} clipPath={`url(#${clip})`}>
-          <motion.path d={geo.outer} animate={{ d: geo.outer }} transition={morph} fill={color} fillOpacity={0.1} />
-          <motion.path d={geo.inner} animate={{ d: geo.inner }} transition={morph} fill={color} fillOpacity={0.2} />
+          <motion.path initial={false} d={geo.outer} animate={{ d: geo.outer }} transition={morph} fill={color} fillOpacity={0.1} />
+          <motion.path initial={false} d={geo.inner} animate={{ d: geo.inner }} transition={morph} fill={color} fillOpacity={0.2} />
           {geo.others.map((d, i) => d && (
-            <motion.path key={i} d={d} animate={{ d }} transition={morph} fill="none" stroke={colors[i]} strokeWidth={1.25} strokeOpacity={0.8} />
+            <motion.path key={i} initial={false} d={d} animate={{ d }} transition={morph} fill="none" stroke={colors[i]} strokeWidth={1.25} strokeOpacity={0.8} />
           ))}
-          <motion.path d={geo.paid} animate={{ d: geo.paid }} transition={morph} fill="none" stroke="var(--color-ink-2)" strokeWidth={1} strokeDasharray="3 4" />
-          <motion.path d={geo.median} animate={{ d: geo.median }} transition={morph} fill="none" stroke={color} strokeWidth={2.25} strokeLinejoin="round" />
+          <motion.path initial={false} d={geo.paid} animate={{ d: geo.paid }} transition={morph} fill="none" stroke="var(--color-ink-2)" strokeWidth={1} strokeDasharray="3 4" />
+          <motion.path initial={false} d={geo.median} animate={{ d: geo.median }} transition={morph} fill="none" stroke={color} strokeWidth={2.25} strokeLinejoin="round" />
         </g>
         {goal !== null && geo.y(goal) > M.top && (
           <g>
