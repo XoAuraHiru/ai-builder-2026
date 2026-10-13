@@ -1,33 +1,88 @@
 @import "tailwindcss";
 
-/* Atrium design tokens. Daylight is the colour of explanation: Why panels and anything Gemini wrote carry it. */
+/* Atrium design system 0.2: a white canvas, white cards outlined with a sand hairline, and one forest green for action
+   and money. Coral and amber are kept for risk, holds and alerts; violet marks only what Gemini wrote.
+   The older token names (ground, wash, ink-2, line, daylight, gain, loss, caution) keep working and now carry the new
+   values, so every page moves to the new system at once. */
 @theme {
-  --color-ground: #f1f3f1;
+  /* Forest: brand, action, money, selection. Primary action is green-500; tonal green-100 for entering and selection. */
+  --color-green-50: #f0f6f2;
+  --color-green-100: #e0ede4;
+  --color-green-200: #c3dccb;
+  --color-green-300: #95c0a5;
+  --color-green-400: #649e7d;
+  --color-green-500: #3f8160;
+  --color-green-600: #2f6b4f;
+  --color-green-700: #255740;
+  --color-green-800: #1d4532;
+  --color-green-900: #143224;
+
+  /* Sand and ink: surfaces and text. ink-400 is for placeholders and disabled text only. */
+  --color-canvas: #ffffff;
+  --color-fill: #fafaf7;
+  --color-sand-100: #f2f1ec;
+  --color-sand-200: #ebeae4;
+  --color-sand-300: #dcdad1;
+  --color-ink-400: #9a968a;
+  --color-ink-500: #6f6c62;
+  --color-ink-700: #3e3c35;
+  --color-ink-900: #1c1b17;
+
+  /* Signals. Coral: losses, holds, fraud, rejected. Amber: drift, pending, unchecked figures. */
+  --color-coral-50: #fdedea;
+  --color-coral-100: #fadad4;
+  --color-coral-500: #e8705f;
+  --color-coral-700: #b23f2e;
+  --color-amber-50: #fcf3d9;
+  --color-amber-300: #f4d27c;
+  --color-amber-400: #e2b23e;
+  --color-amber-800: #7a5a0e;
+
+  /* Gemini: provenance only, never buttons or data. */
+  --color-ai-50: #f2f1fc;
+  --color-ai-100: #dcd9f7;
+  --color-ai-500: #7c74db;
+  --color-ai-700: #4b44a6;
+
+  /* The names the pages already use, on the new palette. */
+  --color-ground: #ffffff;
   --color-surface: #ffffff;
-  --color-wash: #e8ece9;
-  --color-ink: #0f1b24;
-  --color-ink-2: #3a4652;
-  --color-muted: #5f6b76;
-  --color-line: #dce1de;
-  --color-line-strong: #c3cac6;
-  --color-daylight: #e3a72f;
-  --color-daylight-ink: #7a5508;
-  --color-daylight-wash: #fbf1d9;
-  --color-gain: #157347;
-  --color-gain-wash: #e5f2ea;
-  --color-loss: #b23a26;
-  --color-danger-wash: #fbeae6;
-  --color-caution: #8a5a00;
-  --color-caution-wash: #fcf2df;
-  --color-band-1: #4d7f95;
-  --color-band-2: #4f8f7a;
-  --color-band-3: #8f9a45;
-  --color-band-4: #c58a2c;
-  --color-band-5: #b5502f;
-  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+  --color-wash: #fafaf7;
+  --color-ink: #1c1b17;
+  --color-ink-2: #3e3c35;
+  --color-muted: #6f6c62;
+  --color-line: #ebeae4;
+  --color-line-soft: #f2f1ec;
+  --color-line-strong: #dcdad1;
+  --color-daylight: #7c74db;
+  --color-daylight-ink: #4b44a6;
+  --color-daylight-wash: #f2f1fc;
+  --color-gain: #255740;
+  --color-gain-wash: #f0f6f2;
+  --color-loss: #b23f2e;
+  --color-danger-wash: #fdedea;
+  --color-caution: #7a5a0e;
+  --color-caution-wash: #fcf3d9;
+  /* Risk bands are measured against a profile: green at or within it, amber above it. Without a profile, bands 1-3
+     read as within a Balanced profile. */
+  --color-band-1: #3f8160;
+  --color-band-2: #3f8160;
+  --color-band-3: #3f8160;
+  --color-band-4: #e2b23e;
+  --color-band-5: #e2b23e;
+
+  --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /* 8 inputs and tiles, 12 inner panels and fields, 20 cards, 28 app shell, pill for buttons, chips and nav. */
+  --radius-tile: 8px;
   --radius-control: 12px;
-  --radius-panel: 18px;
+  --radius-panel: 20px;
+  --radius-shell: 28px;
+
+  --shadow-float: 0 1px 2px rgba(28, 27, 23, 0.05), 0 12px 32px rgba(28, 27, 23, 0.1);
+  --shadow-pressed: 0 1px 2px rgba(28, 27, 23, 0.08);
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -36,37 +91,52 @@
     color-scheme: light;
   }
   body {
-    background: var(--color-ground);
-    color: var(--color-ink);
+    background: var(--color-canvas);
+    color: var(--color-ink-900);
     font-family: var(--font-sans);
     font-size: 15px;
-    line-height: 1.5;
+    line-height: 22px;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+  a {
+    text-underline-offset: 3px;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]) {
     cursor: pointer;
   }
   :focus-visible {
-    outline: 2px solid var(--color-ink);
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-green-200);
+    border-radius: 6px;
   }
   ::selection {
-    background: var(--color-daylight-wash);
+    background: var(--color-green-100);
   }
 }
 
-/* Figures line up in columns. */
+/* Figures use proportional lining numerals (Schibsted Grotesk's tabular set widens the comma and the point). */
 @utility num {
-  font-variant-numeric: tabular-nums lining-nums;
+  font-variant-numeric: lining-nums proportional-nums;
 }
-/* Archivo's width axis: wider letterforms for headings and key figures. */
+/* The previous typeface's wide axis; Schibsted Grotesk has none, so headings keep their own letterforms. */
 @utility wide {
-  font-variation-settings: "wdth" 116;
+  font-variation-settings: normal;
 }
 @utility wider {
-  font-variation-settings: "wdth" 125;
+  font-variation-settings: normal;
+}
+/* Engine IDs, codes, model names and cost. The 12px default sits in the components layer, below every utility, so a
+   size class beside it (text-[11px]) always wins. */
+@utility code {
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+}
+@layer components {
+  .code {
+    font-size: 12px;
+  }
 }
 
 @media print {

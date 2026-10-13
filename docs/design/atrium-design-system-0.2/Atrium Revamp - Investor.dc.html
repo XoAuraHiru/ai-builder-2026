@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FFFFFF;color:#1C1B17;font-family:'Schibsted Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#2F6B4F;text-decoration:none}
+a:hover{color:#1D4532;text-decoration:underline}
+</style>
+</helmet>
+
+<div style="width:2100px;padding:72px;display:flex;flex-direction:column;gap:96px">
+
+  <header style="display:flex;flex-direction:column;gap:12px;max-width:900px">
+    <span style="font-family:'Geist Mono',monospace;font-size:13px;color:#3E3C35">ATRIUM REVAMP · INVESTOR JOURNEY · PRIYA RAMAN</span>
+    <h1 style="margin:0;font-size:52px;line-height:56px;font-weight:600;letter-spacing:-0.025em">UX audit and redesign: Home, Portfolio X-ray, Markets</h1>
+    <p style="margin:0;font-size:18px;line-height:27px;color:#3E3C35;text-wrap:pretty">Each page shows the current screen and what changes on the left, and the redesign on the right, built from <a href="Atrium Design System.dc.html">Atrium Design System</a> with the left icon rail. Figures that were cut off in the screenshots are filled with placeholders.</p>
+  </header>
+
+  <!-- Shell -->
+  <section id="shell" style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;align-items:baseline;gap:16px"><span style="font-family:'Geist Mono',monospace;font-size:14px;color:#3E3C35">00</span><h2 style="margin:0;font-size:34px;line-height:40px;font-weight:600;letter-spacing:-0.02em">The shell, on every page</h2></div>
+    <div style="background:#FFFFFF;border-radius:24px;padding:12px 32px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:40px">
+      <div style="display:flex;flex-direction:column;gap:10px;padding:20px 0">
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">S1</span>
+        <span style="font-size:17px;font-weight:600">Three navigation systems</span>
+        <span style="font-size:14px;line-height:21px;color:#6F6C62;text-wrap:pretty">Stage tabs with checkbox icons, a 230px text sidebar for five items, and tabs inside pages all compete. The checkboxes read as filters.</span>
+        <span style="font-size:14px;line-height:21px;color:#255740;text-wrap:pretty">An 84px icon rail for pages. In-page tabs become a segmented control in the header. The stage moves into the person switcher, next to the role it belongs to.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:20px 0">
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">S2</span>
+        <span style="font-size:17px;font-weight:600">The guide takes a fifth of the width</span>
+        <span style="font-size:14px;line-height:21px;color:#6F6C62;text-wrap:pretty">“Priya’s story” is a permanent 320px column, so tables and charts get squeezed on every page.</span>
+        <span style="font-size:14px;line-height:21px;color:#255740;text-wrap:pretty">The guide becomes one line in the top bar: progress, the current step and its action. The chevron opens all four steps as a menu.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:20px 0">
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">S3</span>
+        <span style="font-size:17px;font-weight:600">Amber means five things</span>
+        <span style="font-size:14px;line-height:21px;color:#6F6C62;text-wrap:pretty">The logo, the active stage, Ask Atrium, “needs your attention” and the Growth band are all amber or orange.</span>
+        <span style="font-size:14px;line-height:21px;color:#255740;text-wrap:pretty">Amber is now only for caution. Ask Atrium uses the Gemini violet, so it matches the serif text the AI writes.</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:20px 0">
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">S4</span>
+        <span style="font-size:17px;font-weight:600">Flat grey page, outlined cards</span>
+        <span style="font-size:14px;line-height:21px;color:#6F6C62;text-wrap:pretty">Content sits straight on a grey-green page; where cards exist, thin borders separate them.</span>
+        <span style="font-size:14px;line-height:21px;color:#255740;text-wrap:pretty">White canvas with hairline-outlined cards. Shadows only for things that float.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 Home -->
+  <section id="home" style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;align-items:baseline;gap:16px"><span style="font-family:'Geist Mono',monospace;font-size:14px;color:#3E3C35">01</span><h2 style="margin:0;font-size:34px;line-height:40px;font-weight:600;letter-spacing:-0.02em">Home</h2></div>
+    <div style="display:flex;gap:32px;align-items:flex-start">
+      <div style="width:580px;flex-shrink:0;display:flex;flex-direction:column;gap:16px">
+        <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:12px;font-weight:600;color:#6F6C62;padding:4px 6px 0">CURRENT</span>
+          <img src="uploads/screens-1791883976779-zak1.png" alt="Current Home page" style="width:100%;border-radius:10px;display:block">
+        </div>
+        <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:4px 24px">
+          <div style="display:flex;flex-direction:column;gap:8px;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-size:15px;font-weight:600">H1 · The gain is buried in a sentence</span><span style="font-size:14px;line-height:21px;color:#6F6C62">“+$3,508.13, up 7.78% on what you paid in. Account ACC-0001, priced…” mixes the key result with account details.</span><span style="font-size:14px;line-height:21px;color:#255740">Gain as a change chip next to the balance; account and pricing time as a caption.</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-size:15px;font-weight:600">H2 · The risk scale adds five new colours</span><span style="font-size:14px;line-height:21px;color:#6F6C62">Blue to red bands appear nowhere else, and “your profile” versus “now” is told apart only by a solid or dashed outline.</span><span style="font-size:14px;line-height:21px;color:#255740">One sand scale. Green fills your profile’s band, amber fills where the portfolio is now, each with a label above it.</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-size:15px;font-weight:600">H3 · Home doesn’t say what you own</span><span style="font-size:14px;line-height:21px;color:#6F6C62">The X-ray explains the drift, but Home gives no hint of it.</span><span style="font-size:14px;line-height:21px;color:#255740">A “Where your money sits” card with the largest exposures, linking to the X-ray.</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:18px 0"><span style="font-size:15px;font-weight:600">H4 · Ask Atrium is hidden in the top bar</span><span style="font-size:14px;line-height:21px;color:#6F6C62">Step 4 of the story is asking whether to rebalance, but the entry point is a small button far from the drift.</span><span style="font-size:14px;line-height:21px;color:#255740">Suggested questions next to the drift card, in the Gemini style.</span></div>
+        </div>
+      </div>
+
+      <!-- Home artboard -->
+      <div data-screen-label="Home redesign" style="width:1440px;flex-shrink:0;min-height:900px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:28px;padding:16px;display:flex;gap:16px;box-shadow:0 1px 2px rgba(28,27,23,.05),0 24px 64px rgba(28,27,23,.10)">
+        <aside style="width:84px;flex-shrink:0;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:18px 0;display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div style="width:38px;height:38px;border-radius:12px;background:#E0EDE4;color:#255740;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-size:21px;font-weight:500;margin-bottom:20px">A</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;background:#E0EDE4;color:#255740;display:flex;align-items:center;justify-content:center"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg></span><span style="font-size:11px;font-weight:600">Home</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;color:#3E3C35;display:flex;align-items:center;justify-content:center" style-hover="background:#FAFAF7"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12A9 9 0 1 1 12 3v9z"></path><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"></path></svg></span><span style="font-size:11px;font-weight:500;color:#6F6C62">Portfolio</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;color:#3E3C35;display:flex;align-items:center;justify-content:center" style-hover="background:#FAFAF7"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"></path><path d="M14 7h7v7"></path></svg></span><span style="font-size:11px;font-weight:500;color:#6F6C62">Markets</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;color:#3E3C35;display:flex;align-items:center;justify-content:center" style-hover="background:#FAFAF7"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 4.5-9 4.5-9-4.5z"></path><path d="m3 12 9 4.5 9-4.5"></path><path d="m3 16.5 9 4.5 9-4.5"></path></svg></span><span style="font-size:11px;font-weight:500;color:#6F6C62">Funds</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;color:#3E3C35;display:flex;align-items:center;justify-content:center" style-hover="background:#FAFAF7"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M7 15c3-1 7-4 13-9"></path><path d="M7 15c4 0 8-1 13-3" stroke-dasharray="2 2.5"></path></svg></span><span style="font-size:11px;font-weight:500;color:#6F6C62">Plan ahead</span></div>
+        </aside>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:24px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="flex:1;max-width:760px;display:flex;align-items:center;gap:14px;height:52px;padding:0 6px 0 18px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px">
+              <span style="font-size:13px;font-weight:600;white-space:nowrap">Priya’s story</span>
+              <div style="display:flex;gap:3px"><span style="width:16px;height:6px;border-radius:3px;background:#3F8160"></span><span style="width:16px;height:6px;border-radius:3px;background:#95C0A5"></span><span style="width:16px;height:6px;border-radius:3px;background:#EBEAE4"></span><span style="width:16px;height:6px;border-radius:3px;background:#EBEAE4"></span></div>
+              <span style="font-size:12px;color:#6F6C62;white-space:nowrap">2 of 4</span>
+              <span style="width:1px;height:22px;background:#EBEAE4"></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:16px"><span style="font-size:13px;font-weight:600">Test 10,000 futures</span><span style="font-size:12px;color:#6F6C62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Plan ahead replays markets since 2007 to show the range of outcomes.</span></div>
+              <button style="white-space:nowrap;height:40px;padding:0 16px;border:0;border-radius:999px;background:#E0EDE4;color:#1D4532;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Open Plan ahead</button>
+              <button aria-label="Show all steps" style="width:40px;height:40px;border:0;border-radius:999px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3E3C35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+            </div>
+            <div style="flex:1"></div>
+            <button style="white-space:nowrap;height:44px;padding:0 16px;border:0;border-radius:999px;background:#F2F1FC;color:#4B44A6;font:inherit;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"></path></svg>Ask Atrium</button>
+            <div style="display:flex;align-items:center;gap:10px;height:52px;padding:0 14px 0 6px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px">
+              <span style="width:40px;height:40px;border-radius:50%;background:#C3DCCB;color:#143224;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center">PR</span>
+              <div style="display:flex;flex-direction:column;line-height:16px"><span style="font-size:13px;font-weight:600">Priya Raman</span><span style="font-size:12px;color:#6F6C62;white-space:nowrap">Investor · Stage 2, Invest</span></div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding:12px 8px 0">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:14px;font-weight:500;color:#3E3C35">Your portfolio</span>
+              <span style="font-size:60px;line-height:60px;font-weight:500;letter-spacing:-0.035em">$48,604.98</span>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span style="white-space:nowrap;display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;background:#F0F6F2;color:#255740;font-size:13px;font-weight:600">↑ $3,508.13 · 7.78%</span>
+                <span style="font-size:14px;color:#3E3C35">on what you paid in</span>
+                <span style="font-size:13px;color:#6F6C62">· Account ACC-0001 · priced 13 Oct 2026</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button style="white-space:nowrap;height:44px;padding:0 20px;border:1px solid #EBEAE4;border-radius:999px;background:#FFFFFF;color:#1C1B17;font:inherit;font-size:14px;font-weight:500;cursor:pointer">Invest or withdraw</button>
+              <button style="white-space:nowrap;height:44px;padding:0 20px;border:1px solid #EBEAE4;border-radius:999px;background:#FFFFFF;color:#1C1B17;font:inherit;font-size:14px;font-weight:500;cursor:pointer">Trade shares</button>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:16px">
+            <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:24px">
+              <span style="align-self:flex-start;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:#FCF3D9;color:#7A5A0E;font-size:13px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#E2B23E"></span>One thing needs your attention</span>
+              <h3 style="margin:0;font-size:32px;line-height:38px;font-weight:600;letter-spacing:-0.02em;max-width:620px;text-wrap:pretty">Your mix has drifted above the risk you chose.</h3>
+              <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px">
+                <div style="display:flex;flex-direction:column;gap:8px"><span style="height:26px"></span><div style="height:12px;border-radius:6px;background:#EBEAE4"></div><span style="font-size:13px;color:#6F6C62">1 Preserve</span></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><span style="height:26px"></span><div style="height:12px;border-radius:6px;background:#EBEAE4"></div><span style="font-size:13px;color:#6F6C62">2 Cautious</span></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><span style="align-self:flex-start;white-space:nowrap;height:26px;display:inline-flex;align-items:center;padding:0 10px;border-radius:999px;background:#F0F6F2;color:#255740;font-size:12px;font-weight:600">Your profile</span><div style="height:12px;border-radius:6px;background:#3F8160"></div><span style="font-size:13px;font-weight:600">3 Balanced</span></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><span style="align-self:flex-start;white-space:nowrap;height:26px;display:inline-flex;align-items:center;padding:0 10px;border-radius:999px;background:#FCF3D9;color:#7A5A0E;font-size:12px;font-weight:600">Your portfolio now</span><div style="height:12px;border-radius:6px;background:#E2B23E"></div><span style="font-size:13px;font-weight:600">4 Growth</span></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><span style="height:26px"></span><div style="height:12px;border-radius:6px;background:#EBEAE4"></div><span style="font-size:13px;color:#6F6C62">5 Adventurous</span></div>
+              </div>
+              <p style="margin:0;font-size:15px;line-height:22px;color:#3E3C35">Your portfolio behaves like band 4, above your profile’s band 3.</p>
+              <div style="display:flex;gap:8px;padding-top:4px">
+                <button style="white-space:nowrap;height:44px;padding:0 20px;border:0;border-radius:999px;background:#3F8160;color:#FFFFFF;font:inherit;font-size:14px;font-weight:600;cursor:pointer" style-hover="background:#2F6B4F">See what it means for your future</button>
+                <button style="white-space:nowrap;height:44px;padding:0 20px;border:1px solid #EBEAE4;border-radius:999px;background:#FFFFFF;color:#1C1B17;font:inherit;font-size:14px;font-weight:500;cursor:pointer">Open your risk report</button>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:16px;font-weight:600">Where your money sits</span><a href="#xray" style="font-size:13px;font-weight:600">Open X-ray</a></div>
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <div style="display:grid;grid-template-columns:120px minmax(0,1fr) 48px;gap:12px;align-items:center;font-size:13px"><span>Cash and T-bills</span><div style="height:8px;border-radius:4px;background:#F2F1EC"><div style="width:100%;height:8px;border-radius:4px;background:#649E7D"></div></div><span style="text-align:right">41.1%</span></div>
+                  <div style="display:grid;grid-template-columns:120px minmax(0,1fr) 48px;gap:12px;align-items:center;font-size:13px"><span>Technology</span><div style="height:8px;border-radius:4px;background:#F2F1EC"><div style="width:53%;height:8px;border-radius:4px;background:#649E7D"></div></div><span style="text-align:right">21.6%</span></div>
+                  <div style="display:grid;grid-template-columns:120px minmax(0,1fr) 48px;gap:12px;align-items:center;font-size:13px"><span>Bonds</span><div style="height:8px;border-radius:4px;background:#F2F1EC"><div style="width:26%;height:8px;border-radius:4px;background:#649E7D"></div></div><span style="text-align:right">10.7%</span></div>
+                  <div style="display:grid;grid-template-columns:120px minmax(0,1fr) 48px;gap:12px;align-items:center;font-size:13px"><span>Communication</span><div style="height:8px;border-radius:4px;background:#F2F1EC"><div style="width:12%;height:8px;border-radius:4px;background:#649E7D"></div></div><span style="text-align:right">5.1%</span></div>
+                </div>
+                <span style="font-size:12px;line-height:18px;color:#6F6C62">Atrium Balanced and Atrium Growth overlap by 20.1%.</span>
+              </div>
+              <div style="background:#F2F1FC;border-radius:20px;padding:22px 24px;display:flex;flex-direction:column;gap:14px">
+                <span style="display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#4B44A6"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"></path></svg>Ask Atrium</span>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <span style="padding:10px 14px;border-radius:12px;background:#FFFFFF;font-family:'Newsreader',serif;font-size:16px;line-height:22px" style-hover="box-shadow:0 0 0 2px #DCD9F7">Should I rebalance?</span>
+                  <span style="padding:10px 14px;border-radius:12px;background:#FFFFFF;font-family:'Newsreader',serif;font-size:16px;line-height:22px" style-hover="box-shadow:0 0 0 2px #DCD9F7">Why is my portfolio in band 4?</span>
+                </div>
+                <span style="font-size:12px;line-height:18px;color:#4B44A6">Answers come from your own figures.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 X-ray -->
+  <section id="xray" style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;align-items:baseline;gap:16px"><span style="font-family:'Geist Mono',monospace;font-size:14px;color:#3E3C35">02</span><h2 style="margin:0;font-size:34px;line-height:40px;font-weight:600;letter-spacing:-0.02em">Portfolio X-ray</h2></div>
+    <div style="display:flex;gap:32px;align-items:flex-start">
+      <div style="width:580px;flex-shrink:0;display:flex;flex-direction:column;gap:16px">
+        <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:12px;font-weight:600;color:#6F6C62;padding:4px 6px 0">CURRENT</span>
+          <img src="uploads/screens-1791883976798-u775.png" alt="Current Portfolio X-ray page" style="width:100%;border-radius:10px;display:block">
+        </div>
+        <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:4px 24px">
+          <div style="display:flex;flex-direction:column;gap:8px;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-size:15px;font-weight:600">X1 · Tabs under a sidebar item, plus a mystery control</span><span style="font-size:14px;line-height:21px;color:#6F6C62">X-ray / Risk / Risk profile are a third nav level, and the up-dot-down control at the right has no label.</span><span style="font-size:14px;line-height:21px;color:#255740">A segmented control in the page header. The unlabelled control is removed.</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-size:15px;font-weight:600">X2 · Findings read like a list of rules</span><span style="font-size:14px;line-height:21px;color:#6F6C62">The figures (100.0%, 20.1%) sit mid-sentence and both findings look equally important.</span><span style="font-size:14px;line-height:21px;color:#255740">One card per finding: the figure large, a status chip, and the overlapping companies as chips.</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-size:15px;font-weight:600">X3 · The page is one long column</span><span style="font-size:14px;line-height:21px;color:#6F6C62">Companies and sectors only become visible after scrolling past the explanation.</span><span style="font-size:14px;line-height:21px;color:#255740">Findings, companies and sectors are all visible above the fold now that the guide column is gone.</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:18px 0"><span style="font-size:15px;font-weight:600">X4 · Black bars compete with the title</span><span style="font-size:14px;line-height:21px;color:#6F6C62">Full-contrast sector bars are the loudest thing on the page.</span><span style="font-size:14px;line-height:21px;color:#255740">Green bars on sand tracks; shares in companies get a small bar too, so the two lists read alike.</span></div>
+        </div>
+      </div>
+
+      <div data-screen-label="X-ray redesign" style="width:1440px;flex-shrink:0;min-height:900px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:28px;padding:16px;display:flex;gap:16px;box-shadow:0 1px 2px rgba(28,27,23,.05),0 24px 64px rgba(28,27,23,.10)">
+        <aside style="width:84px;flex-shrink:0;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:18px 0;display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div style="width:38px;height:38px;border-radius:12px;background:#E0EDE4;color:#255740;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-size:21px;font-weight:500;margin-bottom:20px">A</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;color:#3E3C35;display:flex;align-items:center;justify-content:center" style-hover="background:#FAFAF7"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg></span><span style="font-size:11px;font-weight:500;color:#6F6C62">Home</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;background:#E0EDE4;color:#255740;display:flex;align-items:center;justify-content:center"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12A9 9 0 1 1 12 3v9z"></path><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"></path></svg></span><span style="font-size:11px;font-weight:600">Portfolio</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;color:#3E3C35;display:flex;align-items:center;justify-content:center" style-hover="background:#FAFAF7"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"></path><path d="M14 7h7v7"></path></svg></span><span style="font-size:11px;font-weight:500;color:#6F6C62">Markets</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;color:#3E3C35;display:flex;align-items:center;justify-content:center" style-hover="background:#FAFAF7"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 4.5-9 4.5-9-4.5z"></path><path d="m3 12 9 4.5 9-4.5"></path><path d="m3 16.5 9 4.5 9-4.5"></path></svg></span><span style="font-size:11px;font-weight:500;color:#6F6C62">Funds</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;color:#3E3C35;display:flex;align-items:center;justify-content:center" style-hover="background:#FAFAF7"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M7 15c3-1 7-4 13-9"></path><path d="M7 15c4 0 8-1 13-3" stroke-dasharray="2 2.5"></path></svg></span><span style="font-size:11px;font-weight:500;color:#6F6C62">Plan ahead</span></div>
+        </aside>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:24px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="flex:1;max-width:760px;display:flex;align-items:center;gap:14px;height:52px;padding:0 6px 0 18px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px">
+              <span style="font-size:13px;font-weight:600;white-space:nowrap">Priya’s story</span>
+              <div style="display:flex;gap:3px"><span style="width:16px;height:6px;border-radius:3px;background:#3F8160"></span><span style="width:16px;height:6px;border-radius:3px;background:#95C0A5"></span><span style="width:16px;height:6px;border-radius:3px;background:#EBEAE4"></span><span style="width:16px;height:6px;border-radius:3px;background:#EBEAE4"></span></div>
+              <span style="font-size:12px;color:#6F6C62;white-space:nowrap">2 of 4</span>
+              <span style="width:1px;height:22px;background:#EBEAE4"></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:16px"><span style="font-size:13px;font-weight:600">Test 10,000 futures</span><span style="font-size:12px;color:#6F6C62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Plan ahead replays markets since 2007 to show the range of outcomes.</span></div>
+              <button style="white-space:nowrap;height:40px;padding:0 16px;border:0;border-radius:999px;background:#E0EDE4;color:#1D4532;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Open Plan ahead</button>
+              <button aria-label="Show all steps" style="width:40px;height:40px;border:0;border-radius:999px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3E3C35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+            </div>
+            <div style="flex:1"></div>
+            <button style="white-space:nowrap;height:44px;padding:0 16px;border:0;border-radius:999px;background:#F2F1FC;color:#4B44A6;font:inherit;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"></path></svg>Ask Atrium</button>
+            <div style="display:flex;align-items:center;gap:10px;height:52px;padding:0 14px 0 6px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px">
+              <span style="width:40px;height:40px;border-radius:50%;background:#C3DCCB;color:#143224;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center">PR</span>
+              <div style="display:flex;flex-direction:column;line-height:16px"><span style="font-size:13px;font-weight:600">Priya Raman</span><span style="font-size:12px;color:#6F6C62;white-space:nowrap">Investor · Stage 2, Invest</span></div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding:12px 8px 0">
+            <div style="display:flex;flex-direction:column;gap:8px;max-width:640px">
+              <h3 style="margin:0;font-size:36px;line-height:42px;font-weight:600;letter-spacing:-0.025em">Portfolio X-ray</h3>
+              <span style="font-size:15px;line-height:22px;color:#3E3C35;text-wrap:pretty">Your funds hold ETFs, and the ETFs hold companies. This is what you own underneath.</span>
+            </div>
+            <div style="display:flex;gap:4px;padding:4px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px">
+              <span style="padding:9px 18px;border-radius:999px;background:#E0EDE4;color:#1D4532;font-size:14px;font-weight:500">X-ray</span>
+              <span style="padding:9px 18px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500" style-hover="background:#FAFAF7">Risk</span>
+              <span style="padding:9px 18px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500;white-space:nowrap" style-hover="background:#FAFAF7">Risk profile</span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 8px"><span style="font-size:16px;font-weight:600">Things to look at</span><span style="font-size:13px;color:#6F6C62">Fixed rules applied to what you own underneath. None of them is an instruction to sell.</span></div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">
+              <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:600">Mostly in the US</span><span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:#FAFAF7;color:#3E3C35;font-size:13px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#9A968A"></span>Note</span></div>
+                <span style="font-size:44px;line-height:46px;font-weight:500;letter-spacing:-0.03em">100.0%</span>
+                <span style="font-size:14px;line-height:21px;color:#3E3C35">of your money is in US stocks, bonds and T-bills.</span>
+              </div>
+              <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:600">Two funds own the same things</span><span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:#FCF3D9;color:#7A5A0E;font-size:13px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#E2B23E"></span>Worth a look</span></div>
+                <span style="font-size:44px;line-height:46px;font-weight:500;letter-spacing:-0.03em">20.1%</span>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+                  <span style="font-size:14px;line-height:21px;color:#3E3C35">overlap between Atrium Balanced and Atrium Growth</span>
+                  <div style="display:flex;gap:6px"><span style="white-space:nowrap;padding:4px 10px;border-radius:999px;background:#FAFAF7;font-size:12px;font-weight:500">NVIDIA</span><span style="white-space:nowrap;padding:4px 10px;border-radius:999px;background:#FAFAF7;font-size:12px;font-weight:500">Apple</span><span style="white-space:nowrap;padding:4px 10px;border-radius:999px;background:#FAFAF7;font-size:12px;font-weight:500">Microsoft</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px">
+            <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:16px;font-weight:600">Largest companies you own</span><span style="font-size:13px;color:#6F6C62">From each ETF’s ten largest holdings, which cover 41.5% of your stock exposure.</span></div>
+              <div style="display:flex;flex-direction:column">
+                <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 170px;gap:16px;padding:10px 0;font-size:12px;font-weight:500;color:#6F6C62;border-bottom:1px solid #F2F1EC"><span>Company</span><span>Share of your money</span><span>Held through</span></div>
+                <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 170px;gap:16px;padding:12px 0;align-items:center;border-bottom:1px solid #F2F1EC"><span style="display:flex;align-items:center;gap:10px"><span style="width:40px;height:28px;border-radius:8px;background:#FAFAF7;font-family:'Geist Mono',monospace;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center">NVDA</span><span style="font-size:14px;font-weight:500">NVIDIA Corp</span></span><span style="display:flex;align-items:center;gap:10px"><span style="flex:1;height:6px;border-radius:3px;background:#F2F1EC"><span style="display:block;width:100%;height:6px;border-radius:3px;background:#649E7D"></span></span><span style="width:44px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums">4.2%</span></span><span style="display:flex;gap:4px"><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">QQQ</span><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">VOO</span><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">VTI</span></span></div>
+                <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 170px;gap:16px;padding:12px 0;align-items:center;border-bottom:1px solid #F2F1EC"><span style="display:flex;align-items:center;gap:10px"><span style="width:40px;height:28px;border-radius:8px;background:#FAFAF7;font-family:'Geist Mono',monospace;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center">AAPL</span><span style="font-size:14px;font-weight:500">Apple Inc</span></span><span style="display:flex;align-items:center;gap:10px"><span style="flex:1;height:6px;border-radius:3px;background:#F2F1EC"><span style="display:block;width:93%;height:6px;border-radius:3px;background:#649E7D"></span></span><span style="width:44px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums">3.9%</span></span><span style="display:flex;gap:4px"><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">QQQ</span><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">VOO</span><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">VTI</span></span></div>
+                <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 170px;gap:16px;padding:12px 0;align-items:center;border-bottom:1px solid #F2F1EC"><span style="display:flex;align-items:center;gap:10px"><span style="width:40px;height:28px;border-radius:8px;background:#FAFAF7;font-family:'Geist Mono',monospace;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center">MSFT</span><span style="font-size:14px;font-weight:500">Microsoft Corp</span></span><span style="display:flex;align-items:center;gap:10px"><span style="flex:1;height:6px;border-radius:3px;background:#F2F1EC"><span style="display:block;width:88%;height:6px;border-radius:3px;background:#649E7D"></span></span><span style="width:44px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums">3.7%</span></span><span style="display:flex;gap:4px"><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">QQQ</span><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">VOO</span><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">VTI</span></span></div>
+                <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 170px;gap:16px;padding:12px 0;align-items:center;border-bottom:1px solid #F2F1EC"><span style="display:flex;align-items:center;gap:10px"><span style="width:40px;height:28px;border-radius:8px;background:#FAFAF7;font-family:'Geist Mono',monospace;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center">AMZN</span><span style="font-size:14px;font-weight:500">Amazon.com Inc</span></span><span style="display:flex;align-items:center;gap:10px"><span style="flex:1;height:6px;border-radius:3px;background:#F2F1EC"><span style="display:block;width:57%;height:6px;border-radius:3px;background:#649E7D"></span></span><span style="width:44px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums">2.4%</span></span><span style="display:flex;gap:4px"><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">QQQ</span><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">VOO</span><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">VTI</span></span></div>
+                <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 170px;gap:16px;padding:12px 0;align-items:center"><span style="display:flex;align-items:center;gap:10px"><span style="width:40px;height:28px;border-radius:8px;background:#FAFAF7;font-family:'Geist Mono',monospace;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center">META</span><span style="font-size:14px;font-weight:500">Meta Platforms</span></span><span style="display:flex;align-items:center;gap:10px"><span style="flex:1;height:6px;border-radius:3px;background:#F2F1EC"><span style="display:block;width:38%;height:6px;border-radius:3px;background:#649E7D"></span></span><span style="width:44px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums">1.6%</span></span><span style="display:flex;gap:4px"><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">QQQ</span><span style="padding:3px 8px;border-radius:999px;border:1px solid #EBEAE4;font-family:'Geist Mono',monospace;font-size:11px">VOO</span></span></div>
+              </div>
+            </div>
+            <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+              <span style="font-size:16px;font-weight:600">Sectors</span>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:13px"><span>Cash and T-bills</span><span style="font-variant-numeric:tabular-nums">41.1%</span></div><div style="height:8px;border-radius:4px;background:#F2F1EC"><div style="width:100%;height:8px;border-radius:4px;background:#649E7D"></div></div></div>
+                <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:13px"><span>Technology</span><span style="font-variant-numeric:tabular-nums">21.6%</span></div><div style="height:8px;border-radius:4px;background:#F2F1EC"><div style="width:53%;height:8px;border-radius:4px;background:#649E7D"></div></div></div>
+                <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:13px"><span>Bonds</span><span style="font-variant-numeric:tabular-nums">10.7%</span></div><div style="height:8px;border-radius:4px;background:#F2F1EC"><div style="width:26%;height:8px;border-radius:4px;background:#649E7D"></div></div></div>
+                <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:13px"><span>Communication</span><span style="font-variant-numeric:tabular-nums">5.1%</span></div><div style="height:8px;border-radius:4px;background:#F2F1EC"><div style="width:12%;height:8px;border-radius:4px;background:#649E7D"></div></div></div>
+                <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:13px;color:#6F6C62"><span>Other sectors</span><span style="font-variant-numeric:tabular-nums">21.5%</span></div><div style="height:8px;border-radius:4px;background:#F2F1EC"><div style="width:52%;height:8px;border-radius:4px;background:#95C0A5"></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 Markets -->
+  <section id="markets" style="display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;align-items:baseline;gap:16px"><span style="font-family:'Geist Mono',monospace;font-size:14px;color:#3E3C35">03</span><h2 style="margin:0;font-size:34px;line-height:40px;font-weight:600;letter-spacing:-0.02em">Markets</h2></div>
+    <div style="display:flex;gap:32px;align-items:flex-start">
+      <div style="width:580px;flex-shrink:0;display:flex;flex-direction:column;gap:16px">
+        <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:12px;font-weight:600;color:#6F6C62;padding:4px 6px 0">CURRENT</span>
+          <img src="uploads/screens-1791883976807-j1ml.png" alt="Current Markets page" style="width:100%;border-radius:10px;display:block">
+        </div>
+        <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:4px 24px">
+          <div style="display:flex;flex-direction:column;gap:8px;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-size:15px;font-weight:600">M1 · The risk column says nothing</span><span style="font-size:14px;line-height:21px;color:#6F6C62">Every stock shows five identical red squares, so you can’t compare rows, and red reads as an error.</span><span style="font-size:14px;line-height:21px;color:#255740">Band number and name with a five-step meter, measured against Priya’s profile: green at or below band 3, amber above.</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-size:15px;font-weight:600">M2 · Market status is easy to miss</span><span style="font-size:14px;line-height:21px;color:#6F6C62">A grey dot line between the description and the search.</span><span style="font-size:14px;line-height:21px;color:#255740">A status chip beside the title, with the opening time.</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-size:15px;font-weight:600">M3 · Controls on three rows</span><span style="font-size:14px;line-height:21px;color:#6F6C62">Tabs, status and search with filters stack before the first row of data.</span><span style="font-size:14px;line-height:21px;color:#255740">Tabs move into the header; search, filter and the risk legend share one toolbar.</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;padding:18px 0"><span style="font-size:15px;font-weight:600">M4 · No visible way to act on a row</span><span style="font-size:14px;line-height:21px;color:#6F6C62">Nothing tells you rows are clickable or how to start a trade.</span><span style="font-size:14px;line-height:21px;color:#255740">Rows highlight on hover and show a Trade button (shown on NVDA). The Guardian promise stays in the subtitle.</span></div>
+        </div>
+      </div>
+
+      <div data-screen-label="Markets redesign" style="width:1440px;flex-shrink:0;min-height:900px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:28px;padding:16px;display:flex;gap:16px;box-shadow:0 1px 2px rgba(28,27,23,.05),0 24px 64px rgba(28,27,23,.10)">
+        <aside style="width:84px;flex-shrink:0;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:18px 0;display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div style="width:38px;height:38px;border-radius:12px;background:#E0EDE4;color:#255740;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-size:21px;font-weight:500;margin-bottom:20px">A</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;color:#3E3C35;display:flex;align-items:center;justify-content:center" style-hover="background:#FAFAF7"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg></span><span style="font-size:11px;font-weight:500;color:#6F6C62">Home</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;color:#3E3C35;display:flex;align-items:center;justify-content:center" style-hover="background:#FAFAF7"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12A9 9 0 1 1 12 3v9z"></path><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"></path></svg></span><span style="font-size:11px;font-weight:500;color:#6F6C62">Portfolio</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;background:#E0EDE4;color:#255740;display:flex;align-items:center;justify-content:center"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"></path><path d="M14 7h7v7"></path></svg></span><span style="font-size:11px;font-weight:600">Markets</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;color:#3E3C35;display:flex;align-items:center;justify-content:center" style-hover="background:#FAFAF7"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 4.5-9 4.5-9-4.5z"></path><path d="m3 12 9 4.5 9-4.5"></path><path d="m3 16.5 9 4.5 9-4.5"></path></svg></span><span style="font-size:11px;font-weight:500;color:#6F6C62">Funds</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:76px"><span style="width:48px;height:36px;border-radius:12px;color:#3E3C35;display:flex;align-items:center;justify-content:center" style-hover="background:#FAFAF7"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M7 15c3-1 7-4 13-9"></path><path d="M7 15c4 0 8-1 13-3" stroke-dasharray="2 2.5"></path></svg></span><span style="font-size:11px;font-weight:500;color:#6F6C62">Plan ahead</span></div>
+        </aside>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:24px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="flex:1;max-width:760px;display:flex;align-items:center;gap:14px;height:52px;padding:0 6px 0 18px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px">
+              <span style="font-size:13px;font-weight:600;white-space:nowrap">Priya’s story</span>
+              <div style="display:flex;gap:3px"><span style="width:16px;height:6px;border-radius:3px;background:#3F8160"></span><span style="width:16px;height:6px;border-radius:3px;background:#95C0A5"></span><span style="width:16px;height:6px;border-radius:3px;background:#EBEAE4"></span><span style="width:16px;height:6px;border-radius:3px;background:#EBEAE4"></span></div>
+              <span style="font-size:12px;color:#6F6C62;white-space:nowrap">2 of 4</span>
+              <span style="width:1px;height:22px;background:#EBEAE4"></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:16px"><span style="font-size:13px;font-weight:600">Test 10,000 futures</span><span style="font-size:12px;color:#6F6C62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Plan ahead replays markets since 2007 to show the range of outcomes.</span></div>
+              <button style="white-space:nowrap;height:40px;padding:0 16px;border:0;border-radius:999px;background:#E0EDE4;color:#1D4532;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Open Plan ahead</button>
+              <button aria-label="Show all steps" style="width:40px;height:40px;border:0;border-radius:999px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3E3C35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+            </div>
+            <div style="flex:1"></div>
+            <button style="white-space:nowrap;height:44px;padding:0 16px;border:0;border-radius:999px;background:#F2F1FC;color:#4B44A6;font:inherit;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"></path></svg>Ask Atrium</button>
+            <div style="display:flex;align-items:center;gap:10px;height:52px;padding:0 14px 0 6px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px">
+              <span style="width:40px;height:40px;border-radius:50%;background:#C3DCCB;color:#143224;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center">PR</span>
+              <div style="display:flex;flex-direction:column;line-height:16px"><span style="font-size:13px;font-weight:600">Priya Raman</span><span style="font-size:12px;color:#6F6C62;white-space:nowrap">Investor · Stage 2, Invest</span></div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding:12px 8px 0">
+            <div style="display:flex;flex-direction:column;gap:8px;max-width:720px">
+              <div style="display:flex;align-items:center;gap:14px"><h3 style="margin:0;font-size:36px;line-height:42px;font-weight:600;letter-spacing:-0.025em">Markets</h3><span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:#FFFFFF;color:#3E3C35;font-size:13px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#9A968A"></span>US market closed · opens 9:30 am ET</span></div>
+              <span style="font-size:15px;line-height:22px;color:#3E3C35;text-wrap:pretty">Thirty large US companies and seventeen ETFs, traded with paper money at real prices. Every order passes the Pre-trade Guardian before it goes anywhere.</span>
+            </div>
+            <div style="display:flex;gap:4px;padding:4px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px">
+              <span style="padding:9px 18px;border-radius:999px;background:#E0EDE4;color:#1D4532;font-size:14px;font-weight:500">Markets</span>
+              <span style="padding:9px 18px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500;white-space:nowrap" style-hover="background:#FAFAF7">Your trades</span>
+            </div>
+          </div>
+
+          <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:20px 24px 8px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:12px;padding-bottom:8px">
+              <div style="width:320px;height:44px;border-radius:12px;background:#FAFAF7;display:flex;align-items:center;gap:10px;padding:0 14px;color:#9A968A;font-size:14px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6F6C62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Symbol or company</div>
+              <div style="display:flex;gap:4px;padding:4px;background:#FAFAF7;border-radius:999px">
+                <span style="padding:8px 16px;border-radius:999px;background:#FFFFFF;font-size:13px;font-weight:600;box-shadow:0 1px 2px rgba(28,27,23,.08)">All</span>
+                <span style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:13px;font-weight:500">Stocks</span>
+                <span style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:13px;font-weight:500">ETFs</span>
+                <span style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:13px;font-weight:500">Watchlist</span>
+              </div>
+              <div style="flex:1"></div>
+              <div style="display:flex;align-items:center;gap:14px;font-size:12px;color:#3E3C35">
+                <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:8px;border-radius:3px;background:#3F8160"></span>Within your profile (band 3)</span>
+                <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span>Above it</span>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:32px minmax(0,2fr) minmax(0,1.3fr) minmax(0,1.5fr) 110px 100px 96px;gap:16px;padding:10px 0;font-size:12px;font-weight:500;color:#6F6C62;border-bottom:1px solid #F2F1EC"><span></span><span>Name</span><span>Sector</span><span>Risk band</span><span style="text-align:right">Price</span><span style="text-align:right">Today</span><span></span></div>
+
+            <div style="display:grid;grid-template-columns:32px minmax(0,2fr) minmax(0,1.3fr) minmax(0,1.5fr) 110px 100px 96px;gap:16px;padding:12px 0;align-items:center;border-bottom:1px solid #F2F1EC">
+              <span style="color:#9A968A;font-size:16px">☆</span>
+              <span style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:32px;border-radius:8px;background:#FAFAF7;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center">AAPL</span><span style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:500">Apple Inc.</span><span style="font-size:12px;color:#6F6C62">Stock</span></span></span>
+              <span style="font-size:14px;color:#3E3C35">Technology</span>
+              <span style="display:flex;align-items:center;gap:10px"><span style="display:flex;gap:3px"><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span></span><span style="font-size:13px;color:#7A5A0E;font-weight:500">5 Adventurous</span></span>
+              <span style="text-align:right;font-size:14px;font-variant-numeric:tabular-nums">$340.97</span>
+              <span style="text-align:right;font-size:14px;font-weight:500;color:#255740;font-variant-numeric:tabular-nums">↑ 1.29%</span>
+              <span></span>
+            </div>
+            <div style="display:grid;grid-template-columns:32px minmax(0,2fr) minmax(0,1.3fr) minmax(0,1.5fr) 110px 100px 96px;gap:16px;padding:12px 0;align-items:center;border-bottom:1px solid #F2F1EC">
+              <span style="color:#9A968A;font-size:16px">☆</span>
+              <span style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:32px;border-radius:8px;background:#FAFAF7;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center">MSFT</span><span style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:500">Microsoft Corporation</span><span style="font-size:12px;color:#6F6C62">Stock</span></span></span>
+              <span style="font-size:14px;color:#3E3C35">Technology</span>
+              <span style="display:flex;align-items:center;gap:10px"><span style="display:flex;gap:3px"><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span></span><span style="font-size:13px;color:#7A5A0E;font-weight:500">5 Adventurous</span></span>
+              <span style="text-align:right;font-size:14px;font-variant-numeric:tabular-nums">$541.15</span>
+              <span style="text-align:right;font-size:14px;font-weight:500;color:#255740;font-variant-numeric:tabular-nums">↑ 1.14%</span>
+              <span></span>
+            </div>
+            <div style="display:grid;grid-template-columns:32px minmax(0,2fr) minmax(0,1.3fr) minmax(0,1.5fr) 110px 100px 96px;gap:16px;padding:12px 12px;margin:0 -12px;align-items:center;background:#FAFAF7;border-radius:12px">
+              <span style="color:#E2B23E;font-size:16px">★</span>
+              <span style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:32px;border-radius:8px;background:#FFFFFF;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center">NVDA</span><span style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:500">NVIDIA Corporation</span><span style="font-size:12px;color:#6F6C62">Stock · on your watchlist</span></span></span>
+              <span style="font-size:14px;color:#3E3C35">Technology</span>
+              <span style="display:flex;align-items:center;gap:10px"><span style="display:flex;gap:3px"><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span></span><span style="font-size:13px;color:#7A5A0E;font-weight:500">5 Adventurous</span></span>
+              <span style="text-align:right;font-size:14px;font-variant-numeric:tabular-nums">$226.32</span>
+              <span style="text-align:right;font-size:14px;font-weight:500;color:#B23F2E;font-variant-numeric:tabular-nums">↓ 1.29%</span>
+              <button style="white-space:nowrap;justify-self:end;height:34px;padding:0 16px;border:0;border-radius:999px;background:#3F8160;color:#FFFFFF;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Trade</button>
+            </div>
+            <div style="display:grid;grid-template-columns:32px minmax(0,2fr) minmax(0,1.3fr) minmax(0,1.5fr) 110px 100px 96px;gap:16px;padding:12px 0;align-items:center;border-bottom:1px solid #F2F1EC">
+              <span style="color:#9A968A;font-size:16px">☆</span>
+              <span style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:32px;border-radius:8px;background:#FAFAF7;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center">AMZN</span><span style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:500">Amazon.com, Inc.</span><span style="font-size:12px;color:#6F6C62">Stock</span></span></span>
+              <span style="font-size:14px;color:#3E3C35">Consumer discretionary</span>
+              <span style="display:flex;align-items:center;gap:10px"><span style="display:flex;gap:3px"><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span></span><span style="font-size:13px;color:#7A5A0E;font-weight:500">5 Adventurous</span></span>
+              <span style="text-align:right;font-size:14px;font-variant-numeric:tabular-nums">$259.53</span>
+              <span style="text-align:right;font-size:14px;font-weight:500;color:#B23F2E;font-variant-numeric:tabular-nums">↓ 1.11%</span>
+              <span></span>
+            </div>
+            <div style="display:grid;grid-template-columns:32px minmax(0,2fr) minmax(0,1.3fr) minmax(0,1.5fr) 110px 100px 96px;gap:16px;padding:12px 0;align-items:center;border-bottom:1px solid #F2F1EC">
+              <span style="color:#9A968A;font-size:16px">☆</span>
+              <span style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:32px;border-radius:8px;background:#F0F6F2;color:#255740;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center">VOO</span><span style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:500">Vanguard S&amp;P 500 ETF</span><span style="font-size:12px;color:#6F6C62">ETF</span></span></span>
+              <span style="font-size:14px;color:#3E3C35">Broad US market</span>
+              <span style="display:flex;align-items:center;gap:10px"><span style="display:flex;gap:3px"><span style="width:14px;height:8px;border-radius:3px;background:#3F8160"></span><span style="width:14px;height:8px;border-radius:3px;background:#3F8160"></span><span style="width:14px;height:8px;border-radius:3px;background:#3F8160"></span><span style="width:14px;height:8px;border-radius:3px;background:#EBEAE4"></span><span style="width:14px;height:8px;border-radius:3px;background:#EBEAE4"></span></span><span style="font-size:13px;color:#255740;font-weight:500">3 Balanced</span></span>
+              <span style="text-align:right;font-size:14px;font-variant-numeric:tabular-nums">$617.20</span>
+              <span style="text-align:right;font-size:14px;font-weight:500;color:#255740;font-variant-numeric:tabular-nums">↑ 0.38%</span>
+              <span></span>
+            </div>
+            <div style="display:grid;grid-template-columns:32px minmax(0,2fr) minmax(0,1.3fr) minmax(0,1.5fr) 110px 100px 96px;gap:16px;padding:12px 0;align-items:center">
+              <span style="color:#9A968A;font-size:16px">☆</span>
+              <span style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:32px;border-radius:8px;background:#F0F6F2;color:#255740;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center">QQQ</span><span style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:500">Invesco QQQ Trust</span><span style="font-size:12px;color:#6F6C62">ETF</span></span></span>
+              <span style="font-size:14px;color:#3E3C35">Large-cap growth</span>
+              <span style="display:flex;align-items:center;gap:10px"><span style="display:flex;gap:3px"><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#E2B23E"></span><span style="width:14px;height:8px;border-radius:3px;background:#EBEAE4"></span></span><span style="font-size:13px;color:#7A5A0E;font-weight:500">4 Growth</span></span>
+              <span style="text-align:right;font-size:14px;font-variant-numeric:tabular-nums">$604.85</span>
+              <span style="text-align:right;font-size:14px;font-weight:500;color:#255740;font-variant-numeric:tabular-nums">↑ 0.71%</span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FFFFFF;color:#1C1B17;font-family:'Schibsted Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#2F6B4F;text-decoration:none}
+a:hover{color:#1D4532;text-decoration:underline}
+</style>
+</helmet>
+
+<div style="max-width:1240px;margin:0 auto;padding:28px 32px 96px;display:flex;flex-direction:column;gap:80px">
+
+  <!-- Header -->
+  <header style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;border-radius:10px;background:#E0EDE4;color:#255740;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-size:20px;font-weight:500">A</div>
+      <span style="font-size:18px;font-weight:600;letter-spacing:-0.01em">Atrium</span>
+      <span style="font-size:13px;color:#6F6C62;padding-left:10px;border-left:1px solid #DCDAD1">Design system 0.2</span>
+    </div>
+    <nav style="display:flex;gap:4px;padding:4px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px;flex-wrap:wrap">
+      <a href="#colour" style="padding:8px 16px;border-radius:999px;background:#E0EDE4;color:#1D4532;font-size:14px;font-weight:500;text-decoration:none">Colour</a>
+      <a href="#type" style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500;text-decoration:none">Type</a>
+      <a href="#shape" style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500;text-decoration:none">Shape</a>
+      <a href="#components" style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500;text-decoration:none">Components</a>
+      <a href="#sample" style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500;text-decoration:none">Sample screen</a>
+    </nav>
+  </header>
+
+  <!-- Intro -->
+  <section style="display:flex;flex-direction:column;gap:32px">
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:760px">
+      <h1 style="margin:0;font-size:44px;line-height:48px;font-weight:600;letter-spacing:-0.025em;text-wrap:pretty">Foundations for the Atrium revamp</h1>
+      <p style="margin:0;font-size:17px;line-height:26px;color:#3E3C35;text-wrap:pretty">A white canvas, white cards outlined with a sand hairline, and one forest green for action and money. Engine figures use a grotesk with tabular numerals; anything Gemini writes uses a serif, so provenance is visible at a glance.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">01</span>
+        <h3 style="margin:0;font-size:17px;line-height:24px;font-weight:600">Engines count, Gemini explains</h3>
+        <p style="margin:0;font-size:14px;line-height:21px;color:#6F6C62;text-wrap:pretty">Numbers from the pricing, simulation and matching engines are set in Schibsted Grotesk. Gemini’s words are set in <span style="font-family:'Newsreader',serif;font-size:16px;color:#1C1B17">Newsreader</span>, always with model and cost.</p>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">02</span>
+        <h3 style="margin:0;font-size:17px;line-height:24px;font-weight:600">People decide</h3>
+        <p style="margin:0;font-size:14px;line-height:21px;color:#6F6C62;text-wrap:pretty">Every AI proposal ends in a button a person presses. Two-person actions show who asked, who approves and the code step.</p>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">03</span>
+        <h3 style="margin:0;font-size:17px;line-height:24px;font-weight:600">Quiet until it matters</h3>
+        <p style="margin:0;font-size:14px;line-height:21px;color:#6F6C62;text-wrap:pretty">Sand and green carry every page. Coral and amber are kept for risk, holds and alerts, so they stand out when they appear.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 Colour -->
+  <section id="colour" style="display:flex;flex-direction:column;gap:32px;scroll-margin-top:24px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:680px">
+      <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">01 · COLOUR</span>
+      <h2 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.02em">Colour</h2>
+      <p style="margin:0;font-size:15px;line-height:22px;color:#6F6C62;text-wrap:pretty">Tokens are named <span style="font-family:'Geist Mono',monospace;font-size:13px;color:#1C1B17">--{family}-{step}</span>. Primary action is green-500. Active nav, selected states and secondary actions use tonal green-100; ink is for text only.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <h3 style="margin:0;font-size:17px;line-height:24px;font-weight:600">Forest · brand and money</h3>
+        <span style="font-size:13px;color:#6F6C62">Action, selection, positive change, chart highlight</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px">
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#F0F6F2;box-shadow:inset 0 0 0 1px rgba(28,27,23,.06)"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">green-50</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#F0F6F2</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#E0EDE4"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">green-100</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#E0EDE4</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#C3DCCB"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">green-200</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#C3DCCB</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#95C0A5"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">green-300</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#95C0A5</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#649E7D"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">green-400</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#649E7D</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#3F8160;display:flex;align-items:flex-end;padding:8px"><span style="font-size:11px;font-weight:600;color:#FFFFFF">Primary</span></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">green-500</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#3F8160</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#2F6B4F"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">green-600</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#2F6B4F</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#255740"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">green-700</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#255740</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#1D4532"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">green-800</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#1D4532</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#143224"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">green-900</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#143224</span></div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <h3 style="margin:0;font-size:17px;line-height:24px;font-weight:600">Sand and ink · surfaces and text</h3>
+        <span style="font-size:13px;color:#6F6C62">ink-400 is for placeholders and disabled text only</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px">
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#FFFFFF;box-shadow:inset 0 0 0 1px rgba(28,27,23,.08)"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">canvas + card</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#FFFFFF</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#FAFAF7;box-shadow:inset 0 0 0 1px rgba(28,27,23,.08)"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">fill</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#FAFAF7</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#F2F1EC"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">sand-100</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#F2F1EC</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#EBEAE4"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">sand-200</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#EBEAE4</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#DCDAD1"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">sand-300</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#DCDAD1</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#9A968A"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">ink-400</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#9A968A</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#6F6C62"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">ink-500</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#6F6C62</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#3E3C35"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">ink-700</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#3E3C35</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px"><div style="height:72px;border-radius:12px;background:#1C1B17"></div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600">ink-900</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">#1C1B17</span></div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <h3 style="margin:0;font-size:17px;line-height:24px;font-weight:600">Signals</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px">
+        <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:600">Positive</span><span style="font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:#F0F6F2;color:#255740">+2.4%</span></div>
+          <div style="display:flex;height:40px;border-radius:10px;overflow:hidden"><div style="flex:1;background:#F0F6F2"></div><div style="flex:1;background:#3F8160"></div><div style="flex:1;background:#255740"></div></div>
+          <span style="font-family:'Geist Mono',monospace;font-size:11px;line-height:16px;color:#6F6C62">bg green-50 · solid green-500 · text green-700</span>
+          <span style="font-size:13px;line-height:19px;color:#3E3C35">Gains, approved, matched, filled.</span>
+        </div>
+        <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:600">Risk</span><span style="font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:#FDEDEA;color:#B23F2E">−3.1%</span></div>
+          <div style="display:flex;height:40px;border-radius:10px;overflow:hidden"><div style="flex:1;background:#FDEDEA"></div><div style="flex:1;background:#E8705F"></div><div style="flex:1;background:#B23F2E"></div></div>
+          <span style="font-family:'Geist Mono',monospace;font-size:11px;line-height:16px;color:#6F6C62">bg coral-50 · solid coral-500 · text coral-700</span>
+          <span style="font-size:13px;line-height:19px;color:#3E3C35">Losses, held orders, fraud, rejected.</span>
+        </div>
+        <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:600">Caution</span><span style="font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:#FCF3D9;color:#7A5A0E">Needs review</span></div>
+          <div style="display:flex;height:40px;border-radius:10px;overflow:hidden"><div style="flex:1;background:#FCF3D9"></div><div style="flex:1;background:#F4D27C"></div><div style="flex:1;background:#7A5A0E"></div></div>
+          <span style="font-family:'Geist Mono',monospace;font-size:11px;line-height:16px;color:#6F6C62">bg amber-50 · solid amber-300 · text amber-800</span>
+          <span style="font-size:13px;line-height:19px;color:#3E3C35">Drift, pending approval, unchecked figures.</span>
+        </div>
+        <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:600">Gemini</span><span style="font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:#F2F1FC;color:#4B44A6">AI written</span></div>
+          <div style="display:flex;height:40px;border-radius:10px;overflow:hidden"><div style="flex:1;background:#F2F1FC"></div><div style="flex:1;background:#7C74DB"></div><div style="flex:1;background:#4B44A6"></div></div>
+          <span style="font-family:'Geist Mono',monospace;font-size:11px;line-height:16px;color:#6F6C62">bg ai-50 · solid ai-500 · text ai-700</span>
+          <span style="font-size:13px;line-height:19px;color:#3E3C35">Provenance only. Never used for buttons or data.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px">
+        <span style="font-size:15px;font-weight:600">Proportion on a typical screen</span>
+        <div style="display:flex;height:40px;border-radius:10px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(28,27,23,.06)">
+          <div style="flex:70;background:#FAFAF7"></div><div style="flex:14;background:#F2F1EC"></div><div style="flex:9;background:#1C1B17"></div><div style="flex:5;background:#3F8160"></div><div style="flex:2;background:#E8705F"></div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#6F6C62"><span>White 70</span><span>Sand 14</span><span>Ink 9</span><span>Forest 5</span><span>Signals 2</span></div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px">
+        <span style="font-size:15px;font-weight:600">Chart series, in order</span>
+        <div style="display:flex;gap:8px;height:40px">
+          <div style="flex:1;border-radius:10px;background:#3F8160"></div><div style="flex:1;border-radius:10px;background:#F4D27C"></div><div style="flex:1;border-radius:10px;background:#E8705F"></div><div style="flex:1;border-radius:10px;background:#95C0A5"></div><div style="flex:1;border-radius:10px;background:#DCDAD1"></div>
+        </div>
+        <span style="font-size:12px;color:#6F6C62">Inactive bars and tracks use sand-100. Highlight one series at a time.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 Type -->
+  <section id="type" style="display:flex;flex-direction:column;gap:32px;scroll-margin-top:24px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:680px">
+      <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">02 · TYPE</span>
+      <h2 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.02em">Three voices</h2>
+      <p style="margin:0;font-size:15px;line-height:22px;color:#6F6C62;text-wrap:pretty">Figures use proportional numerals. Tables switch on tabular numerals in numeric columns so amounts line up.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+        <span style="font-size:13px;color:#6F6C62">Interface and engine figures</span>
+        <span style="font-size:56px;line-height:56px;font-weight:500;letter-spacing:-0.03em">$248,310</span>
+        <span style="font-size:15px;font-weight:600">Schibsted Grotesk · 400 500 600</span>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+        <span style="font-size:13px;color:#6F6C62">Anything Gemini writes</span>
+        <span style="font-family:'Newsreader',serif;font-size:30px;line-height:36px;color:#1C1B17;text-wrap:pretty">Your portfolio has drifted towards growth.</span>
+        <span style="font-size:15px;font-weight:600">Newsreader · 400 500, italic</span>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+        <span style="font-size:13px;color:#6F6C62">IDs, codes, model and cost</span>
+        <span style="font-family:'Geist Mono',monospace;font-size:22px;line-height:32px">ORD-20931<br>gemini-2.5-pro · $0.0041</span>
+        <span style="font-size:15px;font-weight:600">Geist Mono · 400 500</span>
+      </div>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:8px 24px">
+      <div style="display:grid;grid-template-columns:120px 120px minmax(0,1fr);gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">display</span><span style="font-size:12px;color:#6F6C62">44/48 · 600</span><span style="font-size:44px;line-height:48px;font-weight:600;letter-spacing:-0.025em">Good morning, Priya</span></div>
+      <div style="display:grid;grid-template-columns:120px 120px minmax(0,1fr);gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">kpi</span><span style="font-size:12px;color:#6F6C62">36/40 · 500</span><span style="font-size:36px;line-height:40px;font-weight:500;letter-spacing:-0.02em">94.1%</span></div>
+      <div style="display:grid;grid-template-columns:120px 120px minmax(0,1fr);gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">h1</span><span style="font-size:12px;color:#6F6C62">30/36 · 600</span><span style="font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.02em">Portfolio X-ray</span></div>
+      <div style="display:grid;grid-template-columns:120px 120px minmax(0,1fr);gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">h2</span><span style="font-size:12px;color:#6F6C62">22/28 · 600</span><span style="font-size:22px;line-height:28px;font-weight:600;letter-spacing:-0.01em">Bank reconciliation</span></div>
+      <div style="display:grid;grid-template-columns:120px 120px minmax(0,1fr);gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">h3 · card title</span><span style="font-size:12px;color:#6F6C62">16/22 · 600</span><span style="font-size:16px;line-height:22px;font-weight:600">Sales analytics</span></div>
+      <div style="display:grid;grid-template-columns:120px 120px minmax(0,1fr);gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">body</span><span style="font-size:12px;color:#6F6C62">15/22 · 400</span><span style="font-size:15px;line-height:22px">Every order is checked before it reaches the market.</span></div>
+      <div style="display:grid;grid-template-columns:120px 120px minmax(0,1fr);gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">label</span><span style="font-size:12px;color:#6F6C62">13/18 · 500</span><span style="font-size:13px;line-height:18px;font-weight:500">Since last week</span></div>
+      <div style="display:grid;grid-template-columns:120px 120px minmax(0,1fr);gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid #F2F1EC"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">caption</span><span style="font-size:12px;color:#6F6C62">12/16 · 500</span><span style="font-size:12px;line-height:16px;font-weight:500;color:#6F6C62">Target 60% · updated 10:42</span></div>
+      <div style="display:grid;grid-template-columns:120px 120px minmax(0,1fr);gap:16px;align-items:center;padding:18px 0"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">ai-body</span><span style="font-size:12px;color:#6F6C62">17/26 · Newsreader</span><span style="font-family:'Newsreader',serif;font-size:17px;line-height:26px">Shares now make up 68% of the portfolio, against a target of 60%.</span></div>
+    </div>
+  </section>
+
+  <!-- 03 Shape -->
+  <section id="shape" style="display:flex;flex-direction:column;gap:32px;scroll-margin-top:24px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:680px">
+      <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">03 · SHAPE AND SPACE</span>
+      <h2 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.02em">Soft, outlined, on a 4px grid</h2>
+      <p style="margin:0;font-size:15px;line-height:22px;color:#6F6C62;text-wrap:pretty">Cards sit on the white canvas with a 1px sand-200 hairline. Fields and inner panels use the pale sand fill. Shadows are reserved for things that float: menus, popovers, the person switcher.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:18px">
+        <span style="font-size:15px;font-weight:600">Radius</span>
+        <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:center"><div style="width:52px;height:52px;background:#E0EDE4;border-radius:8px"></div><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">r-8</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:center"><div style="width:52px;height:52px;background:#E0EDE4;border-radius:12px"></div><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">r-12</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:center"><div style="width:52px;height:52px;background:#E0EDE4;border-radius:20px"></div><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">r-20</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:center"><div style="width:52px;height:52px;background:#E0EDE4;border-radius:28px"></div><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">r-28</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:center"><div style="width:80px;height:36px;background:#E0EDE4;border-radius:999px"></div><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">pill</span></div>
+        </div>
+        <span style="font-size:12px;line-height:18px;color:#6F6C62">8 inputs and tiles · 12 inner panels · 20 cards · 28 app shell · pill for buttons, chips and nav.</span>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px">
+        <span style="font-size:15px;font-weight:600">Spacing</span>
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">4</span><div style="width:4px;height:10px;border-radius:2px;background:#3F8160"></div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">8</span><div style="width:8px;height:10px;border-radius:2px;background:#3F8160"></div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">12</span><div style="width:12px;height:10px;border-radius:2px;background:#3F8160"></div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">16</span><div style="width:16px;height:10px;border-radius:2px;background:#3F8160"></div><span style="font-size:12px;color:#6F6C62">gap between cards</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">24</span><div style="width:24px;height:10px;border-radius:2px;background:#3F8160"></div><span style="font-size:12px;color:#6F6C62">card padding</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">32</span><div style="width:32px;height:10px;border-radius:2px;background:#3F8160"></div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">48</span><div style="width:48px;height:10px;border-radius:2px;background:#3F8160"></div><span style="font-size:12px;color:#6F6C62">between page sections</span></div>
+      </div>
+      <div style="background:#F2F1EC;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+        <span style="font-size:15px;font-weight:600">Elevation</span>
+        <div style="background:#FFFFFF;border-radius:16px;padding:14px 16px;display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:500">e0 · card</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">none</span></div>
+        <div style="background:#FFFFFF;border-radius:16px;padding:14px 16px;display:flex;justify-content:space-between;font-size:13px;box-shadow:0 1px 2px rgba(28,27,23,.05),0 12px 32px rgba(28,27,23,.10)"><span style="font-weight:500">e1 · menu, popover</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">0 12 32 / 10%</span></div>
+        <div style="background:#FFFFFF;border-radius:16px;padding:14px 16px;display:flex;justify-content:space-between;font-size:13px;box-shadow:0 0 0 3px #C3DCCB"><span style="font-weight:500">focus ring</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#6F6C62">3px green-200</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 Components -->
+  <section id="components" style="display:flex;flex-direction:column;gap:32px;scroll-margin-top:24px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:680px">
+      <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">04 · COMPONENTS</span>
+      <h2 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.02em">Components</h2>
+      <p style="margin:0;font-size:15px;line-height:22px;color:#6F6C62;text-wrap:pretty">The shared parts every journey is built from, shown with Atrium’s own content.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,540px),1fr));gap:16px">
+      <!-- Buttons -->
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:20px">
+        <span style="font-size:15px;font-weight:600">Buttons</span>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button style="white-space:nowrap;height:40px;padding:0 18px;border:0;border-radius:999px;background:#3F8160;color:#FFFFFF;font:inherit;font-size:14px;font-weight:600;cursor:pointer" style-hover="background:#2F6B4F">Test 10,000 futures</button>
+          <button style="white-space:nowrap;height:40px;padding:0 18px;border:0;border-radius:999px;background:#E0EDE4;color:#1D4532;font:inherit;font-size:14px;font-weight:600;cursor:pointer" style-hover="background:#C3DCCB">Enter as Priya</button>
+          <button style="white-space:nowrap;height:40px;padding:0 18px;border:1px solid #EBEAE4;border-radius:999px;background:#FFFFFF;color:#1C1B17;font:inherit;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#FAFAF7">Talk to an advisor</button>
+          <button style="white-space:nowrap;height:40px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#2F6B4F;font:inherit;font-size:14px;font-weight:600;cursor:pointer" style-hover="background:#F0F6F2">View all</button>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button style="white-space:nowrap;height:40px;padding:0 18px;border:0;border-radius:999px;background:#FDEDEA;color:#B23F2E;font:inherit;font-size:14px;font-weight:600;cursor:pointer" style-hover="background:#FADAD4">Cancel order</button>
+          <button disabled="" style="white-space:nowrap;height:40px;padding:0 18px;border:0;border-radius:999px;background:#F2F1EC;color:#9A968A;font:inherit;font-size:14px;font-weight:600;cursor:not-allowed">Approve</button>
+          <button style="white-space:nowrap;height:32px;padding:0 14px;border:0;border-radius:999px;background:#3F8160;color:#FFFFFF;font:inherit;font-size:13px;font-weight:600;cursor:pointer">Small</button>
+          <button aria-label="Notifications" style="width:40px;height:40px;border:0;border-radius:999px;background:#FAFAF7;color:#1C1B17;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#F2F1EC"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></button>
+        </div>
+        <span style="font-size:12px;line-height:18px;color:#6F6C62">Solid green for the main action, tonal green for entering a journey, one primary per view. Disabled buttons always say why nearby.</span>
+      </div>
+
+      <!-- Badges -->
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:20px">
+        <span style="font-size:15px;font-weight:600">Status and change</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:#F0F6F2;color:#255740;font-size:13px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#3F8160"></span>Matched</span>
+          <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:#FCF3D9;color:#7A5A0E;font-size:13px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#E2B23E"></span>Awaiting second approver</span>
+          <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:#FDEDEA;color:#B23F2E;font-size:13px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#E8705F"></span>Held</span>
+          <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:#FAFAF7;color:#3E3C35;font-size:13px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#9A968A"></span>Draft</span>
+          <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:#F2F1FC;color:#4B44A6;font-size:13px;font-weight:500"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"></path></svg>Gemini proposal</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:999px;background:#F0F6F2;color:#255740;font-size:12px;font-weight:600">↑ 14%</span>
+          <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:999px;background:#FDEDEA;color:#B23F2E;font-size:12px;font-weight:600">↓ 3.1%</span>
+          <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 8px;border-radius:999px;background:#FCF3D9;color:#7A5A0E;font-size:12px;font-weight:600">+8 pts over target</span>
+          <span style="width:1px;height:20px;background:#EBEAE4"></span>
+          <span style="display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px 0 4px;border-radius:999px;background:#FAFAF7;font-size:13px;font-weight:500"><span style="width:20px;height:20px;border-radius:50%;background:#E0EDE4;color:#1D4532;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center">2</span>Invest</span>
+        </div>
+        <span style="font-size:12px;line-height:18px;color:#6F6C62">Status chips carry a dot so colour is never the only signal. Change chips always include an arrow or sign.</span>
+      </div>
+
+      <!-- Navigation -->
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:20px;grid-column:1/-1">
+        <span style="font-size:15px;font-weight:600">Top bar and person switcher</span>
+        <div style="background:#FAFAF7;border-radius:20px;padding:12px 12px 12px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:28px;height:28px;border-radius:9px;background:#E0EDE4;color:#255740;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-size:17px;font-weight:500">A</div>
+            <span style="font-size:16px;font-weight:600">Atrium</span>
+          </div>
+          <div style="display:flex;gap:2px;padding:4px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px;flex-wrap:wrap">
+            <span style="padding:8px 16px;border-radius:999px;background:#E0EDE4;color:#1D4532;font-size:14px;font-weight:500">Overview</span>
+            <span style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500">Portfolio</span>
+            <span style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500">Trade</span>
+            <span style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500">Documents</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button aria-label="Notifications" style="width:40px;height:40px;border:0;border-radius:999px;background:#FFFFFF;color:#1C1B17;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></button>
+            <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 12px 0 4px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px">
+              <span style="width:32px;height:32px;border-radius:50%;background:#C3DCCB;color:#143224;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center">PR</span>
+              <div style="display:flex;flex-direction:column;line-height:15px"><span style="font-size:13px;font-weight:600">Priya Raman</span><span style="font-size:11px;color:#6F6C62">Investor · switch person</span></div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:8px"><div style="height:4px;border-radius:2px;background:#3F8160"></div><span style="font-size:12px;color:#6F6C62">1 · Acquire</span></div>
+          <div style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:8px"><div style="height:4px;border-radius:2px;background:#3F8160"></div><span style="font-size:12px;font-weight:600;color:#1C1B17">2 · Invest · you are here</span></div>
+          <div style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:8px"><div style="height:4px;border-radius:2px;background:#EBEAE4"></div><span style="font-size:12px;color:#6F6C62">3 · Trade</span></div>
+          <div style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:8px"><div style="height:4px;border-radius:2px;background:#EBEAE4"></div><span style="font-size:12px;color:#6F6C62">4 · Operate</span></div>
+        </div>
+        <span style="font-size:12px;line-height:18px;color:#6F6C62">The person switcher replaces separate role logins: it always shows who you are and their role. The stage strip sits under the bar on journey pages.</span>
+      </div>
+
+      <!-- Inputs -->
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:20px">
+        <span style="font-size:15px;font-weight:600">Inputs</span>
+        <div style="display:flex;padding:4px;background:#FAFAF7;border-radius:999px;gap:4px">
+          <span style="flex:1;text-align:center;padding:9px 12px;border-radius:999px;background:#FFFFFF;font-size:14px;font-weight:600;box-shadow:0 1px 2px rgba(28,27,23,.08)">Unit trust (Atrium fund)</span>
+          <span style="flex:1;text-align:center;padding:9px 12px;border-radius:999px;color:#6F6C62;font-size:14px;font-weight:500">Shares</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+          <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:500">Amount</span><span style="display:flex;align-items:center;gap:6px;height:44px;padding:0 14px;border-radius:12px;background:#FAFAF7;box-shadow:0 0 0 3px #C3DCCB;font-size:15px"><span style="color:#6F6C62">$</span>10,000</span></label>
+          <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:500">Duration</span><span style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 14px;border-radius:12px;background:#FAFAF7;font-size:15px">10 years<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span></label>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px 0 14px;border-radius:999px;border:1px solid #EBEAE4;font-size:13px;font-weight:500">This month<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6F6C62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span>
+          <span style="font-size:12px;color:#6F6C62">Card-level filter, top right of a card</span>
+        </div>
+        <span style="font-size:12px;line-height:18px;color:#6F6C62">Fields are filled sand, 44px tall, label above. Focus shows the green ring; errors swap it for coral with a sentence below.</span>
+      </div>
+
+      <!-- KPI -->
+      <div style="background:#F2F1EC;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:16px">
+        <span style="font-size:15px;font-weight:600">Stat cards</span>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+          <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;border-radius:8px;background:#F0F6F2;color:#2F6B4F;display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg></span><span style="font-size:14px;font-weight:600">Portfolio value</span></div>
+            <span style="font-size:32px;line-height:36px;font-weight:500;letter-spacing:-0.02em">$248,310</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:12px;color:#6F6C62">Since last week</span><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;background:#F0F6F2;color:#255740;font-size:12px;font-weight:600">↑ 2.4%</span></div>
+          </div>
+          <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;border-radius:8px;background:#FCF3D9;color:#7A5A0E;display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></span><span style="font-size:14px;font-weight:600">Risk level</span></div>
+            <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:32px;line-height:36px;font-weight:500;letter-spacing:-0.02em">6.2</span><span style="font-size:13px;color:#6F6C62">/ 10 · target 5</span></div>
+            <div style="display:flex;gap:3px">
+              <sc-for list="{{ riskSegs }}" as="s" hint-placeholder-count="10"><div style="flex:1;height:16px;border-radius:4px;background:{{ s.bg }}"></div></sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI block -->
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:18px;grid-column:1/-1">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap">
+          <span style="font-size:15px;font-weight:600">Gemini explanation</span>
+          <span style="font-size:12px;color:#6F6C62">Serif text, model and cost, sources, then a person’s decision</span>
+        </div>
+        <div style="background:#F2F1FC;border-radius:16px;padding:22px 24px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#4B44A6"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"></path></svg>Written by Gemini</span>
+            <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#4B44A6">gemini-2.5-pro · 1.2s · $0.0041</span>
+          </div>
+          <sc-if value="{{ showChecks }}" hint-placeholder-val="{{ true }}">
+            <p style="margin:0;font-family:'Newsreader',serif;font-size:19px;line-height:29px;color:#1C1B17;max-width:860px;text-wrap:pretty">Your portfolio has drifted from Balanced towards Growth. Shares now make up <span style="border-bottom:1.5px dotted #3F8160">68%</span> of it, against a target of <span style="border-bottom:1.5px dotted #3F8160">60%</span>, mostly because NVIDIA rose <span style="border-bottom:1.5px dotted #3F8160">41%</span> this year. Across 10,000 futures the worst likely year is now <span style="border-bottom:1.5px dotted #3F8160">−18%</span>, compared with <span style="border-bottom:1.5px dotted #3F8160">−14%</span> at your target mix.<sup style="font-family:'Schibsted Grotesk',sans-serif;font-size:11px;font-weight:600;color:#4B44A6;padding-left:2px">1</sup> That is roughly <span style="background:#FCF3D9;color:#7A5A0E;padding:1px 4px;border-radius:4px;border-bottom:1.5px solid #E2B23E">$9,000</span> more at risk in a bad year.</p>
+          </sc-if>
+          <sc-if value="{{ hideChecks }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:0;font-family:'Newsreader',serif;font-size:19px;line-height:29px;color:#1C1B17;max-width:860px;text-wrap:pretty">Your portfolio has drifted from Balanced towards Growth. Shares now make up 68% of it, against a target of 60%, mostly because NVIDIA rose 41% this year. Across 10,000 futures the worst likely year is now −18%, compared with −14% at your target mix.<sup style="font-family:'Schibsted Grotesk',sans-serif;font-size:11px;font-weight:600;color:#4B44A6;padding-left:2px">1</sup> That is roughly $9,000 more at risk in a bad year.</p>
+          </sc-if>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding-top:14px;border-top:1px solid #DCD9F7">
+            <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#3E3C35">
+              <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;border-bottom:1.5px dotted #3F8160"></span>Checked against the risk engine</span>
+              <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:10px;border-radius:3px;background:#FCF3D9;border-bottom:1.5px solid #E2B23E"></span>Not produced by an engine</span>
+              <span><span style="font-weight:600;color:#4B44A6">1</span> Risk engine run R-20931, 10,000 paths</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button style="white-space:nowrap;height:36px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#2F6B4F;font:inherit;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#FFFFFF">Ask a follow-up</button>
+              <button style="white-space:nowrap;height:36px;padding:0 16px;border:0;border-radius:999px;background:#3F8160;color:#FFFFFF;font:inherit;font-size:13px;font-weight:600;cursor:pointer" style-hover="background:#2F6B4F">Review rebalance</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trust score -->
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:18px">
+        <span style="font-size:15px;font-weight:600">Trust Score</span>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="width:40px;height:40px;border-radius:50%;background:#F2F1EC;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center">KA</span>
+            <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">Kofi Asante</span><span style="font-size:12px;color:#6F6C62">Web enquiry · 2 hours ago</span></div>
+          </div>
+          <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:#FDEDEA;color:#B23F2E;font-size:13px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#E8705F"></span>High risk</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:32px;line-height:36px;font-weight:500">23</span><span style="font-size:13px;color:#6F6C62">/ 100 · fit 71</span></div>
+          <div style="display:flex;gap:3px"><sc-for list="{{ trustSegs }}" as="s" hint-placeholder-count="20"><div style="flex:1;height:16px;border-radius:4px;background:{{ s.bg }}"></div></sc-for></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0">
+          <div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #F2F1EC;font-size:13px"><span>Email domain registered 3 days ago</span><span style="color:#B23F2E;font-weight:600">−31</span></div>
+          <div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #F2F1EC;font-size:13px"><span>Phone number shared with 4 other leads</span><span style="color:#B23F2E;font-weight:600">−28</span></div>
+          <div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #F2F1EC;font-size:13px"><span>Stated income matches postcode band</span><span style="color:#255740;font-weight:600">+6</span></div>
+        </div>
+      </div>
+
+      <!-- Two-person approval -->
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="font-size:15px;font-weight:600">Two-person approval</span>
+          <span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:#FCF3D9;color:#7A5A0E;font-size:13px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#E2B23E"></span>Awaiting second approver</span>
+        </div>
+        <div style="background:#FAFAF7;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px">
+          <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:600">Reverse payment</span><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">PAY-88213</span></div>
+          <span style="font-size:20px;font-weight:500">$4,200.00</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="width:24px;height:24px;border-radius:50%;background:#3F8160;color:#FFFFFF;display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span><span style="flex:1"><span style="font-weight:600">Mei Tanaka</span> requested · Operations</span><span style="color:#6F6C62">10:42</span></div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="width:24px;height:24px;border-radius:50%;border:1.5px dashed #DCDAD1"></span><span style="flex:1"><span style="font-weight:600">Sam Ortiz</span> approves with a one-time code</span></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;gap:6px">
+            <span style="width:40px;height:44px;border-radius:10px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:18px">4</span>
+            <span style="width:40px;height:44px;border-radius:10px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:18px">8</span>
+            <span style="width:40px;height:44px;border-radius:10px;background:#FAFAF7;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:18px">1</span>
+            <span style="width:40px;height:44px;border-radius:10px;background:#FFFFFF;box-shadow:0 0 0 2px #2F6B4F;display:flex;align-items:center;justify-content:center"></span>
+            <span style="width:40px;height:44px;border-radius:10px;background:#FAFAF7"></span>
+            <span style="width:40px;height:44px;border-radius:10px;background:#FAFAF7"></span>
+          </div>
+          <button disabled="" style="white-space:nowrap;height:44px;padding:0 18px;border:0;border-radius:999px;background:#F2F1EC;color:#9A968A;font:inherit;font-size:14px;font-weight:600">Approve</button>
+        </div>
+        <span style="font-size:12px;line-height:18px;color:#6F6C62">When the requester opens their own request, the code field is replaced by: “You asked for this change, so someone else has to approve it.”</span>
+      </div>
+
+      <!-- Hold banner -->
+      <div style="background:#FDEDEA;border-radius:20px;padding:24px;display:flex;gap:16px;align-items:flex-start;grid-column:1/-1;flex-wrap:wrap">
+        <span style="width:40px;height:40px;border-radius:12px;background:#FFFFFF;color:#B23F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg></span>
+        <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:16px;font-weight:600;color:#1C1B17">Order held: sell 120 TSLA</span>
+          <span style="font-size:14px;line-height:21px;color:#3E3C35;text-wrap:pretty">This browser hasn’t been used on your account before, and the order sells your whole position. We’ve paused it until you confirm it’s you.</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button style="white-space:nowrap;height:40px;padding:0 16px;border:0;border-radius:999px;background:transparent;color:#B23F2E;font:inherit;font-size:14px;font-weight:600;cursor:pointer" style-hover="background:#FADAD4">See trust signals</button>
+          <button style="white-space:nowrap;height:40px;padding:0 18px;border:0;border-radius:999px;background:#E0EDE4;color:#1D4532;font:inherit;font-size:14px;font-weight:600;cursor:pointer">Confirm it’s me</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:12px;grid-column:1/-1;overflow-x:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:16px;font-weight:600">Recent orders</span><a href="#components" style="font-size:13px;font-weight:600">View all</a></div>
+        <div style="min-width:680px;display:flex;flex-direction:column">
+          <div style="display:grid;grid-template-columns:120px minmax(0,2fr) 1fr 1fr 1fr 170px;gap:16px;padding:10px 0;font-size:12px;font-weight:500;color:#6F6C62;border-bottom:1px solid #F2F1EC"><span>Order</span><span>Instrument</span><span>Side</span><span>Date</span><span style="text-align:right">Amount</span><span>Status</span></div>
+          <div style="display:grid;grid-template-columns:120px minmax(0,2fr) 1fr 1fr 1fr 170px;gap:16px;padding:12px 0;align-items:center;font-size:14px;border-bottom:1px solid #F2F1EC"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#3E3C35">ORD-20931</span><span style="display:flex;align-items:center;gap:10px"><span style="width:36px;height:28px;border-radius:8px;background:#FAFAF7;font-family:'Geist Mono',monospace;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center">NVDA</span><span style="display:flex;flex-direction:column"><span style="font-weight:500">NVIDIA</span><span style="font-size:12px;color:#6F6C62">60 shares</span></span></span><span>Buy</span><span style="color:#3E3C35">13 Oct</span><span style="text-align:right;font-variant-numeric:tabular-nums">$11,412.60</span><span><span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:#FCF3D9;color:#7A5A0E;font-size:12px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#E2B23E"></span>Concentration check</span></span></div>
+          <div style="display:grid;grid-template-columns:120px minmax(0,2fr) 1fr 1fr 1fr 170px;gap:16px;padding:12px 0;align-items:center;font-size:14px;border-bottom:1px solid #F2F1EC"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#3E3C35">ORD-20928</span><span style="display:flex;align-items:center;gap:10px"><span style="width:36px;height:28px;border-radius:8px;background:#FAFAF7;font-family:'Geist Mono',monospace;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center">TSLA</span><span style="display:flex;flex-direction:column"><span style="font-weight:500">Tesla</span><span style="font-size:12px;color:#6F6C62">120 shares</span></span></span><span>Sell</span><span style="color:#3E3C35">13 Oct</span><span style="text-align:right;font-variant-numeric:tabular-nums">$26,301.00</span><span><span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:#FDEDEA;color:#B23F2E;font-size:12px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#E8705F"></span>Held</span></span></div>
+          <div style="display:grid;grid-template-columns:120px minmax(0,2fr) 1fr 1fr 1fr 170px;gap:16px;padding:12px 0;align-items:center;font-size:14px"><span style="font-family:'Geist Mono',monospace;font-size:12px;color:#3E3C35">SUB-10442</span><span style="display:flex;align-items:center;gap:10px"><span style="width:36px;height:28px;border-radius:8px;background:#F0F6F2;color:#255740;font-family:'Geist Mono',monospace;font-size:10px;font-weight:500;display:flex;align-items:center;justify-content:center">AGF</span><span style="display:flex;flex-direction:column"><span style="font-weight:500">Atrium Global Fund</span><span style="font-size:12px;color:#6F6C62">Unit trust</span></span></span><span>Subscribe</span><span style="color:#3E3C35">9 Oct</span><span style="text-align:right;font-variant-numeric:tabular-nums">$5,000.00</span><span><span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:#F0F6F2;color:#255740;font-size:12px;font-weight:500"><span style="width:6px;height:6px;border-radius:50%;background:#3F8160"></span>Matched</span></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 Sample -->
+  <section id="sample" style="display:flex;flex-direction:column;gap:32px;scroll-margin-top:24px">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:680px">
+      <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#6F6C62">05 · SAMPLE SCREEN</span>
+      <h2 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.02em">Put together: Priya’s overview</h2>
+      <p style="margin:0;font-size:15px;line-height:22px;color:#6F6C62;text-wrap:pretty">A check that the parts hold up as a page. Switch between the top bar and an icon rail in Tweaks.</p>
+    </div>
+
+    <div style="background:#FAFAF7;border-radius:32px;padding:14px">
+      <div style="background:#FFFFFF;border-radius:24px;padding:16px;display:flex;gap:16px;min-height:640px">
+        <sc-if value="{{ isRail }}" hint-placeholder-val="{{ false }}">
+          <aside style="width:72px;flex-shrink:0;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:16px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:11px;background:#E0EDE4;color:#255740;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-size:20px;font-weight:500;margin-bottom:18px">A</div>
+            <span style="width:44px;height:44px;border-radius:14px;background:#E0EDE4;color:#255740;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg></span>
+            <span style="width:44px;height:44px;border-radius:14px;color:#3E3C35;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg></span>
+            <span style="width:44px;height:44px;border-radius:14px;color:#3E3C35;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"></path><path d="M4 7h16"></path><path d="m16 21 4-4-4-4"></path><path d="M20 17H4"></path></svg></span>
+            <span style="width:44px;height:44px;border-radius:14px;color:#3E3C35;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg></span>
+            <span style="width:44px;height:44px;border-radius:14px;color:#3E3C35;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></span>
+            <span style="margin-top:auto;width:40px;height:40px;border-radius:50%;background:#C3DCCB;color:#143224;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center">PR</span>
+          </aside>
+        </sc-if>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:16px">
+          <sc-if value="{{ isTop }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:2px 2px 2px 6px">
+              <div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:28px;border-radius:9px;background:#E0EDE4;color:#255740;display:flex;align-items:center;justify-content:center;font-family:'Newsreader',serif;font-size:17px;font-weight:500">A</div><span style="font-size:16px;font-weight:600">Atrium</span></div>
+              <div style="display:flex;gap:2px;padding:4px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px;flex-wrap:wrap"><span style="padding:8px 16px;border-radius:999px;background:#E0EDE4;color:#1D4532;font-size:14px;font-weight:500">Overview</span><span style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500">Portfolio</span><span style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500">Trade</span><span style="padding:8px 16px;border-radius:999px;color:#3E3C35;font-size:14px;font-weight:500">Documents</span></div>
+              <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 12px 0 4px;background:#FFFFFF;border:1px solid #EBEAE4;border-radius:999px"><span style="width:32px;height:32px;border-radius:50%;background:#C3DCCB;color:#143224;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center">PR</span><span style="font-size:13px;font-weight:600">Priya Raman</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6F6C62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></div>
+            </div>
+          </sc-if>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;padding:8px 6px">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <h3 style="margin:0;font-size:30px;line-height:36px;font-weight:600;letter-spacing:-0.02em">Good morning, Priya</h3>
+              <span style="font-size:14px;color:#6F6C62">Balanced portfolio · last valued 13 Oct, 16:00 ET</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button style="white-space:nowrap;height:40px;padding:0 18px;border:1px solid #EBEAE4;border-radius:999px;background:#FFFFFF;color:#1C1B17;font:inherit;font-size:14px;font-weight:500;cursor:pointer">Buy or sell</button>
+              <button style="white-space:nowrap;height:40px;padding:0 18px;border:0;border-radius:999px;background:#3F8160;color:#FFFFFF;font:inherit;font-size:14px;font-weight:600;cursor:pointer" style-hover="background:#2F6B4F">Test 10,000 futures</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+            <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px"><span style="font-size:13px;font-weight:500;color:#3E3C35">Portfolio value</span><span style="font-size:30px;line-height:34px;font-weight:500;letter-spacing:-0.02em">$248,310</span><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:#6F6C62">Since last week</span><span style="height:22px;padding:0 8px;border-radius:999px;background:#F0F6F2;color:#255740;font-size:12px;font-weight:600;display:inline-flex;align-items:center">↑ 2.4%</span></div></div>
+            <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px"><span style="font-size:13px;font-weight:500;color:#3E3C35">Shares in portfolio</span><span style="font-size:30px;line-height:34px;font-weight:500;letter-spacing:-0.02em">68%</span><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:#6F6C62">Target 60%</span><span style="height:22px;padding:0 8px;border-radius:999px;background:#FCF3D9;color:#7A5A0E;font-size:12px;font-weight:600;display:inline-flex;align-items:center">+8 pts</span></div></div>
+            <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px"><span style="font-size:13px;font-weight:500;color:#3E3C35">Risk level</span><div style="display:flex;align-items:baseline;gap:6px"><span style="font-size:30px;line-height:34px;font-weight:500;letter-spacing:-0.02em">6.2</span><span style="font-size:13px;color:#6F6C62">/ 10</span></div><div style="display:flex;gap:3px"><sc-for list="{{ riskSegs }}" as="s" hint-placeholder-count="10"><div style="flex:1;height:14px;border-radius:4px;background:{{ s.bg }}"></div></sc-for></div></div>
+            <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px"><span style="font-size:13px;font-weight:500;color:#3E3C35">Cash available</span><span style="font-size:30px;line-height:34px;font-weight:500;letter-spacing:-0.02em">$12,480</span><span style="font-size:12px;color:#6F6C62">Paper money · settles T+1</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:16px;flex:1">
+            <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:16px;min-height:320px">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:16px;font-weight:600">Portfolio value</span><span style="white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px 0 14px;border-radius:999px;border:1px solid #EBEAE4;font-size:13px;font-weight:500">Last 12 months<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6F6C62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></span></div>
+              <div style="flex:1;display:flex;gap:10px;min-height:220px">
+                <sc-for list="{{ bars }}" as="b" hint-placeholder-count="12">
+                  <div style="flex:1;display:flex;flex-direction:column;gap:8px;align-items:center;min-width:0">
+                    <div style="flex:1;width:100%;max-width:36px;border-radius:999px;border:1px dashed #EBEAE4;display:flex;flex-direction:column;justify-content:flex-end;position:relative">
+                      <sc-if value="{{ b.on }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:50%;top:{{ b.tipTop }};transform:translateX(-50%);background:#255740;color:#FFFFFF;font-size:12px;font-weight:600;padding:5px 9px;border-radius:999px;white-space:nowrap">{{ b.tip }}</span></sc-if>
+                      <div style="height:{{ b.h }};width:100%;border-radius:999px;background:{{ b.bg }}"></div>
+                    </div>
+                    <span style="font-size:11px;color:#6F6C62">{{ b.m }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#FFFFFF;border:1px solid #EBEAE4;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:16px;font-weight:600">Why your risk went up</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#4B44A6">gemini-2.5-flash · $0.0006</span></div>
+              <p style="margin:0;font-family:'Newsreader',serif;font-size:18px;line-height:27px;color:#1C1B17;text-wrap:pretty">NVIDIA’s rise has pushed shares to <span style="border-bottom:1.5px dotted #3F8160">68%</span> of your portfolio. You chose Balanced, which aims for <span style="border-bottom:1.5px dotted #3F8160">60%</span>. Selling some NVIDIA and adding to the Atrium Bond Fund would bring you back.</p>
+              <div style="margin-top:auto;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between;font-size:13px;padding-top:12px;border-top:1px solid #F2F1EC"><span style="color:#6F6C62">Worst likely year now</span><span style="font-weight:600;color:#B23F2E">−18%</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#6F6C62">At your target mix</span><span style="font-weight:600">−14%</span></div>
+                <button style="white-space:nowrap;height:40px;margin-top:6px;border:0;border-radius:999px;background:#E0EDE4;color:#1D4532;font:inherit;font-size:14px;font-weight:600;cursor:pointer">Review rebalance</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="font-size:12px;color:#6F6C62;border-top:1px solid #EBEAE4;padding-top:20px">Atrium design system 0.2 · draft for review · all people and figures are synthetic</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;navStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;top&quot;,&quot;rail&quot;],&quot;default&quot;:&quot;rail&quot;,&quot;tsType&quot;:&quot;'top' | 'rail'&quot;,&quot;section&quot;:&quot;Sample screen&quot;},&quot;showChecks&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Gemini text&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const nav = this.props.navStyle ?? 'rail';
+    const checks = this.props.showChecks ?? true;
+    const seg = (n, filled, c) => Array.from({ length: n }, (_, i) => ({ bg: i < filled ? c : '#F2F1EC' }));
+    const months = ['Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'];
+    const vals = [42, 48, 45, 55, 51, 60, 57, 66, 63, 74, 70, 86];
+    const active = 9;
+    const bars = months.map((m, i) => ({
+      m, h: vals[i] + '%', bg: i === active ? '#3F8160' : '#F2F1EC',
+      on: i === active, tip: '$241,950', tipTop: 'calc(' + (100 - vals[i]) + '% - 36px)'
+    }));
+    return {
+      isTop: nav === 'top', isRail: nav === 'rail',
+      showChecks: checks, hideChecks: !checks,
+      riskSegs: [...seg(10, 6, '#E2B23E')].map((s, i) => i === 4 ? { bg: '#E2B23E' } : s),
+      trustSegs: seg(20, 5, '#E8705F'),
+      bars
+    };
+  }
+}
+</script>
+</body>
+</html>

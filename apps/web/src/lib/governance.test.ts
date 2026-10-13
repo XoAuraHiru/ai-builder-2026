@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  agreementLine, canPause, caseValue, driftLine, headline, runLine, runNotice, STATUS_LABEL, STATUS_TONE, suiteTitle, type ModelRow, type RunRow,
+  agreementLine, asUtc, canPause, caseValue, clockUtc, driftLine, headline, passShare, runLine, runMeta, runNotice, STATUS_LABEL, STATUS_TONE,
+  suiteStatus, suiteTitle, type ModelRow, type RunRow,
 } from "./governance";
 
 const row = (status: ModelRow["status"], over: Partial<ModelRow> = {}): ModelRow => ({
@@ -72,3 +73,25 @@ describe("the notice after a run", () => {
   });
 });
 
+
+describe("runs and suites at a glance", () => {
+  it("reads the API's zone-less run times as UTC", () => {
+    expect(asUtc("2026-10-13T10:58:11.169205").toISOString()).toBe("2026-10-13T10:58:11.169Z");
+    expect(asUtc("2026-10-13T10:58:11+00:00").toISOString()).toBe("2026-10-13T10:58:11.000Z");
+    expect(clockUtc("2026-10-13T10:58:11")).toBe("10:58 UTC");
+  });
+  it("writes a run as one mono line with its cost", () => {
+    const run = { tier: "free", trigger: "local", status: "finished", started_at: "2026-10-13T10:58:11", finished_at: "2026-10-13T10:58:13",
+      cost_usd: "0.000000", git_sha: "" } as RunRow;
+    expect(runMeta(run)).toBe("free checks · run on this server · Oct 13 10:58 UTC · $0.0000");
+    expect(runMeta({ ...run, tier: "live", trigger: "button", status: "running", cost_usd: "0.0412", git_sha: "a1b2c3d4e5" }))
+      .toBe("live checks · started from this page · running since 10:58 UTC · $0.0412 · a1b2c3d");
+  });
+  it("colours a suite by its bar and fills its bar by the cases that passed", () => {
+    expect(suiteStatus({ passed: true, counts: { pass: 4, fail: 0, error: 0 } })).toEqual({ label: "Meets its bar", tone: "gain" });
+    expect(suiteStatus({ passed: false, counts: { pass: 3, fail: 1, error: 0 } })).toEqual({ label: "Misses its bar", tone: "loss" });
+    expect(suiteStatus({ passed: false, counts: { pass: 0, fail: 0, error: 2 } })).toEqual({ label: "No result", tone: "caution" });
+    expect(passShare({ pass: 3, fail: 1, error: 0 })).toBe(75);
+    expect(passShare({ pass: 0, fail: 0, error: 0 })).toBe(0);
+  });
+});

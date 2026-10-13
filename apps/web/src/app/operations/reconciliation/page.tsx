@@ -5,14 +5,17 @@ import Link from "next/link";
 import { api, ApiError, apiDownload, apiUpload } from "@/lib/api";
 import { formatDate, formatUsd } from "@/lib/format";
 import {
-  acceptMany, balanceNote, confidenceWords, diffMarks, matchTotals, meterCells, proposerLabel, splitProposals, statementFlow, TIER_COPY,
+  acceptMany, balanceNote, confidenceWords, diffMarks, matchStatus, matchTotals, meterCells, proposerLabel, shortId, splitProposals,
+  statementFlow, TIER_COPY,
   type Approval, type Match, type ReconcileResult, type Reconciliation, type Statement,
 } from "@/lib/operations";
 import { AiProse } from "@/components/ai-prose";
-import { Badge, Button, EmptyState, Field, inputClass, Loading, Notice, PageHeader, Panel, Section, tableStyles as t } from "@/components/ui";
+import { Badge, Button, EmptyState, Field, inputClass, Loading, Notice, PageHeader, Section, Sparkle } from "@/components/ui";
+import { StatCard, StatusChip, TableCard, tbl } from "../_parts";
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
-const UPLOAD = "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full border border-line-strong bg-surface px-5 text-sm font-semibold text-ink transition-colors hover:border-ink focus-within:ring-2 focus-within:ring-ink";
+const UPLOAD = "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full border border-sand-200 bg-white px-5 text-sm font-medium text-ink-900 transition-colors hover:bg-fill focus-within:shadow-[0_0_0_3px_var(--color-green-200)]";
+const LINK = "font-semibold text-green-600 underline-offset-4 hover:text-green-800 hover:underline";
 
 function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -25,31 +28,44 @@ function saveBlob(blob: Blob, filename: string) {
 
 function Chevron() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" className="shrink-0 text-muted transition-transform group-open:rotate-180">
-      <path d="M3 5.5 7 9l4-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" className="shrink-0 text-ink-500 transition-transform group-open:rotate-180">
+      <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
+/** How sure the proposer is, as a five-step green meter with the words and the percentage beside it. */
 function Meter({ confidence }: { confidence: number }) {
   const filled = meterCells(confidence);
   return (
-    <span className="flex items-center gap-2.5 text-[13px] text-ink-2">
+    <span className="flex items-center gap-2.5" role="img" aria-label={`Confidence ${Math.round(confidence * 100)}%, ${confidenceWords(confidence).toLowerCase()}`}>
       <span className="flex gap-[3px]" aria-hidden="true">
-        {[0, 1, 2, 3, 4].map((i) => <span key={i} className={`h-1.5 w-4 rounded-[2px] ${i < filled ? "bg-gain" : "bg-line"}`} />)}
+        {[0, 1, 2, 3, 4].map((i) => <span key={i} className={`h-2 w-4 rounded-[3px] ${i < filled ? "bg-green-500" : "bg-sand-200"}`} />)}
       </span>
-      <span className="num">{confidenceWords(confidence)}, {Math.round(confidence * 100)}%</span>
+      <span aria-hidden="true" className="whitespace-nowrap text-[13px] font-medium text-green-700">
+        {confidenceWords(confidence)} <span className="num">{Math.round(confidence * 100)}%</span>
+      </span>
     </span>
   );
 }
 
+/** A reference with the characters that differ from the expected one marked in amber: a typing slip, shown. */
 function Reference({ text, against }: { text: string; against: string }) {
   return (
-    <span className="num">
+    <span className="font-mono text-[13px] text-ink-900">
       {diffMarks(text, against).map((m, i) => m.diff
-        ? <mark key={i} className="rounded-[3px] bg-daylight-wash px-0.5 text-daylight-ink">{m.ch}</mark>
+        ? <mark key={i} className="rounded-[3px] border-b-[1.5px] border-amber-400 bg-amber-50 px-[1px] text-amber-800">{m.ch}</mark>
         : <span key={i}>{m.ch}</span>)}
     </span>
+  );
+}
+
+function Side({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0 space-y-2 rounded-control bg-fill p-4">
+      <p className="text-xs font-medium text-ink-500">{label}</p>
+      {children}
+    </div>
   );
 }
 
@@ -57,81 +73,112 @@ function Pair({ match, busy, onDecide }: { match: Match; busy: string; onDecide:
   const sub = match.subscriptions[0];
   const typed = match.lines.length === 1 && match.lines[0].reference && sub && match.lines[0].reference !== sub.reference
     ? match.lines[0].reference : null;
+  const agent = match.proposed_by === "agent";
   return (
-    <Panel className="space-y-4 p-5 sm:p-6">
+    <article className="space-y-4 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="font-semibold">{TIER_COPY[match.tier]}</span>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h3 className="text-base font-semibold">{TIER_COPY[match.tier]}</h3>
+          {agent ? <Badge tone="ai">Gemini proposal</Badge> : match.state === "awaiting_approval"
+            ? <StatusChip tone={matchStatus(match.state).tone}>{matchStatus(match.state).label}</StatusChip> : null}
+        </div>
         <Meter confidence={match.confidence} />
       </div>
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_40px_minmax(0,1fr)] md:items-stretch">
-        <div className="space-y-1 rounded-[14px] border border-line bg-ground/60 p-4">
-          <p className="text-xs text-muted">On the statement{match.lines.length > 1 ? `, ${match.lines.length} lines` : ""}</p>
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_32px_minmax(0,1fr)] md:items-stretch">
+        <Side label={`On the statement${match.lines.length > 1 ? `, ${match.lines.length} lines` : ""}`}>
           {match.lines.map((l) => (
-            <p key={l.id} className="text-sm"><span className="num font-semibold">{formatUsd(l.amount)}</span> <span className="text-ink-2">{l.description}</span></p>
+            <p key={l.id} className="text-sm">
+              <span className="block text-[20px] font-medium leading-7 tracking-[-0.01em] num">{formatUsd(l.amount)}</span>
+              <span className="block text-ink-700">{l.description}</span>
+            </p>
           ))}
-          {typed && sub && <p className="text-[13px] text-ink-2">Reference written as <Reference text={typed} against={sub.reference} /></p>}
+          {typed && sub && (
+            <p className="flex flex-wrap items-baseline gap-x-2 border-t border-sand-200 pt-2 text-[13px] text-ink-700">
+              Written as <Reference text={typed} against={sub.reference} />
+            </p>
+          )}
+        </Side>
+        <div className="hidden items-center justify-center text-ink-400 md:flex" aria-hidden="true">
+          <svg width="28" height="12" viewBox="0 0 28 12"><path d="M1 6h24M20 1l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </div>
-        <div className="hidden items-center justify-center md:flex" aria-hidden="true">
-          <svg width="36" height="12" viewBox="0 0 36 12"><path d="M2 6h30M27 1l6 5-6 5" fill="none" stroke="#8c979f" strokeWidth="1.4" /></svg>
-        </div>
-        <div className="space-y-1 rounded-[14px] border border-line bg-ground/60 p-4">
-          <p className="text-xs text-muted">Waiting for money</p>
+        <Side label="Waiting for money">
           {match.subscriptions.map((s) => (
-            <p key={s.instruction_id} className="text-sm"><span className="num font-semibold">{formatUsd(s.amount)}</span> <span className="text-ink-2">{s.reference}, {s.holder}, {s.fund_name}</span></p>
+            <p key={s.instruction_id} className="text-sm">
+              <span className="block text-[20px] font-medium leading-7 tracking-[-0.01em] num">{formatUsd(s.amount)}</span>
+              <span className="block text-ink-700">{s.holder}, {s.fund_name}</span>
+              <span className="block pt-0.5">
+                {typed ? <span className="text-[13px] text-ink-700">Expected <Reference text={s.reference} against={typed} /></span>
+                  : <span className="font-mono text-[13px] text-ink-700">{s.reference}</span>}
+              </span>
+            </p>
           ))}
-        </div>
+        </Side>
       </div>
-      <ul className="flex flex-wrap gap-2">
-        {match.evidence.map((e, i) => <li key={i} className="rounded-full bg-ground px-3 py-1 text-[13px] text-ink-2">{e}</li>)}
+      <ul className="flex flex-wrap gap-2" aria-label="Why it matches">
+        {match.evidence.map((e, i) => (
+          <li key={i} className="inline-flex items-center gap-1.5 rounded-full bg-fill px-3 py-1 text-[13px] text-ink-700">
+            <span aria-hidden="true" className="text-green-600">✓</span>{e}
+          </li>
+        ))}
       </ul>
-      <div className="flex flex-wrap items-center gap-2.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-t border-sand-100 pt-4">
         {match.state === "awaiting_approval" ? (
-          <p className="text-sm text-ink-2">Matched by hand; waiting for a second person in <Link href="/operations/approvals" className="font-semibold underline underline-offset-4">Approvals</Link>.</p>
+          <p className="text-sm text-ink-700">Matched by hand; waiting for a second person in <Link href="/operations/approvals" className={LINK}>Approvals</Link>.</p>
         ) : (
           <>
             <Button busy={busy === `accept:${match.id}`} disabled={Boolean(busy)} onClick={() => onDecide(match.id, "accept")}>Accept the match</Button>
-            <Button variant="secondary" busy={busy === `reject:${match.id}`} disabled={Boolean(busy)} onClick={() => onDecide(match.id, "reject")}>Reject</Button>
+            <Button variant="danger" busy={busy === `reject:${match.id}`} disabled={Boolean(busy)} onClick={() => onDecide(match.id, "reject")}>Reject</Button>
           </>
         )}
-        <span className="flex items-center gap-2 text-[13px] text-muted">
-          {match.proposed_by === "agent" && <span aria-hidden="true" className="h-2 w-2 rounded-[1px] bg-daylight" />}
-          Proposed by {proposerLabel(match.proposed_by)}
+        <span className={`inline-flex items-center gap-1.5 text-[13px] sm:ml-auto ${agent ? "text-ai-700" : "text-ink-500"}`}>
+          {agent && <Sparkle size={12} />}Proposed by {proposerLabel(match.proposed_by)}
         </span>
       </div>
-    </Panel>
+    </article>
   );
 }
 
 function Flow({ statement }: { statement: Statement }) {
   const f = statementFlow(statement);
   const balance = balanceNote(statement);
-  const tiles = [
-    { n: f.read, label: "transactions read", cls: "bg-ground" },
-    { n: f.matched, label: "matched", cls: "bg-gain-wash text-gain" },
-    { n: f.waiting, label: "waiting for your decision", cls: "bg-daylight-wash text-daylight-ink" },
-    { n: f.left, label: "left for you", cls: "border border-dashed border-line-strong bg-surface" },
-  ];
+  const toMatch = f.read - f.ignored;
   return (
-    <Panel className="space-y-5 p-6 sm:p-7">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-[18px] font-semibold">Latest statement, read by {statement.source === "documentai" ? "Document AI" : "the CSV reader"}</h2>
-        <span className="text-[13px] text-muted">{statement.filename}{statement.account_last4 ? `, account ending ${statement.account_last4}` : ""}</span>
+    <section aria-labelledby="flow-title" className="space-y-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-1">
+        <h2 id="flow-title" className="text-[20px] font-semibold leading-7 tracking-[-0.01em]">
+          Latest statement, read by {statement.source === "documentai" ? "Document AI" : "the CSV reader"}
+        </h2>
+        <span className="text-[13px] text-ink-500">
+          <span className="font-mono text-xs text-ink-700">{statement.filename}</span>{statement.account_last4 ? `, account ending ${statement.account_last4}` : ""}
+        </span>
       </div>
-      <ul className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
-        {tiles.map((x) => (
-          <li key={x.label} className={`rounded-[14px] p-4 ${x.cls}`}>
-            <span className="num wide block text-[30px] font-semibold leading-none">{x.n}</span>
-            <span className="mt-1.5 block text-sm text-ink-2">{x.label}</span>
-          </li>
-        ))}
-      </ul>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <StatCard icon="list" title="Transactions read" value={f.read} tone="neutral"
+          caption={f.ignored > 0 ? `${f.ignored} (interest and fees) need no match` : "Every line is a deposit"}
+          chip={balance && <StatusChip tone={balance.ok ? "gain" : "caution"}>{balance.ok ? "Balances" : "Does not balance"}</StatusChip>} />
+        <StatCard icon="check" title="Matched" value={f.matched} unit={`of ${toMatch}`} tone="gain"
+          caption={f.matched === toMatch && toMatch > 0 ? "Every deposit is matched" : "Accepted by a person"} />
+        <StatCard icon="match" title="Waiting for you" value={f.waiting} tone={f.waiting > 0 ? "caution" : "gain"}
+          caption={f.waiting > 0 ? "Proposals to accept or reject" : "No proposal waits"} />
+        <StatCard icon="hand" title="Left for you" value={f.left} tone={f.left > 0 ? "caution" : "gain"}
+          caption={f.left > 0 ? "No rule or agent found a match" : "Nothing left over"} />
+      </div>
       {balance && (
-        <p className={`flex items-center gap-2.5 text-sm font-semibold ${balance.ok ? "text-gain" : "text-caution"}`}>
+        <p className={`flex items-center gap-2 px-1 text-[13px] font-medium ${balance.ok ? "text-green-700" : "text-amber-800"}`}>
           <span aria-hidden="true">{balance.ok ? "✓" : "!"}</span>{balance.text}
         </p>
       )}
-      {f.ignored > 0 && <p className="text-[13px] text-muted">{f.ignored} line{f.ignored > 1 ? "s" : ""} (interest and fees) need no match.</p>}
-    </Panel>
+    </section>
+  );
+}
+
+function Pick({ checked, disabled, onChange, children }:
+  { checked: boolean; disabled?: boolean; onChange: () => void; children: React.ReactNode }) {
+  return (
+    <label className={`flex min-h-11 items-start gap-3 rounded-control px-3 py-2.5 text-sm transition-colors ${disabled ? "opacity-60" : "cursor-pointer hover:bg-fill"} ${checked ? "bg-green-50 hover:bg-green-50" : ""}`}>
+      <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0 accent-green-500" disabled={disabled} checked={checked} onChange={onChange} />
+      <span className="min-w-0">{children}</span>
+    </label>
   );
 }
 
@@ -225,6 +272,7 @@ export default function ReconciliationPage() {
     }
   }
 
+  // Each proposal card carries its own green Accept; the page's own actions stay tonal or outlined beside them.
   const header = (
     <PageHeader title="Reconciliation"
       description="Match the money that reached the client money account with the subscriptions waiting for it. Rules take the clear cases, an agent proposes the rest, and you decide each one."
@@ -235,7 +283,7 @@ export default function ReconciliationPage() {
             <input ref={file} type="file" accept=".pdf,.csv,application/pdf,text/csv" className="sr-only" disabled={Boolean(busy)}
               onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
           </label>
-          <Button busy={busy === "sample"} disabled={Boolean(busy) || !data} onClick={readSample}>Read the sample statement</Button>
+          <Button variant="tonal" busy={busy === "sample"} disabled={Boolean(busy) || !data} onClick={readSample}>Read the sample statement</Button>
         </>
       } />
   );
@@ -250,19 +298,21 @@ export default function ReconciliationPage() {
   const chosenLines = data.unmatched.filter((l) => lineIds.includes(l.id));
   const chosenSubs = data.receipts.filter((r) => subIds.includes(r.instruction_id));
   const totals = matchTotals(chosenLines, chosenSubs);
+  const missing = !lineIds.length ? "Choose at least one deposit." : !subIds.length ? "Choose the subscription it pays for."
+    : !reason.trim() ? "Say why they belong together." : "";
 
   return (
     <>
       {header}
-      <p className="-mt-4 mb-8 max-w-[70ch] text-sm text-muted">
+      <p className="-mt-4 mb-8 max-w-[72ch] px-1 text-[13px] leading-5 text-ink-500">
         The sample statement is written for the payments Atrium is waiting for, with the imperfections real statements have
         {data.sample_format === "pdf" ? ", and as a PDF it is read by Document AI"
           : data.reads_pdf ? ". It is read as a CSV; upload the PDF to have Document AI read it"
           : "; Document AI is not configured here, so it is read as a CSV"}.
-        Download it as a <button type="button" className="underline underline-offset-4" onClick={() => download("pdf")}>PDF</button> or
-        a <button type="button" className="underline underline-offset-4" onClick={() => download("csv")}>CSV</button>.
+        Download it as a <button type="button" className={LINK} onClick={() => download("pdf")}>PDF</button> or
+        a <button type="button" className={LINK} onClick={() => download("csv")}>CSV</button>.
       </p>
-      <div className="space-y-10">
+      <div className="space-y-12">
         {error && <Notice tone="error">{error}</Notice>}
         {latest ? <Flow statement={latest} /> : (
           <EmptyState title="No statement yet" action={<Button busy={busy === "sample"} onClick={readSample}>Read the sample statement</Button>}>
@@ -271,20 +321,20 @@ export default function ReconciliationPage() {
         )}
 
         {data.unmatched.length > 0 && waiting.length > 0 && (
-          <Panel className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
             <p className="text-[15px]">
               <span className="font-semibold">{data.unmatched.length} deposit{data.unmatched.length === 1 ? " waits" : "s wait"}</span>
-              <span className="text-ink-2"> to be matched with {waiting.length} subscription{waiting.length === 1 ? "" : "s"} waiting for money.</span>
+              <span className="text-ink-700"> to be matched with {waiting.length} subscription{waiting.length === 1 ? "" : "s"} waiting for money.</span>
             </p>
             <Button busy={busy === "find"} disabled={Boolean(busy)} onClick={findMatches}>Find matches</Button>
-          </Panel>
+          </div>
         )}
         {found && (
           <div className="space-y-3">
-            <p className="text-sm text-ink-2">The rules proposed {found.rules}; {found.used_agent ? `the agent proposed ${found.agent}` : `the scorer proposed ${found.scorer}`}.</p>
+            <p className="px-1 text-sm text-ink-700">The rules proposed {found.rules}; {found.used_agent ? `the agent proposed ${found.agent}` : `the scorer proposed ${found.scorer}`}.</p>
             {found.used_agent
-              ? <AiProse caption="Written by the reconciliation agent (Gemini Flash) after it scored and checked each candidate."><p>{found.summary}</p></AiProse>
-              : <p className="text-sm text-ink-2">{found.summary}</p>}
+              ? <AiProse caption="Written by the reconciliation agent after it scored and checked each candidate."><p>{found.summary}</p></AiProse>
+              : <Notice title="The scorer stood in">{found.summary}</Notice>}
           </div>
         )}
         {data.demo && data.receipts.length === 0 && (
@@ -295,35 +345,41 @@ export default function ReconciliationPage() {
         )}
 
         {others.length > 0 && (
-          <Section title="The agent's proposals" description="You decide each one.">
+          <Section title="Proposals to decide" description="The agent's and the scorer's proposals. You decide each one.">
             <div className="space-y-4">{others.map((m) => <Pair key={m.id} match={m} busy={busy} onDecide={decide} />)}</div>
           </Section>
         )}
 
         {rules.length > 0 && (
-          <Panel className="space-y-4 p-5 sm:p-6">
+          <section className="space-y-4 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h2 className="font-semibold">{rules.length} exact match{rules.length === 1 ? "" : "es"} by the rules</h2>
-                <p className="text-sm text-ink-2">Reference and amount agree, or the only payment of its amount came from the holder: {rules.slice(0, 3).map((m) => m.subscriptions[0]?.holder).filter(Boolean).join(", ")}{rules.length > 3 ? ` and ${rules.length - 3} more` : ""}.</p>
+              <div className="min-w-0 max-w-[72ch]">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h2 className="text-base font-semibold">{rules.length} exact match{rules.length === 1 ? "" : "es"} by the rules</h2>
+                  <StatusChip tone="neutral">Rules</StatusChip>
+                </div>
+                <p className="mt-1 text-sm text-ink-700">Reference and amount agree, or the only payment of its amount came from the holder: {rules.slice(0, 3).map((m) => m.subscriptions[0]?.holder).filter(Boolean).join(", ")}{rules.length > 3 ? ` and ${rules.length - 3} more` : ""}.</p>
               </div>
-              <div className="flex flex-wrap gap-2.5">
+              <div className="flex flex-wrap gap-2">
                 <Button variant="secondary" aria-expanded={showExact} onClick={() => setShowExact((v) => !v)}>{showExact ? "Hide them" : "Review them"}</Button>
-                <Button busy={busy === "accept-all"} disabled={Boolean(busy)} onClick={() => acceptAll(rules.map((m) => m.id))}>
+                <Button variant="tonal" busy={busy === "accept-all"} disabled={Boolean(busy)} onClick={() => acceptAll(rules.map((m) => m.id))}>
                   Accept all {rules.length}
                 </Button>
               </div>
             </div>
             {showExact && <div className="space-y-4">{rules.map((m) => <Pair key={m.id} match={m} busy={busy} onDecide={decide} />)}</div>}
-          </Panel>
+          </section>
         )}
 
         {left.length > 0 && (
           <Section title="Left for you" description="No rule or agent found a subscription for these deposits.">
             <ul className="space-y-3">
               {left.map((l) => (
-                <li key={l.id} className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-dashed border-line-strong bg-surface p-5">
-                  <p className="text-sm"><span className="num font-semibold">{formatUsd(l.amount)}</span> <span className="text-ink-2">{formatDate(l.value_date)}, {l.description}</span></p>
+                <li key={l.id} className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-dashed border-sand-300 bg-white p-5">
+                  <p className="min-w-0 text-sm">
+                    <span className="block text-[20px] font-medium leading-7 tracking-[-0.01em] num">{formatUsd(l.amount)}</span>
+                    <span className="text-ink-700">{formatDate(l.value_date)}, {l.description}</span>
+                  </p>
                   <Button variant="secondary" size="sm" onClick={() => openByHand(l.id)}>Match by hand</Button>
                 </li>
               ))}
@@ -331,56 +387,58 @@ export default function ReconciliationPage() {
           </Section>
         )}
 
-        <details ref={byHand} className="group rounded-panel border border-line bg-surface">
-          <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-4 px-5 font-semibold sm:px-6">
-            Match by hand
-            <span className="ml-auto text-sm font-normal text-muted">A second person approves the match</span>
-            <Chevron />
+        <details ref={byHand} className="group scroll-mt-24 rounded-panel border border-sand-200 bg-white">
+          <summary className="flex min-h-16 cursor-pointer list-none items-center gap-4 px-5 sm:px-6 [&::-webkit-details-marker]:hidden">
+            <span className="text-base font-semibold">Match by hand</span>
+            <span className="ml-auto flex items-center gap-4">
+              <span className="hidden text-[13px] text-ink-500 sm:inline">A second person approves the match</span>
+              <Chevron />
+            </span>
           </summary>
-          <div className="space-y-5 border-t border-line p-5 sm:p-6">
+          <div className="space-y-6 border-t border-sand-100 p-5 sm:p-6">
             <div className="grid gap-6 lg:grid-cols-2">
-              <fieldset>
-                <legend className="text-sm font-semibold">Deposits on the statement</legend>
-                {data.unmatched.length === 0 ? <p className="mt-2 text-sm text-muted">Every deposit is matched or proposed.</p> : (
-                  <ul className="mt-2 divide-y divide-line border-y border-line">
+              <fieldset className="min-w-0">
+                <legend className="mb-2 text-[13px] font-medium">Deposits on the statement</legend>
+                {data.unmatched.length === 0 ? <p className="text-sm text-ink-500">Every deposit is matched or proposed.</p> : (
+                  <div className="space-y-1">
                     {data.unmatched.map((l) => (
-                      <li key={l.id}>
-                        <label className="flex min-h-11 cursor-pointer items-start gap-3 py-2.5 text-sm">
-                          <input type="checkbox" className="mt-1" checked={lineIds.includes(l.id)} onChange={() => toggle(lineIds, setLineIds, l.id)} />
-                          <span className="min-w-0"><span className="num font-semibold">{formatUsd(l.amount)}</span> <span className="text-muted">{formatDate(l.value_date)}</span><span className="block text-ink-2">{l.description}</span></span>
-                        </label>
-                      </li>
+                      <Pick key={l.id} checked={lineIds.includes(l.id)} onChange={() => toggle(lineIds, setLineIds, l.id)}>
+                        <span className="num font-semibold">{formatUsd(l.amount)}</span> <span className="text-ink-500">{formatDate(l.value_date)}</span>
+                        <span className="block text-ink-700">{l.description}</span>
+                      </Pick>
                     ))}
-                  </ul>
+                  </div>
                 )}
               </fieldset>
-              <fieldset>
-                <legend className="text-sm font-semibold">Subscriptions waiting for money</legend>
-                {data.receipts.length === 0 ? <p className="mt-2 text-sm text-muted">No subscription is waiting for money.</p> : (
-                  <ul className="mt-2 divide-y divide-line border-y border-line">
+              <fieldset className="min-w-0">
+                <legend className="mb-2 text-[13px] font-medium">Subscriptions waiting for money</legend>
+                {data.receipts.length === 0 ? <p className="text-sm text-ink-500">No subscription is waiting for money.</p> : (
+                  <div className="space-y-1">
                     {data.receipts.map((r) => (
-                      <li key={r.instruction_id}>
-                        <label className={`flex min-h-11 items-start gap-3 py-2.5 text-sm ${r.in_proposal ? "opacity-60" : "cursor-pointer"}`}>
-                          <input type="checkbox" className="mt-1" disabled={r.in_proposal} checked={subIds.includes(r.instruction_id)} onChange={() => toggle(subIds, setSubIds, r.instruction_id)} />
-                          <span className="min-w-0"><span className="num font-semibold">{formatUsd(r.amount)}</span> <span className="num text-muted">{r.reference}</span><span className="block text-ink-2">{r.holder}, {r.fund_name}{r.in_proposal ? "; in a proposal" : ""}</span></span>
-                        </label>
-                      </li>
+                      <Pick key={r.instruction_id} disabled={r.in_proposal} checked={subIds.includes(r.instruction_id)} onChange={() => toggle(subIds, setSubIds, r.instruction_id)}>
+                        <span className="num font-semibold">{formatUsd(r.amount)}</span> <span className="font-mono text-xs text-ink-700">{r.reference}</span>
+                        <span className="block text-ink-700">{r.holder}, {r.fund_name}{r.in_proposal ? "; in a proposal" : ""}</span>
+                      </Pick>
                     ))}
-                  </ul>
+                  </div>
                 )}
               </fieldset>
             </div>
             {(lineIds.length > 0 || subIds.length > 0) && (
-              <div className="max-w-xl space-y-3">
-                <p className="text-sm">
-                  The lines total <span className="num font-semibold">{formatUsd(totals.paid)}</span> and the subscriptions <span className="num font-semibold">{formatUsd(totals.due)}</span>.{" "}
-                  <span className={totals.agrees ? "text-gain" : "text-caution"}>{totals.agrees ? "They agree." : "They do not agree yet."}</span>
-                </p>
+              <div className="max-w-xl space-y-4">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-control bg-fill px-4 py-3 text-sm">
+                  <span>Deposits <span className="num font-semibold">{formatUsd(totals.paid)}</span></span>
+                  <span>Subscriptions <span className="num font-semibold">{formatUsd(totals.due)}</span></span>
+                  <StatusChip tone={totals.agrees ? "gain" : "caution"}>{totals.agrees ? "They agree" : "They do not agree yet"}</StatusChip>
+                </div>
                 <Field label="Why these belong together" hint="The approver reads this before deciding.">
                   <textarea className={`${inputClass} min-h-20`} value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)}
                     placeholder="For example: The client confirmed by phone that this check pays for their October subscription." />
                 </Field>
-                <Button busy={busy === "manual"} disabled={!lineIds.length || !subIds.length || !reason.trim()} onClick={askManual}>Ask for approval</Button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button busy={busy === "manual"} disabled={Boolean(missing)} onClick={askManual}>Ask for approval</Button>
+                  {missing && <span className="text-xs text-ink-500">{missing}</span>}
+                </div>
               </div>
             )}
             {asked && <Notice tone="success" title="Sent for approval">{asked.summary}.</Notice>}
@@ -388,42 +446,52 @@ export default function ReconciliationPage() {
         </details>
 
         {data.recent.length > 0 && (
-          <details className="group rounded-panel border border-line bg-surface">
-            <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-4 px-5 font-semibold sm:px-6">Recently decided<Chevron /></summary>
-            <ul className="divide-y divide-line border-t border-line px-5 text-sm sm:px-6">
-              {data.recent.map((m) => (
-                <li key={m.id} className="flex flex-wrap items-baseline justify-between gap-2 py-3">
-                  <span className="min-w-0">
-                    {m.subscriptions.map((s) => `${s.reference} for ${s.holder}`).join(", ")}
-                    <span className="block text-xs text-muted">{TIER_COPY[m.tier]}; {m.state} by {m.decided_by ?? "operations"}{m.decided_at ? ` on ${formatDate(m.decided_at)}` : ""}</span>
-                  </span>
-                  <Badge tone={m.state === "accepted" ? "gain" : "neutral"}>{m.state === "accepted" ? "Accepted" : "Rejected"}</Badge>
-                </li>
-              ))}
-            </ul>
-          </details>
+          <TableCard title="Recently decided" description="Matches people accepted or rejected, newest first.">
+            <div className={tbl.wrap}>
+              <table className={`${tbl.table} min-w-[680px]`}>
+                <thead className={tbl.head}>
+                  <tr><th className={tbl.th}>Reference</th><th className={tbl.th}>Client</th><th className={tbl.th}>How it matched</th><th className={tbl.th}>Decided</th><th className={`${tbl.th} text-right`}>Amount</th><th className={tbl.th}>Status</th></tr>
+                </thead>
+                <tbody>
+                  {data.recent.map((m) => {
+                    const status = matchStatus(m.state);
+                    const amount = m.subscriptions.reduce((sum, s) => sum + Number(s.amount), 0);
+                    return (
+                      <tr key={m.id} className={tbl.row}>
+                        <td className={`${tbl.td} ${tbl.id}`}>{m.subscriptions.map((s) => s.reference).join(", ") || shortId(m.id)}</td>
+                        <td className={tbl.td}>{m.subscriptions.map((s) => s.holder).join(", ")}</td>
+                        <td className={`${tbl.td} text-ink-700`}>{TIER_COPY[m.tier]}</td>
+                        <td className={`${tbl.td} whitespace-nowrap text-ink-700`}>{m.decided_at ? formatDate(m.decided_at) : "None"}<span className="block text-xs text-ink-500">{m.decided_by ?? "operations"}</span></td>
+                        <td className={`${tbl.td} ${tbl.amount}`}>{formatUsd(amount)}</td>
+                        <td className={tbl.td}><StatusChip tone={status.tone}>{status.label}</StatusChip></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </TableCard>
         )}
 
         {data.statements.length > 0 && (
-          <details className="group rounded-panel border border-line bg-surface">
-            <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-4 px-5 font-semibold sm:px-6">Statements<Chevron /></summary>
-            <div className={`${t.wrap} border-t border-line px-5 sm:px-6`}>
-              <table className={t.table}>
-                <thead className={t.head}><tr><th className={t.th}>File</th><th className={t.th}>Read by</th><th className={t.th}>Uploaded</th><th className={`${t.th} text-right`}>To match</th><th className={`${t.th} text-right`}>Matched</th></tr></thead>
+          <TableCard title="Statements" description="Every statement read, with what is still to match.">
+            <div className={tbl.wrap}>
+              <table className={`${tbl.table} min-w-[680px]`}>
+                <thead className={tbl.head}><tr><th className={tbl.th}>File</th><th className={tbl.th}>Read by</th><th className={tbl.th}>Uploaded</th><th className={`${tbl.th} text-right`}>To match</th><th className={`${tbl.th} text-right`}>Matched</th></tr></thead>
                 <tbody>
                   {data.statements.map((s) => (
-                    <tr key={s.id} className={t.row}>
-                      <td className={t.td}>{s.filename}{s.bank_name && <span className="block text-xs text-muted">{s.bank_name}{s.account_last4 ? `, account ending ${s.account_last4}` : ""}</span>}</td>
-                      <td className={t.td}>{s.source === "documentai" ? "Document AI" : "CSV"}</td>
-                      <td className={t.td}>{formatDate(s.uploaded_at)}<span className="block text-xs text-muted">{s.uploaded_by}</span></td>
-                      <td className={`${t.td} num text-right`}>{(s.counts.unmatched ?? 0) + (s.counts.proposed ?? 0)}</td>
-                      <td className={`${t.td} num text-right`}>{s.counts.matched ?? 0}</td>
+                    <tr key={s.id} className={tbl.row}>
+                      <td className={tbl.td}><span className={tbl.id}>{s.filename}</span>{s.bank_name && <span className="block text-xs text-ink-500">{s.bank_name}{s.account_last4 ? `, account ending ${s.account_last4}` : ""}</span>}</td>
+                      <td className={tbl.td}>{s.source === "documentai" ? "Document AI" : "CSV reader"}</td>
+                      <td className={`${tbl.td} whitespace-nowrap text-ink-700`}>{formatDate(s.uploaded_at)}<span className="block text-xs text-ink-500">{s.uploaded_by}</span></td>
+                      <td className={`${tbl.td} ${tbl.amount}`}>{(s.counts.unmatched ?? 0) + (s.counts.proposed ?? 0)}</td>
+                      <td className={`${tbl.td} ${tbl.amount}`}>{s.counts.matched ?? 0}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </details>
+          </TableCard>
         )}
       </div>
     </>

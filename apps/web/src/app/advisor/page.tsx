@@ -4,36 +4,68 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { formatUsd } from "@/lib/format";
-import { attentionHeadline, STAGE_LABEL, strongestSignal, triage, type Lead } from "@/lib/leads";
+import { attentionHeadline, sourceLabel, STAGE_LABEL, timeAgo, topSignals, triage, type Lead } from "@/lib/leads";
+import { initials } from "@/lib/personas";
 import { useMe } from "@/lib/session-context";
-import { TrustBadge } from "@/components/score-badge";
+import { TrustBadge, TrustMeter, TrustScoreCard } from "@/components/score-badge";
 import { Button, KeyMoment, Loading, Notice, PageHeader, Section } from "@/components/ui";
 
-function FitBar({ score }: { score: number | null }) {
+const ROW = "md:grid md:grid-cols-[minmax(0,2.2fr)_110px_minmax(170px,1.3fr)_120px] md:items-center md:gap-6";
+
+function LeadRow({ lead }: { lead: Lead }) {
+  const scored = lead.lead_score !== null;
   return (
-    <span className="flex items-center gap-2.5">
-      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-line" aria-hidden="true">
-        <span className="block h-full rounded-full bg-ink" style={{ width: `${score ?? 0}%` }} />
-      </span>
-      <span className="num w-7 text-right text-[13px] font-semibold">{score ?? "?"}</span>
-    </span>
+    <li className="border-t border-sand-100 first:border-t-0">
+      <Link href={`/advisor/leads/${lead.id}`} className={`${ROW} flex flex-col gap-3 px-5 py-4 hover:bg-fill sm:px-6`}>
+        <span className="flex min-w-0 items-center gap-3">
+          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sand-100 text-xs font-semibold">
+            {initials(lead.full_name)}
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium">{lead.full_name}</span>
+            <span className="block truncate text-xs text-ink-500">
+              {STAGE_LABEL[lead.stage]} · {sourceLabel(lead.source)} · {timeAgo(lead.created_at)}
+            </span>
+            <span className="mt-0.5 block truncate text-xs text-ink-500">{lead.goals}</span>
+          </span>
+        </span>
+        <span className="flex flex-wrap items-center gap-x-5 gap-y-3 md:contents">
+          {/* On phones: the Lead Score and the amount share a line, the Trust Score takes the next; from md, grid columns. */}
+          <span className="order-1 flex items-baseline gap-1 md:order-none">
+            <span className="sr-only">Lead Score</span>
+            {scored ? (
+              <>
+                <span className="num text-[22px] font-medium leading-7 tracking-[-0.01em]">{lead.lead_score}</span>
+                <span className="num text-xs text-ink-500">/ 100<span className="md:hidden"> fit</span></span>
+              </>
+            ) : <span className="text-[13px] text-ink-400">Not scored</span>}
+          </span>
+          <span className="order-3 flex basis-full flex-col gap-2 md:order-none md:basis-auto">
+            <span className="flex items-center gap-2">
+              <TrustBadge band={lead.trust_band} score={lead.trust_score} />
+              {lead.trust_score !== null && <span className="num text-[13px] text-ink-700">{lead.trust_score} <span className="text-ink-500">/ 100</span></span>}
+            </span>
+            <span className="block w-full md:max-w-[240px]"><TrustMeter score={lead.trust_score} band={lead.trust_band} size="sm" /></span>
+          </span>
+          <span className="order-2 ml-auto flex flex-col items-end md:order-none md:ml-0">
+            <span className="sr-only">Amount</span>
+            <span className="num text-sm font-medium">{formatUsd(lead.investable_usd, 0)}</span>
+            <span className="text-xs text-ink-500">to invest</span>
+          </span>
+        </span>
+      </Link>
+    </li>
   );
 }
 
-function LeadRow({ lead }: { lead: Lead }) {
+function LeadList({ leads }: { leads: Lead[] }) {
   return (
-    <li>
-      <Link href={`/advisor/leads/${lead.id}`}
-        className="grid gap-x-5 gap-y-1 border-t border-line py-4 hover:bg-ground/60 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_110px] sm:items-center">
-        <span className="min-w-0">
-          <span className="block font-semibold">{lead.full_name}</span>
-          <span className="block truncate text-[13px] text-muted">{STAGE_LABEL[lead.stage]}. {lead.goals}</span>
-        </span>
-        <span className="flex items-center gap-2 text-[13px] text-muted sm:block"><span className="sm:sr-only">Fit</span><FitBar score={lead.lead_score} /></span>
-        <span><TrustBadge band={lead.trust_band} score={lead.trust_score} /></span>
-        <span className="num font-semibold sm:text-right">{formatUsd(lead.investable_usd, 0)}</span>
-      </Link>
-    </li>
+    <div className="overflow-hidden rounded-panel border border-sand-200 bg-white">
+      <div aria-hidden="true" className={`${ROW} hidden border-b border-sand-100 px-6 py-2.5 text-xs font-medium text-ink-500`}>
+        <span>Lead</span><span>Lead Score</span><span>Trust Score</span><span className="text-right">Amount</span>
+      </div>
+      <ul>{leads.map((l) => <LeadRow key={l.id} lead={l} />)}</ul>
+    </div>
   );
 }
 
@@ -87,6 +119,7 @@ export default function Leads() {
       {busy ? `Scoring with Gemini${progress ? `, ${progress}` : ""}` : `Score ${t.unscored.length} new lead${t.unscored.length > 1 ? "s" : ""}`}
     </Button>
   );
+  const best = t.call[0];
 
   return (
     <>
@@ -94,53 +127,56 @@ export default function Leads() {
         description="Every lead is scored twice before you call: for fit, how likely they are to become a client, and for trust, how likely they are to be real."
         actions={scoreButton || undefined} />
       {error && <div className="mb-6"><Notice tone="error">{error}</Notice></div>}
-      <div className="space-y-10">
-        {t.attention.length > 0 && (
+      <div className="space-y-12">
+        {t.attention.length > 0 ? (
           <KeyMoment tone="alert" label="Look at these first" title={attentionHeadline(t.attention)}>
-            <ul className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {t.attention.map((l) => (
                 <li key={l.id}>
-                  <Link href={`/advisor/leads/${l.id}`}
-                    className="flex h-full flex-col gap-1 rounded-[14px] border border-loss/25 bg-danger-wash p-4 hover:border-loss">
-                    <span className="font-semibold">{l.full_name}</span>
-                    <span className="num text-[13px] text-ink-2">{formatUsd(l.investable_usd, 0)} to invest</span>
-                    <span className="num text-[13px] font-semibold text-loss">
-                      {l.trust_band === "blocked" ? "Blocked" : `Trust ${l.trust_score}, high risk`}
-                    </span>
-                    {strongestSignal(l) && <span className="text-[13px] text-ink-2">{strongestSignal(l)}</span>}
+                  <Link href={`/advisor/leads/${l.id}`} aria-label={`${l.full_name}, Trust Score ${l.trust_score ?? "not scored"}. Open the lead`}
+                    className="group block h-full rounded-panel">
+                    <TrustScoreCard score={l.trust_score} band={l.trust_band} signals={topSignals(l)} fit={l.lead_score} limit={3}
+                      person={{ name: l.full_name, meta: `${sourceLabel(l.source)} · ${timeAgo(l.created_at)}` }}
+                      className="h-full transition-colors group-hover:border-sand-300 group-hover:bg-fill"
+                      footer={<p className="num mt-auto text-[13px] text-ink-700">{formatUsd(l.investable_usd, 0)} to invest</p>} />
                   </Link>
                 </li>
               ))}
             </ul>
           </KeyMoment>
-        )}
+        ) : t.unscored.length > 0 ? (
+          <KeyMoment tone="attention" label="New leads"
+            title={`${t.unscored.length} new lead${t.unscored.length > 1 ? "s have" : " has"} not been scored yet.`}>
+            <p className="max-w-[60ch] text-[15px] leading-[22px] text-ink-700">
+              Score them to see who is worth a call first and who needs a look before anyone calls.
+            </p>
+          </KeyMoment>
+        ) : best ? (
+          <KeyMoment tone="good" label="Clear to call" title={`No lead needs a trust review. ${best.full_name} fits best.`}>
+            <p className="max-w-[60ch] text-[15px] leading-[22px] text-ink-700">
+              {t.call.length} lead{t.call.length > 1 ? "s are" : " is"} worth a call, sorted by fit below.
+            </p>
+          </KeyMoment>
+        ) : null}
 
         {(t.call.length > 0 || t.unscored.length === 0) && (
-          <Section title="Worth a call" description="Sorted by fit. The bar is the Lead Score; the badge is the Trust Score.">
-            {t.call.length === 0 ? <p className="text-sm text-muted">No leads are waiting for a call.</p> : (
-              <ul className="rounded-panel border border-line bg-surface px-5 [&>li:first-child>a]:border-t-0">
-                {t.call.map((l) => <LeadRow key={l.id} lead={l} />)}
-              </ul>
-            )}
+          <Section title="Worth a call" description="Sorted by fit. The figure is the Lead Score; the meter is the Trust Score.">
+            {t.call.length === 0 ? <p className="text-sm text-ink-500">No leads are waiting for a call.</p> : <LeadList leads={t.call} />}
           </Section>
         )}
 
         {t.unscored.length > 0 && (
           <Section title="Not scored yet" description="Gemini reads each new lead's answers; the Lead Score and Trust Score follow.">
-            <ul className="rounded-panel border border-line bg-surface px-5 [&>li:first-child>a]:border-t-0">
-              {t.unscored.map((l) => <LeadRow key={l.id} lead={l} />)}
-            </ul>
+            <LeadList leads={t.unscored} />
           </Section>
         )}
 
         {t.clients.length > 0 && (
           <Section title="Clients" description="Leads that opened an account.">
-            <ul className="rounded-panel border border-line bg-surface px-5 [&>li:first-child>a]:border-t-0">
-              {t.clients.map((l) => <LeadRow key={l.id} lead={l} />)}
-            </ul>
+            <LeadList leads={t.clients} />
           </Section>
         )}
-        {t.closed.length > 0 && <p className="text-sm text-muted">{t.closed.length} disqualified lead{t.closed.length > 1 ? "s are" : " is"} not shown.</p>}
+        {t.closed.length > 0 && <p className="text-sm text-ink-500">{t.closed.length} disqualified lead{t.closed.length > 1 ? "s are" : " is"} not shown.</p>}
       </div>
     </>
   );

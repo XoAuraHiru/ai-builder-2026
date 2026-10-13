@@ -1,18 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { api, ApiError, apiUpload } from "@/lib/api";
 import { demoFor } from "@/lib/calls";
 import { formatDate, formatUsd } from "@/lib/format";
-import { TRUST_LABEL, trustTone, type Lead } from "@/lib/leads";
+import { sourceLabel, topSignals, trustTone, type Lead } from "@/lib/leads";
 import { AiProse } from "@/components/ai-prose";
 import { CallsSection } from "@/components/calls-section";
+import { CardSection } from "@/components/card-section";
 import { ProposalBadges, ProposalSections, type Proposal } from "@/components/proposal-view";
-import { TrustBadge } from "@/components/score-badge";
+import { LeadScoreStat, SignalRow, TrustScoreCard } from "@/components/score-badge";
 import { WhyPanel } from "@/components/why-panel";
-import { Badge, Button, Figure, inputClass, Loading, Notice, PageHeader, Panel, Section, tableStyles } from "@/components/ui";
+import { Badge, Button, ButtonLink, Field, Figure, inputClass, Loading, Notice, PageHeader, Sparkle, tableStyles } from "@/components/ui";
 
 type Finding = { code: string; label: string; weight: number; evidence: string; source: string; blocking: boolean };
 type IdentityResult = { id: string; extracted: Record<string, string | number | null>; findings: Finding[]; source: string;
@@ -26,7 +26,27 @@ const ACTIONS: Record<string, string> = {
   high_risk: "Hold for review before any onboarding.", blocked: "Blocked until a person reviews it.", pending: "Not scored yet.",
 };
 const STAGE_NAME: Record<string, string> = { new: "New", qualified: "Qualified", proposal: "Proposal", onboarding: "Onboarding", disqualified: "Disqualified" };
+const FILE_INPUT = "block w-full text-[13px] text-ink-700 file:mr-3 file:h-10 file:cursor-pointer file:rounded-full file:border file:border-sand-200 file:bg-white file:px-4 file:text-sm file:font-medium file:text-ink-900 hover:file:bg-fill";
 const message = (e: unknown) => (e instanceof ApiError ? e.message : String(e));
+
+function MarketingFindings({ findings }: { findings: Compliance["findings"] }) {
+  return (
+    <ul className="space-y-2 rounded-control bg-amber-50 px-4 py-3 text-sm leading-[21px] text-ink-900">
+      {findings.map((f, i) => (
+        <li key={i}><span className="font-semibold text-amber-800">&ldquo;{f.phrase}&rdquo;</span>: {f.explanation} {f.suggestion}</li>
+      ))}
+    </ul>
+  );
+}
+
+function Detail({ label, children, wide = false }: { label: string; children: React.ReactNode; wide?: boolean }) {
+  return (
+    <div className={wide ? "sm:col-span-2" : ""}>
+      <dt className="text-[13px] text-ink-500">{label}</dt>
+      <dd className="mt-0.5 text-[15px] leading-[22px]">{children}</dd>
+    </div>
+  );
+}
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
@@ -87,10 +107,10 @@ export default function LeadDetail() {
   return (
     <>
       <PageHeader title={lead.full_name} back={{ href: "/advisor", label: "Leads" }}
-        description={`${lead.email}, ${lead.phone ?? "no phone"}. Came via ${lead.source} on ${formatDate(lead.created_at)}.`}
+        description={`${lead.email}, ${lead.phone ?? "no phone"}. ${sourceLabel(lead.source)} on ${formatDate(lead.created_at)}.`}
         actions={lead.stage !== "client" ? (
-          <label className="flex items-center gap-2 text-sm">Stage
-            <select value={lead.stage} disabled={Boolean(busy)} className={`${inputClass} w-40 py-1.5`}
+          <label className="flex items-center gap-2.5 text-[13px] font-medium">Stage
+            <select value={lead.stage} disabled={Boolean(busy)} className={`${inputClass} w-44`}
               onChange={(e) => run("stage", async () => {
                 setLead(await api<Lead>(`/leads/${id}/stage`, { method: "PATCH", body: JSON.stringify({ stage: e.target.value }) }));
               })}>
@@ -98,92 +118,91 @@ export default function LeadDetail() {
             </select>
           </label>
         ) : <Badge tone="gain">Client</Badge>} />
-      <div className="space-y-12">
+      <div className="space-y-6">
         {(actionError.stage || actionError.load || actionError.rescore) && (
           <Notice tone="error">{actionError.stage || actionError.load || `AI scoring failed: ${actionError.rescore}`}</Notice>
         )}
         {lead.scoring_error && (
-          <Notice tone="caution" title="The AI analysis is missing" action={<Button variant="secondary" busy={busy === "rescore"}
+          <Notice tone="caution" title="The AI analysis is missing" action={<Button variant="secondary" size="sm" busy={busy === "rescore"}
             onClick={() => run("rescore", async () => { setLead(await api<Lead>(`/leads/${id}/rescore`, { method: "POST" })); })}>Retry AI scoring</Button>}>
             {lead.scoring_error}. The rule-based scores below are complete.
           </Notice>
         )}
         {!lead.scored_at && (
-          <Button busy={busy === "rescore"} onClick={() => run("rescore", async () => { setLead(await api<Lead>(`/leads/${id}/rescore`, { method: "POST" })); await load(); })}>
-            {busy === "rescore" ? "Scoring with Gemini" : "Score this lead with AI"}
-          </Button>
+          <Notice tone="caution" title="Not scored yet"
+            action={<Button variant="tonal" size="sm" busy={busy === "rescore"} onClick={() => run("rescore", async () => { setLead(await api<Lead>(`/leads/${id}/rescore`, { method: "POST" })); await load(); })}>
+              {busy === "rescore" ? "Scoring with Gemini" : "Score this lead"}
+            </Button>}>
+            Gemini reads the answers; the Lead Score and the Trust Score follow.
+          </Notice>
         )}
-        <div className="grid gap-6 md:grid-cols-2">
-          <Panel className="space-y-4 p-5">
-            <Figure label="Lead Score" value={String(lead.lead_score ?? "Not scored")}
-              detail={factors ? `${Math.round(factors.probability * 100)}% likely to become a client` : undefined} />
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <LeadScoreStat score={lead.lead_score} probability={factors?.probability}>
             {factors && (
               <WhyPanel title="what drives this score" model={`${factors.model} (${factors.source})`}
                 evidence={[...factors.for.map((f) => ({ label: `For: ${f.label}`, detail: f.value })),
                   ...factors.against.map((f) => ({ label: `Against: ${f.label}`, detail: f.value }))]} />
             )}
-          </Panel>
-          <Panel className="space-y-4 p-5">
-            <div className="flex items-start justify-between gap-3">
-              <Figure label="Trust Score" value={String(lead.trust_score ?? "Not scored")} detail={ACTIONS[tone]} />
-              <TrustBadge band={lead.trust_band} score={lead.trust_score} />
-            </div>
-            {lead.trust_signals && (
-              <WhyPanel title={`trust signals (${TRUST_LABEL[tone]})`} model="fixed rule weights; Gemini and Document AI supply evidence"
-                evidence={lead.trust_signals.length
-                  ? lead.trust_signals.map((s) => ({ label: `${s.code} ${s.label} (${s.weight})`, detail: s.evidence + (s.blocking ? " A person must decide." : "") }))
-                  : [{ label: "No risk signals", detail: "Nothing in the form, the history or the documents raised a flag." }]} />
-            )}
-          </Panel>
+          </LeadScoreStat>
+          <TrustScoreCard score={lead.trust_score} band={lead.trust_band} signals={lead.trust_signals ? topSignals(lead) : null}
+            fit={lead.lead_score} evidence
+            footer={(
+              <div className="mt-auto flex flex-col gap-1 rounded-control bg-fill px-4 py-3">
+                <p className="text-sm font-medium">{ACTIONS[tone]}</p>
+                <p className="text-xs text-ink-500">Fixed rule weights; Gemini and Document AI supply evidence only.</p>
+              </div>
+            )} />
         </div>
-        <Section title="Profile">
-          <dl className="grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-            <div><dt className="text-muted">Goals</dt><dd>{lead.goals}</dd></div>
-            <div><dt className="text-muted">Horizon</dt><dd className="num">{lead.horizon_years} years</dd></div>
-            <div><dt className="text-muted">To invest now</dt><dd className="num">{formatUsd(lead.investable_usd)}</dd></div>
-            <div><dt className="text-muted">Every month</dt><dd className="num">{formatUsd(lead.monthly_usd)}</dd></div>
-            <div><dt className="text-muted">Source of funds</dt><dd>{lead.source_of_funds.replace("_", " ")}</dd></div>
-            {lead.notes && <div className="sm:col-span-2"><dt className="text-muted">Notes</dt><dd>{lead.notes}</dd></div>}
+
+        <CardSection title="Profile" description="The prospect's own answers, then Gemini's reading of them.">
+          <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Detail label="Goals">{lead.goals}</Detail>
+            <Detail label="Horizon"><span className="num">{lead.horizon_years} year{lead.horizon_years === 1 ? "" : "s"}</span></Detail>
+            <Detail label="To invest now"><span className="num">{formatUsd(lead.investable_usd)}</span></Detail>
+            <Detail label="Every month"><span className="num">{formatUsd(lead.monthly_usd)}</span></Detail>
+            <Detail label="Source of funds">{lead.source_of_funds.replaceAll("_", " ")}</Detail>
+            {lead.notes && <Detail label="Notes" wide>{lead.notes}</Detail>}
           </dl>
           {lead.enrichment && (
             <div className="mt-6">
               <AiProse caption="Gemini's reading of the form. The prospect's own words stay above.">
                 <p>{lead.enrichment.goals_summary}</p>
-                <p className="mt-2"><span className="font-sans text-sm font-medium">Next best action. </span>{lead.next_best_action}</p>
-                <p className="mt-2 flex flex-wrap items-center gap-1 font-sans text-sm">Suggested funds:
-                  {lead.enrichment.suggested_funds.map((f) => <Badge key={f}>{f}</Badge>)}</p>
+                <p className="mt-2"><span className="font-sans text-sm font-semibold">Next best action. </span>{lead.next_best_action}</p>
+                <p className="mt-3 flex flex-wrap items-center gap-1.5 font-sans text-sm">Suggested funds:
+                  {lead.enrichment.suggested_funds.map((f) => <span key={f} className="code rounded-full bg-white px-2.5 py-1 text-[11px]">{f}</span>)}</p>
               </AiProse>
             </div>
           )}
-        </Section>
+        </CardSection>
+
         {lead.analysis && (
-          <Section title="Their analysis" description={`Run on the front page on ${formatDate(lead.analysis.created_at)}, before they applied. The figures are a simulation, not a promise they were given.`}>
-            <Panel className="p-5">
-              <p className="text-sm text-ink-2">
-                {formatUsd(lead.analysis.initial_usd, 0)}{Number(lead.analysis.monthly_usd) > 0 ? ` plus ${formatUsd(lead.analysis.monthly_usd, 0)} a month` : ""} in{" "}
-                <span className="font-semibold text-ink">{lead.analysis.name}</span> ({lead.analysis.kind === "share" ? "shares" : "unit trust"}) for {lead.analysis.years} years
-              </p>
-              <div className="mt-4 grid gap-6 sm:grid-cols-3">
-                <Figure label="Middle outcome" value={formatUsd(lead.analysis.summary.median_usd, 0)} />
-                <Figure label="Likely range" value={`${formatUsd(lead.analysis.summary.p10_usd, 0)} to ${formatUsd(lead.analysis.summary.p90_usd, 0)}`} />
-                <Figure label="Paid in" value={formatUsd(lead.analysis.summary.contributed_usd, 0)}
-                  detail={`${lead.analysis.summary.prob_loss_pct}% of futures end below it.`} />
-              </div>
-              {lead.analysis.summary.comparison_median_usd !== null && (
-                <p className="mt-3 text-sm text-ink-2">The S&amp;P 500 on the same simulated months: middle outcome {formatUsd(lead.analysis.summary.comparison_median_usd, 0)}.</p>
-              )}
-            </Panel>
-          </Section>
+          <CardSection title="Their analysis" description={`Run on the front page on ${formatDate(lead.analysis.created_at)}, before they applied. The figures are a simulation, not a promise they were given.`}>
+            <p className="text-sm text-ink-700">
+              {formatUsd(lead.analysis.initial_usd, 0)}{Number(lead.analysis.monthly_usd) > 0 ? ` plus ${formatUsd(lead.analysis.monthly_usd, 0)} a month` : ""} in{" "}
+              <span className="font-semibold text-ink-900">{lead.analysis.name}</span> ({lead.analysis.kind === "share" ? "shares" : "unit trust"}) for {lead.analysis.years} years
+            </p>
+            <div className="mt-5 grid gap-6 sm:grid-cols-3">
+              <Figure label="Middle outcome" value={formatUsd(lead.analysis.summary.median_usd, 0)} />
+              <Figure label="Likely range" value={`${formatUsd(lead.analysis.summary.p10_usd, 0)} to ${formatUsd(lead.analysis.summary.p90_usd, 0)}`} />
+              <Figure label="Paid in" value={formatUsd(lead.analysis.summary.contributed_usd, 0)}
+                detail={`${lead.analysis.summary.prob_loss_pct}% of futures end below it.`} />
+            </div>
+            {lead.analysis.summary.comparison_median_usd !== null && (
+              <p className="mt-4 text-[13px] text-ink-700">The S&amp;P 500 on the same simulated months: middle outcome {formatUsd(lead.analysis.summary.comparison_median_usd, 0)}.</p>
+            )}
+          </CardSection>
         )}
-        <Section title="Identity document" description="Gemini reads the fields; Document AI screens for tampering. The image is never stored.">
-          <p className="mb-3 text-sm text-ink-2">
-            Try a <a className="underline underline-offset-4" href="/demo/specimen-match.png" download>matching sample card</a> or a{" "}
-            <a className="underline underline-offset-4" href="/demo/specimen-mismatch.png" download>mismatched one</a>.
+
+        <CardSection title="Identity document" description="Gemini reads the fields; Document AI screens for tampering. The image is never stored.">
+          <p className="mb-4 text-sm text-ink-700">
+            Try a <a className="font-semibold text-green-600 hover:text-green-800 hover:underline" href="/demo/specimen-match.png" download>matching sample card</a> or a{" "}
+            <a className="font-semibold text-green-600 hover:text-green-800 hover:underline" href="/demo/specimen-mismatch.png" download>mismatched one</a>.
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <input type="file" accept="image/png,image/jpeg,application/pdf" className="text-sm file:mr-3 file:rounded-control file:border file:border-line-strong file:bg-surface file:px-3 file:py-1.5"
+            <input type="file" aria-label="Identity document" accept="image/png,image/jpeg,application/pdf" className={`${FILE_INPUT} max-w-[420px] flex-1`}
               onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            <Button disabled={!file} busy={busy === "identity"} onClick={() => run("identity", async () => {
+            <Button variant="secondary" disabled={!file} busy={busy === "identity"} onClick={() => run("identity", async () => {
               const form = new FormData();
               form.append("file", file!);
               setIdentity(await apiUpload<IdentityResult>(`/leads/${id}/documents`, form));
@@ -192,119 +211,134 @@ export default function LeadDetail() {
           </div>
           {fail("identity")}
           {identity && (
-            <div className="mt-4 space-y-3 text-sm">
-              <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-3">
+            <div className="mt-5 space-y-4">
+              <dl className="grid gap-x-8 gap-y-3 rounded-control bg-fill px-4 py-4 sm:grid-cols-3">
                 {Object.entries(identity.extracted).map(([k, v]) => (
-                  <div key={k}><dt className="text-muted">{k.replaceAll("_", " ")}</dt><dd>{v === null ? "Not found" : String(v)}</dd></div>
+                  <div key={k}>
+                    <dt className="text-xs capitalize text-ink-500">{k.replaceAll("_", " ")}</dt>
+                    <dd className={`mt-0.5 text-sm ${v === null ? "text-ink-400" : ""}`}>{v === null ? "Not found" : String(v)}</dd>
+                  </div>
                 ))}
               </dl>
               {identity.findings.length === 0 ? <Notice tone="success">No findings: the document matches the form.</Notice> : (
-                <ul className="divide-y divide-line border-y border-line">
-                  {identity.findings.map((f) => (
-                    <li key={f.code} className="py-2"><span className="font-medium">{f.code} {f.label} ({f.weight})</span>: {f.evidence}</li>
-                  ))}
+                <ul className="border-b border-sand-100">
+                  {identity.findings.map((f) => <SignalRow key={f.code} signal={f} evidence />)}
                 </ul>
               )}
-              <p className="text-xs text-muted">Checked by {identity.source}.</p>
+              <p className="text-xs text-ink-500">Checked by <span className="code text-[11px]">{identity.source}</span>.</p>
             </div>
           )}
-        </Section>
+        </CardSection>
+
         <CallsSection leadId={id} demoCall={demoFor(lead.email)} onChange={load} />
-        <Section title="Proposal" description="Gemini Pro writes a personalised proposal from the simulation and the fund documents. It is a draft for you to review; nothing is sent."
-          actions={latest ? <Link href={`/advisor/leads/${id}/proposal`} className="text-sm underline underline-offset-4">Open the printable proposal</Link> : undefined}>
-          <Button variant={latest ? "secondary" : "primary"} busy={busy === "proposal"} disabled={risky}
+
+        <CardSection title="Proposal"
+          description="Gemini Pro writes a personalised proposal from the simulation and the fund documents. It is a draft for you to review; nothing is sent."
+          actions={latest ? <ButtonLink href={`/advisor/leads/${id}/proposal`} variant="quiet" size="sm">Open the printable proposal</ButtonLink> : undefined}>
+          <Button variant="ai" busy={busy === "proposal"} disabled={risky}
             onClick={() => run("proposal", async () => { await api<Proposal>(`/leads/${id}/proposal`, { method: "POST" }); await load(); })}>
+            {busy !== "proposal" && <Sparkle />}
             {busy === "proposal" ? "Gemini Pro is writing, which can take up to a minute" : latest ? "Write a new version" : "Write a proposal"}
           </Button>
-          {risky && <p className="mt-2 text-sm text-muted">Resolve the trust review before preparing a proposal.</p>}
+          {risky && <p className="mt-2 text-[13px] text-ink-500">Resolve the trust review before preparing a proposal.</p>}
           {fail("proposal")}
           {latest && (
             <div className="mt-6 space-y-4">
               <ProposalBadges proposal={latest} />
               <ProposalSections proposal={latest} />
-              {!latest.compliance.ok && (
-                <ul className="space-y-1 rounded-panel border border-caution/30 bg-caution-wash p-3 text-sm">
-                  {latest.compliance.findings.map((f, i) => <li key={i}><span className="font-medium">&ldquo;{f.phrase}&rdquo;</span>: {f.explanation} {f.suggestion}</li>)}
-                </ul>
-              )}
+              {!latest.compliance.ok && <MarketingFindings findings={latest.compliance.findings} />}
             </div>
           )}
-        </Section>
-        <div className="grid gap-12 lg:grid-cols-2">
-          <Section title="First reply" description="The Lead Intelligence agent drafts it and checks it against the marketing rules.">
-            <Button variant="secondary" busy={busy === "draft"} onClick={() => run("draft", async () => {
+        </CardSection>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <CardSection title="First reply" description="The Lead Intelligence agent drafts it and checks it against the marketing rules.">
+            <Button variant="ai" busy={busy === "draft"} onClick={() => run("draft", async () => {
               setDraft(await api<Draft>(`/leads/${id}/draft-reply`, { method: "POST" }));
               await load();
-            })}>{busy === "draft" ? "The agent is writing" : "Draft the first reply"}</Button>
+            })}>{busy !== "draft" && <Sparkle />}{busy === "draft" ? "The agent is writing" : "Draft the first reply"}</Button>
             {fail("draft")}
             {draft && (
-              <div className="mt-4 space-y-2">
-                <input className={inputClass} aria-label="Subject" value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} />
-                <textarea className={`${inputClass} h-48 font-serif text-[15.5px]`} aria-label="Message" value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} />
-                <p className="text-xs text-daylight-ink">Drafted by Gemini. Edit it before you send it.</p>
-                {draft.compliance.ok ? <Notice tone="success">Marketing-rule check passed ({draft.compliance.reviewed_by.join(" and ")}).</Notice> : (
-                  <ul className="space-y-1 rounded-panel border border-caution/30 bg-caution-wash p-3 text-sm">
-                    {draft.compliance.findings.map((f, i) => <li key={i}><span className="font-medium">&ldquo;{f.phrase}&rdquo;</span>: {f.explanation} {f.suggestion}</li>)}
-                  </ul>
-                )}
+              <div className="mt-5 space-y-3">
+                <Field label="Subject">
+                  <input className={inputClass} value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} />
+                </Field>
+                <Field label="Message">
+                  <textarea className={`${inputClass} h-48 font-serif text-[16px] leading-6`} value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} />
+                </Field>
+                <p className="flex items-center gap-1.5 text-xs font-medium text-ai-700"><Sparkle size={12} />Drafted by Gemini. Edit it before you send it.</p>
+                {draft.compliance.ok
+                  ? <Notice tone="success">Marketing-rule check passed ({draft.compliance.reviewed_by.join(" and ")}).</Notice>
+                  : <MarketingFindings findings={draft.compliance.findings} />}
               </div>
             )}
-          </Section>
-          <Section title="Ask the concierge" description="Routes your question to the Lead Intelligence or the Trust and Fraud agent.">
-            <form className="flex gap-2" onSubmit={(e) => {
+          </CardSection>
+          <CardSection title="Ask the concierge" description="Routes your question to the Lead Intelligence or the Trust and Fraud agent.">
+            <form className="flex flex-col gap-2 sm:flex-row" onSubmit={(e) => {
               e.preventDefault();
               run("ask", async () => {
                 setAnswer((await api<{ answer: string }>(`/leads/${id}/ask`, { method: "POST", body: JSON.stringify({ question }) })).answer);
                 await load();
               });
             }}>
-              <input className={inputClass} placeholder="Why is this lead flagged?" value={question} onChange={(e) => setQuestion(e.target.value)} />
-              <Button type="submit" busy={busy === "ask"} disabled={question.trim().length < 3}>Ask</Button>
+              <input className={inputClass} aria-label="Your question" placeholder="Why is this lead flagged?" value={question} onChange={(e) => setQuestion(e.target.value)} />
+              <Button type="submit" variant="ai" busy={busy === "ask"} disabled={question.trim().length < 3}>{busy !== "ask" && <Sparkle />}Ask</Button>
             </form>
             {fail("ask")}
-            {answer && <div className="mt-4"><AiProse caption="Answered by the advisor concierge on Gemini"><p className="whitespace-pre-wrap">{answer}</p></AiProse></div>}
-          </Section>
+            {answer && <div className="mt-5"><AiProse caption="Answered by the advisor concierge on Gemini"><p className="whitespace-pre-wrap">{answer}</p></AiProse></div>}
+          </CardSection>
         </div>
+
         {lead.stage !== "client" ? (
-          <Section title="Convert to client" description="Opens an account with everything already known. A high-risk lead needs a recorded reason.">
+          <CardSection title="Convert to client" description="Opens an account with everything already known. A high-risk lead needs a recorded reason.">
             {risky && (
-              <textarea className={`${inputClass} mb-3`} rows={3} placeholder="Override reason (recorded): what did you verify, and how?"
-                value={override} onChange={(e) => setOverride(e.target.value)} />
+              <div className="mb-4 max-w-[640px]">
+                <Field label="Override reason" hint="Recorded with the account: what did you verify, and how?">
+                  <textarea className={inputClass} rows={3} value={override} onChange={(e) => setOverride(e.target.value)}
+                    placeholder="For example: Called the client on a known number and checked their ID in person." />
+                </Field>
+              </div>
             )}
             <Button disabled={risky && override.trim().length < 5} busy={busy === "convert"} onClick={() => run("convert", async () => {
               setConverted(await api<{ account_number: string }>(`/leads/${id}/convert`, { method: "POST", body: JSON.stringify({ override_reason: override || null }) }));
               await load();
             })}>Convert to client</Button>
+            {risky && override.trim().length < 5 && <p className="mt-2 text-[13px] text-ink-500">Write the override reason first.</p>}
             {fail("convert")}
-          </Section>
+          </CardSection>
         ) : (
           <Notice tone="success" title="Client">
             Converted{converted ? ` with account ${converted.account_number}` : ""}. They can sign in as {lead.email}.
           </Notice>
         )}
-        <Section title="AI activity on this lead" description="Every model call, with its purpose, model, confidence and cost.">
-          {decisions.length === 0 ? <p className="text-sm text-muted">No AI calls yet.</p> : (
+
+        <CardSection title="AI activity on this lead" description="Every model call, with its purpose, model, confidence and cost.">
+          {decisions.length === 0 ? <p className="text-sm text-ink-500">No AI calls yet.</p> : (
             <div className={tableStyles.wrap}>
-              <table className={tableStyles.table}>
+              <table className={`${tableStyles.table} min-w-[640px]`}>
                 <thead className={tableStyles.head}>
-                  <tr><th className={tableStyles.th}>When</th><th className={tableStyles.th}>Purpose</th><th className={tableStyles.th}>Model</th>
-                    <th className={`${tableStyles.th} text-right`}>Confidence</th><th className={`${tableStyles.th} text-right`}>Cost</th></tr>
+                  <tr>
+                    <th className={tableStyles.th}>Call</th><th className={tableStyles.th}>When</th><th className={tableStyles.th}>Purpose</th>
+                    <th className={tableStyles.th}>Model</th><th className={`${tableStyles.th} text-right`}>Confidence</th>
+                    <th className={`${tableStyles.th} text-right`}>Cost</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {decisions.map((d) => (
                     <tr key={d.id} className={tableStyles.row}>
-                      <td className={`${tableStyles.td} num`}>{new Date(d.created_at).toLocaleTimeString()}</td>
-                      <td className={tableStyles.td}>{d.purpose.replaceAll("_", " ")}</td>
-                      <td className={`${tableStyles.td} text-ink-2`}>{d.model}</td>
+                      <td className={`${tableStyles.td} code text-ink-700`} title={d.id}>{d.id.slice(0, 8)}</td>
+                      <td className={`${tableStyles.td} num whitespace-nowrap text-ink-700`}>{new Date(d.created_at.endsWith("Z") ? d.created_at : `${d.created_at}Z`).toLocaleTimeString()}</td>
+                      <td className={`${tableStyles.td} first-letter:uppercase`}>{d.purpose.replaceAll("_", " ")}</td>
+                      <td className={`${tableStyles.td} code text-ink-700`}>{d.model}</td>
                       <td className={`${tableStyles.td} num text-right`}>{d.confidence === null ? "" : `${Math.round(d.confidence * 100)}%`}</td>
-                      <td className={`${tableStyles.td} num text-right`}>${Number(d.cost_usd).toFixed(4)}</td>
+                      <td className={`${tableStyles.td} code text-right text-ink-700`}>${Number(d.cost_usd).toFixed(4)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-        </Section>
+        </CardSection>
       </div>
     </>
   );

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { NarrativeView, type Narrative } from "@/components/ai-prose";
 import { FanChart } from "@/components/fan-chart";
 import { UnitPriceChart } from "@/components/unit-price-chart";
-import { Badge, Button, ButtonLink, Field, Figure, inputClass, MoneyInput, Notice, Panel, RiskBand, Segmented } from "@/components/ui";
+import { Badge, Button, ButtonLink, Field, Figure, inputClass, MoneyInput, Notice, Panel, RiskBand, Segmented, Sparkle } from "@/components/ui";
 import {
   applyLink, disclosure, fundOrderLink, MAX_YEARS, shareOrderLink, unitRange, unitStats, validate, wholeShares,
   type Analysis, type AnalyzerKind, type AnalyzerOptions, type UnitHistory, type UnitRange,
@@ -26,12 +26,13 @@ const RANGES: { value: UnitRange; label: string }[] = [
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
-    <fieldset className="border-t border-line pt-5 first:border-t-0 first:pt-0">
-      <legend className="flex items-center gap-2.5 text-sm font-semibold">
-        <span aria-hidden="true" className="num flex h-6 w-6 items-center justify-center rounded-full border border-ink text-xs">{n}</span>
+    <fieldset className="border-t border-sand-100 pt-5 first:border-t-0 first:pt-0">
+      {/* Floated, so the legend sits under the divider instead of breaking it. */}
+      <legend className="float-left flex w-full items-center gap-2.5 text-[15px] font-semibold">
+        <span aria-hidden="true" className="num flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-xs font-semibold text-green-800">{n}</span>
         {title}
       </legend>
-      <div className="mt-3">{children}</div>
+      <div className="clear-left pt-3">{children}</div>
     </fieldset>
   );
 }
@@ -133,12 +134,12 @@ export function Analyzer() {
               <div role="radiogroup" aria-label="Fund" className="grid gap-2">
                 {options?.funds.map((f) => (
                   <button key={f.code} type="button" role="radio" aria-checked={code === f.code} onClick={() => setCode(f.code)}
-                    className={`flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-control border px-3.5 py-2.5 text-left text-sm ${
-                      code === f.code ? "border-ink bg-ground" : "border-line hover:border-line-strong"}`}>
+                    className={`flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-control px-3.5 py-2.5 text-left text-sm transition-colors ${
+                      code === f.code ? "bg-green-100 text-green-900 shadow-[inset_0_0_0_1.5px_var(--color-green-500)]" : "bg-fill hover:bg-sand-100"}`}>
                     <span className="font-semibold">{f.name.replace(/^Atrium /, "")}</span>
                     <span className="flex items-center gap-3">
                       <RiskBand band={f.risk_band} showLabel={false} />
-                      <span className="num text-xs text-muted">{(f.fee_bps / 100).toFixed(2)}% a year</span>
+                      <span className="num text-xs text-ink-500">{(f.fee_bps / 100).toFixed(2)}% a year</span>
                     </span>
                   </button>
                 ))}
@@ -175,11 +176,11 @@ export function Analyzer() {
               <Step n={4} title="For how long?">
                 <div className="flex items-center gap-4">
                   <input type="range" min={1} max={MAX_YEARS} value={years} onChange={(e) => setYears(Number(e.target.value))}
-                    aria-label="Years" className="h-11 flex-1 accent-[var(--color-ink)]" />
+                    aria-label="Years" className="h-11 flex-1 accent-[var(--color-green-500)]" />
                   <span className="num w-20 text-right text-[15px] font-semibold">{years} year{years === 1 ? "" : "s"}</span>
                 </div>
               </Step>
-              {error && <p role="alert" className="text-sm text-loss">{error}</p>}
+              {error && <p role="alert" className="text-[13px] text-coral-700">{error}</p>}
               <Button type="submit" busy={running} className="w-full">{running ? "Simulating 10,000 futures" : "Analyze"}</Button>
             </>
           )}
@@ -191,9 +192,10 @@ export function Analyzer() {
           <Result analysis={analysis} history={history} range={range} onRange={setRange} price={price} investor={investor}
             signedIn={Boolean(me)} narrative={narrative} explaining={explaining} explainError={explainError} onExplain={explain} />
         ) : (
-          <Panel className="flex min-h-[320px] flex-col justify-center p-6 sm:p-8">
-            <p className="wide max-w-[24ch] text-[22px] font-semibold leading-snug">Choose an investment, an amount and a duration.</p>
-            <p className="mt-3 max-w-[52ch] text-ink-2">
+          <Panel className="flex flex-col items-start lg:min-h-[320px] justify-center gap-3 p-6 sm:p-8">
+            <Badge>Nothing run yet</Badge>
+            <p className="max-w-[24ch] text-[22px] font-semibold leading-7 tracking-[-0.01em]">Choose an investment, an amount and a duration.</p>
+            <p className="max-w-[52ch] text-[15px] leading-[22px] text-ink-700">
               Atrium replays real markets since 2007 ten thousand ways and shows the range of what your money could become,
               with what you pay in beside it. For a fund you also see how its unit price has moved.
             </p>
@@ -219,12 +221,12 @@ function Result({ analysis, history, range, onRange, price, investor, signedIn, 
   return (
     <div className="space-y-6">
       <Panel className="p-5 sm:p-7">
-        <p className="text-sm text-muted">{paid} in {analysis.name}, for {r.years} year{r.years === 1 ? "" : "s"}</p>
+        <p className="text-[13px] text-ink-500">{paid} in {analysis.name}, for {r.years} year{r.years === 1 ? "" : "s"}</p>
         <div className="mt-4">
           <Figure size="lg" label="Middle outcome" value={formatUsd(s.final.p50, 0)}
             detail="Half the simulated futures end above this, half below." />
         </div>
-        <div className="mt-6 grid gap-6 border-t border-line pt-5 sm:grid-cols-2">
+        <div className="mt-6 grid gap-6 border-t border-sand-100 pt-5 sm:grid-cols-2">
           <Figure label="Likely range" value={`${formatUsd(s.final.p10, 0)} to ${formatUsd(s.final.p90, 0)}`}
             detail="Eight in ten futures end in this range." />
           <Figure label="You pay in" value={formatUsd(r.contributed, 0)}
@@ -235,15 +237,15 @@ function Result({ analysis, history, range, onRange, price, investor, signedIn, 
             <FanChart scenarios={scenarios} active={0} goal={null} colors={SERIES} />
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-ink-2">
+        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-ink-700">
           <span className="flex items-center gap-2"><span aria-hidden="true" className="h-0.5 w-5" style={{ background: SERIES[0] }} />{analysis.name}, middle and ranges</span>
           {analysis.comparison && (
             <span className="flex items-center gap-2"><span aria-hidden="true" className="h-0.5 w-5" style={{ background: SERIES[1] }} />
               {analysis.comparison.label}, middle {formatUsd(analysis.comparison.final.p50, 0)}</span>
           )}
-          <span className="flex items-center gap-2"><span aria-hidden="true" className="w-5 border-t border-dashed border-ink-2" />Paid in</span>
+          <span className="flex items-center gap-2"><span aria-hidden="true" className="w-5 border-t border-dashed border-ink-700" />Paid in</span>
         </div>
-        <p className="mt-4 text-sm text-ink-2">
+        <p className="mt-4 text-[13px] leading-5 text-ink-700">
           History used: {formatMonth(s.history.window_start)} to {formatMonth(s.history.window_end)}. Its worst 12 months
           were {formatPct(s.history.worst_12m_pct, 1, true)} and its largest fall {formatPct(s.history.max_drawdown_pct)}.
           {analysis.kind === "unit_trust" && s.fee_cost > 0 && ` Fees cost about ${formatUsd(s.fee_cost, 0)} over the period in the middle outcome.`}
@@ -254,8 +256,8 @@ function Result({ analysis, history, range, onRange, price, investor, signedIn, 
         <Panel className="p-5 sm:p-7">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="text-[18px] font-semibold">Unit price</h3>
-              <p className="text-sm text-muted">Published since {formatDate(history.inception_on)}; before that, a backtest of the fund&apos;s ETFs.</p>
+              <h3 className="text-base font-semibold leading-[22px]">Unit price</h3>
+              <p className="text-[13px] text-ink-500">Published since {formatDate(history.inception_on)}; before that, a backtest of the fund&apos;s ETFs.</p>
             </div>
             <Segmented label="Unit price range" value={range} options={RANGES} onChange={onRange} />
           </div>
@@ -272,46 +274,44 @@ function Result({ analysis, history, range, onRange, price, investor, signedIn, 
       )}
 
       <Panel className="p-5 sm:p-7">
-        <h3 className="text-[18px] font-semibold">Turn this into an investment</h3>
+        <h3 className="text-base font-semibold leading-[22px]">Turn this into an investment</h3>
         {investor ? (
           analysis.kind === "unit_trust" ? (
             <>
-              <p className="mt-1 text-sm text-ink-2">Fund orders opens with {analysis.name} and {formatUsd(r.initial_usd, 0)} filled in
+              <p className="mt-1 text-sm leading-[21px] text-ink-700">Fund orders opens with {analysis.name} and {formatUsd(r.initial_usd, 0)} filled in
                 {r.monthly_usd ? `, and a monthly plan of ${formatUsd(r.monthly_usd, 0)}` : ""}. You review the checks before anything is sent.</p>
-              <div className="mt-4"><ButtonLink href={fundOrderLink(analysis)}>Invest in {analysis.name}</ButtonLink></div>
+              <div className="mt-4"><ButtonLink variant="tonal" href={fundOrderLink(analysis)}>Invest in {analysis.name}</ButtonLink></div>
             </>
           ) : buy && buy.shares > 0 ? (
             <>
-              <p className="mt-1 text-sm text-ink-2">At {formatUsd(price ?? 0)} a share, {formatUsd(r.initial_usd, 0)} buys {buy.shares} whole
+              <p className="mt-1 text-sm leading-[21px] text-ink-700">At {formatUsd(price ?? 0)} a share, {formatUsd(r.initial_usd, 0)} buys {buy.shares} whole
                 share{buy.shares === 1 ? "" : "s"} for {formatUsd(buy.cost)}, leaving {formatUsd(buy.left)}. The Pre-trade Guardian checks the order first.</p>
-              <div className="mt-4"><ButtonLink href={shareOrderLink(analysis, price ?? 0)}>Buy {buy.shares} share{buy.shares === 1 ? "" : "s"} of {analysis.code}</ButtonLink></div>
+              <div className="mt-4"><ButtonLink variant="tonal" href={shareOrderLink(analysis, price ?? 0)}>Buy {buy.shares} share{buy.shares === 1 ? "" : "s"} of {analysis.code}</ButtonLink></div>
             </>
           ) : (
-            <p className="mt-1 text-sm text-ink-2">
+            <p className="mt-1 text-sm leading-[21px] text-ink-700">
               {buy ? `${formatUsd(r.initial_usd, 0)} is less than one share at ${formatUsd(price ?? 0)}.` : "Fetching the live price…"}
             </p>
           )
         ) : (
           <>
-            <p className="mt-1 text-sm text-ink-2">An advisor gets your application with this analysis attached, so the conversation starts from it.</p>
-            <div className="mt-4"><ButtonLink href={applyLink(analysis)}>Talk to an advisor about this plan</ButtonLink></div>
+            <p className="mt-1 text-sm leading-[21px] text-ink-700">An advisor gets your application with this analysis attached, so the conversation starts from it.</p>
+            <div className="mt-4"><ButtonLink variant="tonal" href={applyLink(analysis)}>Talk to an advisor about this plan</ButtonLink></div>
           </>
         )}
       </Panel>
 
-      {signedIn && (
+      {signedIn && (narrative ? <NarrativeView narrative={narrative} /> : (
         <Panel className="p-5 sm:p-7">
-          {narrative ? <NarrativeView narrative={narrative} /> : (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-ink-2">Gemini can explain these figures in plain words; every figure it writes is checked.</p>
-              <Button variant="secondary" busy={explaining} onClick={onExplain}>Explain this</Button>
-            </div>
-          )}
-          {explainError && <p role="alert" className="mt-3 text-sm text-loss">{explainError}</p>}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm leading-[21px] text-ink-700">Gemini can explain these figures in plain words; every figure it writes is checked.</p>
+            <Button variant="ai" busy={explaining} onClick={onExplain}>{!explaining && <Sparkle />}Explain this</Button>
+          </div>
+          {explainError && <p role="alert" className="mt-3 text-[13px] text-coral-700">{explainError}</p>}
         </Panel>
-      )}
+      ))}
 
-      <div className="space-y-2 text-xs leading-relaxed text-muted">
+      <div className="space-y-2 text-xs leading-[18px] text-ink-500">
         {disclosure(analysis).map((p) => <p key={p.slice(0, 24)}>{p}</p>)}
       </div>
     </div>

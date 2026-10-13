@@ -2,11 +2,11 @@ import type { ReactNode } from "react";
 import type { IconName } from "@/lib/nav";
 
 const PATHS: Record<IconName, ReactNode> = {
-  home: <path d="M4 11 12 4l8 7v9H4z" />,
-  portfolio: <><circle cx="12" cy="12" r="8" /><path d="M12 4v8l6 4" /></>,
-  markets: <><path d="M4 17l5-5 4 3 7-8" /><path d="M15 7h5v5" /></>,
-  funds: <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 4v16M4 10h5" /></>,
-  plan: <><path d="M4 18c4-1 6-5 8-9s5-5 8-5" /><path d="M4 21h16" /></>,
+  home: <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
+  portfolio: <><path d="M21 12A9 9 0 1 1 12 3v9z" /><path d="M15 3.5A9 9 0 0 1 20.5 9H15z" /></>,
+  markets: <><path d="m3 17 6-6 4 4 8-8" /><path d="M14 7h7v7" /></>,
+  funds: <><path d="m12 3 9 4.5-9 4.5-9-4.5z" /><path d="m3 12 9 4.5 9-4.5" /><path d="m3 16.5 9 4.5 9-4.5" /></>,
+  plan: <><path d="M3 3v18h18" /><path d="M7 15c3-1 7-4 13-9" /><path d="M7 15c4 0 8-1 13-3" strokeDasharray="2 2.5" /></>,
   leads: <path d="M4 5h16l-6 7v6l-4 2v-8z" />,
   held: <><rect x="5" y="4" width="14" height="16" rx="2" /><path d="M9 9h6M9 13h6" /></>,
   form: <><rect x="5" y="4" width="14" height="16" rx="2" /><path d="M12 9v6M9 12h6" /></>,
@@ -22,7 +22,7 @@ const PATHS: Record<IconName, ReactNode> = {
 
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}
       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {PATHS[name]}
     </svg>

@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { api, ApiError } from "@/lib/api";
+import { questionFrom } from "@/lib/invest";
 import { useMe } from "@/lib/session-context";
 import { AiProse } from "@/components/ai-prose";
 import { WhyPanel } from "@/components/why-panel";
-import { Button, EmptyState, Notice, PageHeader } from "@/components/ui";
+import { Button, EmptyState, Notice, PageHeader, Sparkle } from "@/components/ui";
 
 type Trace = { tool: string; label: string };
 type Source = { id: string; title: string; retriever: string };
@@ -33,13 +34,14 @@ const TOOL_DETAIL: Record<string, string> = {
   preview_trade: "The Pre-trade Guardian's checks on a possible order. Nothing was placed.",
 };
 
+/** Gemini at work: a violet line moving along a sand track, since what is coming is Gemini's writing. */
 function Thinking() {
   const reduce = useReducedMotion();
   return (
     <div role="status" className="space-y-2">
-      <p className="text-sm text-muted">The copilot is checking your data and the fund documents…</p>
-      <div className="h-[2px] w-48 overflow-hidden rounded-full bg-line">
-        <motion.span className="block h-full w-1/3 rounded-full bg-daylight" animate={reduce ? undefined : { x: ["-100%", "300%"] }}
+      <p className="text-sm text-ink-500">The copilot is checking your data and the fund documents…</p>
+      <div className="h-[3px] w-48 overflow-hidden rounded-full bg-sand-100">
+        <motion.span className="block h-full w-1/3 rounded-full bg-ai-500" animate={reduce ? undefined : { x: ["-100%", "300%"] }}
           transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }} />
       </div>
     </div>
@@ -54,9 +56,18 @@ export default function CopilotPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const end = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLInputElement>(null);
+
+  // A question carried from elsewhere (Home's Ask Atrium card) waits in the box; the person still presses Ask.
+  useEffect(() => {
+    const q = questionFrom(window.location.search);
+    if (!q) return;
+    setDraft(q);
+    box.current?.focus();
+  }, []);
 
   useEffect(() => {
-    end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    if (turns.length || busy) end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [turns, busy]);
 
   async function ask(question: string) {
@@ -82,26 +93,28 @@ export default function CopilotPage() {
   return (
     <>
       <PageHeader title="Copilot" description="Ask about your portfolio, your fees or any Atrium fund. The copilot looks up your data and the fund documents before it answers, and shows you what it checked." />
-      <div className="max-w-3xl">
+      <div className="max-w-[860px]">
         {turns.length === 0 && (
-          <div className="mb-8">
-            <p className="text-sm font-medium">Try asking</p>
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          <section aria-labelledby="try-asking" className="mb-8 flex flex-col gap-3.5 rounded-panel bg-ai-50 px-5 py-5 sm:px-6 sm:py-[22px]">
+            <h2 id="try-asking" className="inline-flex items-center gap-2 text-sm font-semibold text-ai-700"><Sparkle />Try asking</h2>
+            <ul className="grid gap-2 sm:grid-cols-2">
               {SUGGESTIONS.map((s) => (
                 <li key={s}>
-                  <button type="button" onClick={() => ask(s)} className="w-full rounded-panel border border-line bg-surface px-4 py-3 text-left text-sm hover:border-ink">
+                  <button type="button" onClick={() => ask(s)}
+                    className="h-full w-full rounded-control bg-white px-3.5 py-2.5 text-left font-serif text-base leading-[22px] text-ink-900 transition-shadow hover:ring-2 hover:ring-ai-100">
                     {s}
                   </button>
                 </li>
               ))}
             </ul>
-          </div>
+            <p className="text-xs leading-[18px] text-ai-700">Answers come from your own figures and Atrium&apos;s fund documents.</p>
+          </section>
         )}
         <ol className="space-y-7" aria-live="polite">
           {turns.map((t, i) => (
             <li key={i} className={t.role === "user" ? "flex justify-end" : ""}>
               {t.role === "user" ? (
-                <p className="max-w-[80%] rounded-panel bg-ink px-4 py-2.5 text-[15px] text-white">{t.text}</p>
+                <p className="max-w-[80%] rounded-[20px] rounded-br-md bg-green-100 px-4 py-2.5 text-[15px] text-green-900">{t.text}</p>
               ) : (
                 <div className="space-y-3">
                   <AiProse caption="Written by Gemini from your data and Atrium's fund documents"><p className="whitespace-pre-line">{t.text}</p></AiProse>
@@ -119,10 +132,10 @@ export default function CopilotPage() {
         {error && <div className="mt-6"><Notice tone="caution">{error}</Notice></div>}
         <div ref={end} />
         <form onSubmit={(e) => { e.preventDefault(); ask(draft); }}
-          className="sticky bottom-4 mt-8 flex gap-2 rounded-panel border border-line bg-surface p-2 shadow-[0_12px_32px_-16px_rgba(23,32,42,0.35)]">
+          className="sticky bottom-4 mt-8 flex gap-2 rounded-full border border-sand-200 bg-white p-1.5 pl-3 shadow-float focus-within:ring-[3px] focus-within:ring-green-200">
           <label htmlFor="question" className="sr-only">Your question</label>
-          <input id="question" value={draft} maxLength={500} onChange={(e) => setDraft(e.target.value)} placeholder="Ask about your portfolio or a fund"
-            className="min-w-0 flex-1 bg-transparent px-2 py-2 text-[15px] placeholder:text-muted focus:outline-none" />
+          <input ref={box} id="question" value={draft} maxLength={500} onChange={(e) => setDraft(e.target.value)} placeholder="Ask about your portfolio or a fund"
+            className="min-w-0 flex-1 bg-transparent px-2 py-2 text-[15px] placeholder:text-ink-400 focus:shadow-none focus:outline-none" />
           <Button type="submit" busy={busy} disabled={draft.trim().length < 3}>Ask</Button>
         </form>
       </div>

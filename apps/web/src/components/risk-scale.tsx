@@ -1,33 +1,39 @@
-import { BAND_COLOR } from "@/lib/invest";
-import { BAND_LABEL } from "@/components/ui";
+import { scaleMarks, type ScaleMark } from "@/lib/invest";
 
-const BANDS = [1, 2, 3, 4, 5];
+const FILL: Record<ScaleMark["fill"], string> = {
+  profile: "bg-green-500", above: "bg-amber-400", calm: "bg-green-300", none: "bg-sand-200",
+};
+const CHIP: Record<NonNullable<ScaleMark["chip"]>["tone"], string> = {
+  gain: "bg-green-50 text-green-700", caution: "bg-amber-50 text-amber-800", neutral: "bg-fill text-ink-700",
+};
 
-/** The five risk bands with the investor's profile (solid ring) and their portfolio (dashed ring) marked. */
+/** One sand scale of the five risk bands. Green fills the profile's band, amber fills where the portfolio is now when
+ *  it sits above the profile, and each marked band carries a chip above it, so the two never rest on colour alone.
+ *  Three grid rows (chips, bars, names) keep the bars level when a chip wraps on a phone. */
 export function RiskScale({ profile, portfolio }: { profile: number | null; portfolio: number }) {
+  const marks = scaleMarks(profile, portfolio);
+  const name = (band: number) => marks[band - 1].label.slice(2);
   const said = profile
-    ? `Risk scale from 1 to 5: your profile is band ${profile}, ${BAND_LABEL[profile]}; your portfolio behaves like band ${portfolio}, ${BAND_LABEL[portfolio]}`
-    : `Risk scale from 1 to 5: your portfolio behaves like band ${portfolio}, ${BAND_LABEL[portfolio]}`;
+    ? `Risk scale from 1 to 5: your profile is band ${profile}, ${name(profile)}; your portfolio behaves like band ${portfolio}, ${name(portfolio)}`
+    : `Risk scale from 1 to 5: your portfolio behaves like band ${portfolio}, ${name(portfolio)}`;
   return (
-    <div role="img" aria-label={said} className="space-y-2.5">
-      <div className="grid grid-cols-5 gap-1.5" aria-hidden="true">
-        {BANDS.map((b) => (
-          <div key={b} className="h-3.5 rounded-[4px]"
-            style={{
-              background: BAND_COLOR[b], outlineOffset: 2,
-              outline: b === profile ? "2px solid var(--color-ink)" : b === portfolio ? "2px dashed var(--color-loss)" : undefined,
-            }} />
-        ))}
-      </div>
-      <div className="grid grid-cols-5 gap-1.5 text-[12px] leading-snug text-muted sm:text-[13px]" aria-hidden="true">
-        {BANDS.map((b) => (
-          <span key={b} className={b === profile ? "font-semibold text-ink" : b === portfolio ? "font-semibold text-loss" : ""}>
-            {b} {BAND_LABEL[b]}
-            {b === profile && <span className="block">{b === portfolio ? "your profile and portfolio" : "your profile"}</span>}
-            {b === portfolio && b !== profile && <span className="block">your portfolio now</span>}
-          </span>
-        ))}
-      </div>
+    <div role="img" aria-label={said} className="grid grid-cols-5 gap-x-1.5 gap-y-2">
+      {marks.map((m) => (
+        <span key={`chip-${m.band}`} aria-hidden="true" className="flex min-h-6.5 min-w-0 items-end">
+          {m.chip && (
+            <span className={`inline-flex min-h-6.5 max-w-full items-center rounded-[13px] px-2 py-1 text-[11px] font-semibold leading-3.5 sm:px-2.5 sm:text-xs sm:leading-4 ${CHIP[m.chip.tone]}`}>
+              {m.chip.text}
+            </span>
+          )}
+        </span>
+      ))}
+      {marks.map((m) => <span key={`bar-${m.band}`} aria-hidden="true" className={`h-3 rounded-md ${FILL[m.fill]}`} />)}
+      {marks.map((m) => (
+        <span key={`name-${m.band}`} aria-hidden="true"
+          className={`min-w-0 text-[11px] leading-4 wrap-anywhere sm:text-[13px] sm:leading-4.5 ${m.chip ? "font-semibold text-ink-900" : "text-ink-500"}`}>
+          {m.chip ? m.label : <><span className="sm:hidden">{m.band}</span><span className="hidden sm:inline">{m.label}</span></>}
+        </span>
+      ))}
     </div>
   );
 }

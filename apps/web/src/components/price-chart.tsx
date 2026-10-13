@@ -13,7 +13,7 @@ const QUARTERS = ["01", "04", "07", "10"];
 export function PriceChart({ points, label }: { points: { day: string; close: number }[]; label: string }) {
   const ref = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
-  if (points.length < 2) return <p className="text-sm text-muted">There is not enough price history to draw a chart.</p>;
+  if (points.length < 2) return <p className="text-sm text-ink-500">There is not enough price history to draw a chart.</p>;
 
   const closes = points.map((p) => p.close);
   const lo = Math.min(...closes);
@@ -40,28 +40,28 @@ export function PriceChart({ points, label }: { points: { day: string; close: nu
       <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full touch-none select-none" role="img" aria-label={label}>
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={M.left} x2={W - M.right} y1={y(t)} y2={y(t)} stroke="var(--color-line)" />
-            <text x={M.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="num fill-muted text-[11px]">{formatUsd(t, t >= 1000 ? 0 : 2)}</text>
+            <line x1={M.left} x2={W - M.right} y1={y(t)} y2={y(t)} stroke="var(--color-sand-200)" />
+            <text x={M.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="num fill-ink-500 text-[11px]">{formatUsd(t, t >= 1000 ? 0 : 2)}</text>
           </g>
         ))}
         {marks.map(({ i, day }) => (
-          <text key={day} x={x(i)} y={H - 8} textAnchor="middle" className="num fill-muted text-[11px]">{formatMonth(day.slice(0, 7))}</text>
+          <text key={day} x={x(i)} y={H - 8} textAnchor="middle" className="num fill-ink-500 text-[11px]">{formatMonth(day.slice(0, 7))}</text>
         ))}
-        <path d={areaPath(line, floor)} fill={up ? "var(--color-gain)" : "var(--color-loss)"} fillOpacity={0.06} />
-        <path d={linePath(line)} fill="none" stroke="var(--color-ink)" strokeWidth={1.5} strokeLinejoin="round" />
+        <path d={areaPath(line, floor)} fill={up ? "var(--color-green-500)" : "var(--color-coral-500)"} fillOpacity={0.08} />
+        <path d={linePath(line)} fill="none" stroke={up ? "var(--color-green-500)" : "var(--color-coral-500)"} strokeWidth={2} strokeLinejoin="round" />
         {point && hover !== null && (
           <g>
-            <line x1={x(hover)} x2={x(hover)} y1={M.top} y2={H - M.bottom} stroke="var(--color-line-strong)" />
-            <circle cx={x(hover)} cy={y(point.close)} r={3.5} fill="var(--color-surface)" stroke="var(--color-ink)" strokeWidth={1.5} />
+            <line x1={x(hover)} x2={x(hover)} y1={M.top} y2={H - M.bottom} stroke="var(--color-sand-300)" />
+            <circle cx={x(hover)} cy={y(point.close)} r={3.5} fill="var(--color-canvas)" stroke={up ? "var(--color-green-500)" : "var(--color-coral-500)"} strokeWidth={2} />
           </g>
         )}
         <rect x={M.left} y={M.top} width={W - M.left - M.right} height={H - M.top - M.bottom} fill="transparent"
           onPointerMove={onMove} onPointerLeave={() => setHover(null)} />
       </svg>
       {point && hover !== null && (
-        <div className="pointer-events-none absolute top-0 rounded-control border border-line bg-surface px-2 py-1 text-xs"
+        <div className="pointer-events-none absolute top-0 rounded-control border border-sand-200 bg-white px-2.5 py-1.5 text-xs shadow-float"
           style={{ left: `${(x(hover) / W) * 100}%`, transform: `translateX(${hover > points.length / 2 ? "-105%" : "5%"})` }}>
-          <span className="num font-medium">{formatUsd(point.close)}</span> <span className="text-muted">{formatDate(point.day)}</span>
+          <span className="num font-medium">{formatUsd(point.close)}</span> <span className="text-ink-500">{formatDate(point.day)}</span>
         </div>
       )}
     </div>

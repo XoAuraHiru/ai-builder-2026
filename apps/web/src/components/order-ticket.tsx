@@ -7,7 +7,7 @@ import { formatUsd } from "@/lib/format";
 import { actionLabel, canPlace, estimateCost, orderBody, type Draft, type GuardianReport, type TradeOrder } from "@/lib/trading";
 import { NarrativeView, type Narrative } from "@/components/ai-prose";
 import { GuardianPanel } from "@/components/guardian-panel";
-import { Button, Field, inputClass, Notice, Panel, Segmented } from "@/components/ui";
+import { Button, Field, inputClass, Notice, Panel, Segmented, Sparkle } from "@/components/ui";
 
 const message = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 
@@ -20,7 +20,7 @@ function Placed({ order }: { order: TradeOrder }) {
     : { tone: "error" as const, title: "Not placed", text: last };
   return (
     <Notice tone={view.tone} title={view.title}
-      action={<Link href="/investor/trades" className="text-sm font-medium underline decoration-line-strong underline-offset-4 hover:decoration-ink">See it in Trades</Link>}>
+      action={<Link href="/investor/trades" className="whitespace-nowrap text-sm font-semibold text-green-600 hover:text-green-800 hover:underline">See it in Trades</Link>}>
       {view.text}
     </Notice>
   );
@@ -108,7 +108,7 @@ export function OrderTicket({ accountId, symbol, price, held, onPlaced, initialQ
   const estimate = estimateCost(draft.order_type === "limit" && limit ? limit : price, draft.quantity);
   return (
     <div className="space-y-5">
-      <Panel className="p-5">
+      <Panel className="p-5 sm:p-6">
         <form onSubmit={check} className="space-y-4">
           <div className="flex flex-wrap gap-2">
             <Segmented label="Buy or sell" value={draft.side} onChange={(v) => change({ side: v })}
@@ -126,11 +126,11 @@ export function OrderTicket({ accountId, symbol, price, held, onPlaced, initialQ
                 onChange={(e) => change({ limit_price: e.target.value })} />
             </Field>
           )}
-          <p className="text-sm text-ink-2">{estimate !== null ? `About ${formatUsd(estimate)}, before the spread.` : "Enter how many shares."}</p>
+          <p className="text-sm text-ink-700">{estimate !== null ? `About ${formatUsd(estimate)}, before the spread.` : "Enter how many shares."}</p>
           {linked && analysisId && draft.side === "buy" && (
-            <p className="text-xs text-muted">Filled in from your analysis: the whole shares your amount buys at the latest price. The order records the analysis.</p>
+            <p className="text-xs text-ink-500">Filled in from your analysis: the whole shares your amount buys at the latest price. The order records the analysis.</p>
           )}
-          <Button type="submit" variant="secondary" busy={busy === "check"} className="w-full">Check order</Button>
+          <Button type="submit" variant="tonal" busy={busy === "check"} className="w-full">Check order</Button>
         </form>
       </Panel>
       {error && <Notice tone="error">{error}</Notice>}
@@ -138,11 +138,11 @@ export function OrderTicket({ accountId, symbol, price, held, onPlaced, initialQ
       {report && (
         <GuardianPanel report={report}>
           {narrative ? <NarrativeView narrative={narrative} />
-            : explainError ? <p className="text-sm text-muted">{explainError}</p>
-            : <p role="status" className="border-l-2 border-daylight pl-5 text-sm text-daylight-ink">Gemini is writing an explanation of this verdict…</p>}
+            : explainError ? <p className="text-sm text-ink-500">{explainError}</p>
+            : <p role="status" className="flex items-center gap-2 rounded-[16px] bg-ai-50 px-5 py-4 text-sm font-medium text-ai-700"><Sparkle />Gemini is writing an explanation of this verdict…</p>}
           {report.verdict === "warn" && (
             <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" className="mt-1 accent-[var(--color-ink)]" checked={ack} onChange={(e) => setAck(e.target.checked)} />
+              <input type="checkbox" className="mt-1 accent-green-500" checked={ack} onChange={(e) => setAck(e.target.checked)} />
               I have read the warnings and want to go ahead.
             </label>
           )}

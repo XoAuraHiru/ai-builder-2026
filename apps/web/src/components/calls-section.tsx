@@ -8,7 +8,8 @@ import {
 } from "@/lib/calls";
 import { formatDate } from "@/lib/format";
 import { AiProse } from "@/components/ai-prose";
-import { Badge, Button, KeyMoment, Notice, Panel, Section } from "@/components/ui";
+import { CardSection } from "@/components/card-section";
+import { Badge, Button, Notice, Sparkle } from "@/components/ui";
 
 const ACCEPT = "audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,audio/ogg,.mp3,.wav,.m4a,.ogg";
 const LISTENING = "Gemini is listening…";
@@ -92,21 +93,21 @@ export function CallsSection({ leadId, demoCall, onChange }:
   const audioUrl = current ? (demo ? audio[demo] : audio[current.id]) : undefined;
 
   return (
-    <Section id="calls" title="Calls"
+    <CardSection id="calls" title="Calls"
       description="Gemini listens to a recorded call and proposes; you decide. A flag or update whose words are not in the transcript is dropped. The audio is never stored, only the reading.">
       <div className="flex flex-wrap items-center gap-2.5">
         {demoCall && (
-          <Button busy={busy === demoCall} disabled={Boolean(busy) || Boolean(paused)} onClick={() => runDemo(demoCall)}>
-            {busy === demoCall ? LISTENING : `Analyse the ${demoCall} call`}
+          <Button variant="ai" busy={busy === demoCall} disabled={Boolean(busy) || Boolean(paused)} onClick={() => runDemo(demoCall)}>
+            {busy !== demoCall && <Sparkle />}{busy === demoCall ? LISTENING : `Analyse the ${demoCall} call`}
           </Button>
         )}
-        <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold ${demoCall ? "border border-line-strong bg-surface text-ink hover:border-ink focus-within:border-ink" : "bg-ink text-white hover:bg-[#26343f]"} ${busy || paused ? "pointer-events-none opacity-60" : ""}`} aria-disabled={Boolean(paused) || undefined}>
+        <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full border border-sand-200 bg-white px-5 text-sm font-medium text-ink-900 hover:bg-fill focus-within:shadow-[0_0_0_3px_var(--color-green-200)] ${busy || paused ? "pointer-events-none text-ink-400" : ""}`} aria-disabled={Boolean(paused) || undefined}>
           {busy === "upload" ? LISTENING : "Upload a recording"}
           <input type="file" accept={ACCEPT} className="sr-only" disabled={Boolean(busy) || Boolean(paused)}
             onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ""; }} />
         </label>
       </div>
-      <p className="mt-2 text-xs text-muted">
+      <p className="mt-2 text-xs text-ink-500">
         MP3, WAV, M4A or OGG, up to 20 MB.{demoCall && ` The ${demoCall} call is a demo recorded for this lead: synthetic voices reading a script.`}
       </p>
       {paused && (
@@ -116,9 +117,9 @@ export function CallsSection({ leadId, demoCall, onChange }:
           </Notice>
         </div>
       )}
-      {busy && <p role="status" className="mt-3 text-sm text-daylight-ink">{LISTENING} A three-minute call takes about half a minute.</p>}
+      {busy && <p role="status" className="mt-3 flex items-center gap-1.5 text-[13px] font-medium text-ai-700"><Sparkle size={12} />{LISTENING} A three-minute call takes about half a minute.</p>}
       {error && <div className="mt-4"><Notice tone="error" title="The call could not be analysed">{error}</Notice></div>}
-      {calls === null ? <p role="status" className="mt-6 text-sm text-muted">Loading the calls…</p>
+      {calls === null ? <p role="status" className="mt-6 text-sm text-ink-500">Loading the calls…</p>
         : current ? (
           <div className="mt-6">
             <CallView key={current.id} call={current} leadId={leadId} audioUrl={audioUrl}
@@ -127,16 +128,16 @@ export function CallsSection({ leadId, demoCall, onChange }:
                 await onChange();
               }} />
           </div>
-        ) : <p className="mt-6 text-sm text-muted">No calls analysed for this lead yet.</p>}
+        ) : <p className="mt-6 text-sm text-ink-500">No calls analysed for this lead yet.</p>}
       {earlier.length > 0 && (
         <div className="mt-8">
           <h3 className="text-sm font-semibold">Earlier calls</h3>
-          <ul className="mt-2 divide-y divide-line border-y border-line">
+          <ul className="mt-2 divide-y divide-sand-100 border-y border-sand-100">
             {earlier.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5 text-sm">
                 <span className="min-w-0">
                   <span className="font-medium">{c.filename}</span>{" "}
-                  <span className="text-muted">
+                  <span className="text-ink-500">
                     {formatDate(c.created_at)}, {c.reading.flags.length === 1 ? "1 flag" : `${c.reading.flags.length} flags`}
                   </span>
                 </span>
@@ -146,16 +147,16 @@ export function CallsSection({ leadId, demoCall, onChange }:
           </ul>
         </div>
       )}
-    </Section>
+    </CardSection>
   );
 }
 
 function TimeButton({ at, onPlay }: { at: number; onPlay?: (at: number) => void }) {
-  if (!onPlay) return <span className="num inline-flex min-h-8 shrink-0 items-center self-start text-xs font-semibold text-muted">{clock(at)}</span>;
+  if (!onPlay) return <span className="num inline-flex min-h-8 shrink-0 items-center self-start text-xs font-semibold text-ink-500">{clock(at)}</span>;
   return (
     <button type="button" onClick={() => onPlay(at)} aria-label={`Play from ${clock(at)}`}
-      className="num inline-flex h-8 shrink-0 items-center gap-1.5 self-start rounded-full border border-line-strong bg-surface px-2.5 text-xs font-semibold text-ink hover:border-ink">
-      <svg width="8" height="9" viewBox="0 0 8 9" aria-hidden="true"><path d="M0 0l8 4.5L0 9z" fill="currentColor" /></svg>
+      className="num inline-flex h-8 shrink-0 items-center gap-1.5 self-start rounded-full border border-sand-200 bg-white px-2.5 text-xs font-semibold text-ink-900 hover:bg-fill">
+      <svg width="8" height="9" viewBox="0 0 8 9" aria-hidden="true" className="text-green-600"><path d="M0 0l8 4.5L0 9z" fill="currentColor" /></svg>
       {clock(at)}
     </button>
   );
@@ -163,23 +164,21 @@ function TimeButton({ at, onPlay }: { at: number; onPlay?: (at: number) => void 
 
 const SEVERITY_TONE = { high: "loss", medium: "caution", low: "neutral" } as const;
 
+/** Each flag as a status chip (coral for high, amber for medium) at the second it was said, the words quoted, and why. */
 function FlagList({ flags, onPlay }: { flags: CallFlag[]; onPlay?: (at: number) => void }) {
   return (
-    <ul className="divide-y divide-line">
+    <ul>
       {flags.map((f, i) => (
-        <li key={`${f.kind}-${f.start_s}-${i}`} className="py-3.5 first:pt-0 last:pb-0">
+        <li key={`${f.kind}-${f.start_s}-${i}`} className="border-t border-sand-100 py-4 first:border-t-0 first:pt-0 last:pb-0">
           <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={SEVERITY_TONE[f.severity]}>{SEVERITY_LABEL[f.severity]} · {FLAG_LABEL[f.kind]}</Badge>
             <TimeButton at={f.start_s} onPlay={onPlay} />
-            <span className="font-semibold">{FLAG_LABEL[f.kind]}</span>
-            <Badge tone={SEVERITY_TONE[f.severity]}>{SEVERITY_LABEL[f.severity]} severity</Badge>
           </div>
-          <p className="mt-2 text-[15px] text-ink">&ldquo;{f.quote}&rdquo;</p>
-          <p className="mt-1 text-sm text-ink-2">{f.why} <span className="text-muted">Touches {f.rule}.</span></p>
+          <p className="mt-2.5 text-[15px] leading-[22px] text-ink-900">&ldquo;{f.quote}&rdquo;</p>
+          <p className="mt-1 text-sm leading-[21px] text-ink-700">{f.why} <span className="text-ink-500">Touches {f.rule}.</span></p>
           {f.source === "gemini" ? (
-            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-daylight-ink">
-              <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-[1px] bg-daylight" />Flagged by Gemini
-            </p>
-          ) : <p className="mt-1.5 text-xs text-muted">Flagged by the promise rules that also check advisors&rsquo; drafts</p>}
+            <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-ai-700"><Sparkle size={12} />Flagged by Gemini</p>
+          ) : <p className="mt-2 text-xs text-ink-500">Flagged by the promise rules that also check advisors&rsquo; drafts</p>}
         </li>
       ))}
     </ul>
@@ -230,24 +229,25 @@ function CallView({ call, leadId, audioUrl, onApplied }:
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="font-semibold">{call.filename}</p>
-        <p className="text-sm text-muted">
+      <div className="rounded-control bg-fill px-4 py-3.5">
+        <p className="code text-[13px] text-ink-900">{call.filename}</p>
+        <p className="mt-0.5 text-[13px] text-ink-500">
           {call.source === "demo" ? "Demo call" : "Uploaded recording"}, {clock(call.duration_s)}. Analysed by {call.created_by} on {formatDate(call.created_at)}.
         </p>
         {audioUrl ? <audio ref={player} controls preload="metadata" src={audioUrl} className="mt-3 w-full max-w-xl" />
-          : <p className="mt-2 text-sm text-ink-2">{call.source === "demo" ? "Loading the recording…" : "The recording is not kept, so only its reading can be shown."}</p>}
+          : <p className="mt-2 text-sm text-ink-700">{call.source === "demo" ? "Loading the recording…" : "The recording is not kept, so only its reading can be shown."}</p>}
       </div>
 
-      {high.length > 0 ? (
-        <KeyMoment tone="alert" label="Conduct flags" title={flagsHeadline(flags)}>
+      {flags.length > 0 ? (
+        <section aria-label="Conduct flags" className="space-y-4">
+          <div className="flex flex-col items-start gap-3">
+            <Badge tone={high.length > 0 ? "loss" : "caution"}>
+              {flags.length === 1 ? "1 conduct flag" : `${flags.length} conduct flags`}
+            </Badge>
+            {high.length > 0 && <h3 className="max-w-[620px] text-[20px] font-semibold leading-7 tracking-[-0.01em]">{flagsHeadline(flags)}</h3>}
+          </div>
           <FlagList flags={flags} onPlay={onPlay} />
-        </KeyMoment>
-      ) : flags.length > 0 ? (
-        <Panel className="p-5">
-          <h3 className="mb-3 text-sm font-semibold">Conduct flags</h3>
-          <FlagList flags={flags} onPlay={onPlay} />
-        </Panel>
+        </section>
       ) : (
         <Notice tone="success" title="No conduct flags">Neither Gemini nor the promise rules found anything to flag on this call.</Notice>
       )}
@@ -256,68 +256,71 @@ function CallView({ call, leadId, audioUrl, onApplied }:
         warning={figuresWarning(reading.unsupported_figures)}>
         <p>{reading.summary}</p>
         {reading.action_items.length > 0 && (
-          <ul className="mt-3 list-disc space-y-1 pl-5 text-[16px]">
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-[16px] leading-6">
             {reading.action_items.map((a, i) => <li key={i}>{a}</li>)}
           </ul>
         )}
       </AiProse>
 
       {reading.updates.length > 0 && (
-        <Panel className="p-5">
-          <h3 className="text-sm font-semibold">Proposed updates</h3>
-          <p className="mt-1 flex items-start gap-2 text-xs text-daylight-ink">
-            <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-[1px] bg-daylight" />
-            Proposed by Gemini from the client&rsquo;s own words, each checked against the transcript and the form&rsquo;s limits.
-          </p>
-          <p className="mt-2 text-sm text-muted">Tick the ones the client stated. Nothing changes on the lead until you apply them.</p>
-          <ul className="mt-3 divide-y divide-line border-y border-line">
+        <section aria-labelledby={`updates-${call.id}`} className="space-y-3">
+          <div>
+            <h3 id={`updates-${call.id}`} className="text-[15px] font-semibold">Proposed updates</h3>
+            <p className="mt-1 flex items-start gap-1.5 text-xs font-medium text-ai-700">
+              <span className="mt-0.5 shrink-0"><Sparkle size={12} /></span>
+              Proposed by Gemini from the client&rsquo;s own words, each checked against the transcript and the form&rsquo;s limits.
+            </p>
+            <p className="mt-1.5 text-[13px] text-ink-500">Tick the ones the client stated. Nothing changes on the lead until you apply them.</p>
+          </div>
+          <ul className="space-y-2">
             {reading.updates.map((u) => {
               const done = applied.get(u.field);
               const id = `call-${call.id}-${u.field}`;
+              const on = Boolean(done) || ticked.has(u.field);
               return (
-                <li key={u.field} className="flex gap-3 py-3">
-                  <input id={id} type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-ink" checked={Boolean(done) || ticked.has(u.field)}
+                <li key={u.field} className={`flex gap-3 rounded-control px-4 py-3.5 transition-colors ${on && !done ? "bg-green-50" : "bg-fill"}`}>
+                  <input id={id} type="checkbox" className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[var(--color-green-500)]" checked={on}
                     disabled={Boolean(done) || busy} onChange={() => toggle(u.field)} />
                   <div className="min-w-0 text-sm">
-                    <label htmlFor={id} className="font-medium text-ink">{updateLine(u)}</label>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-ink-2">
+                    <label htmlFor={id} className="font-medium text-ink-900">{updateLine(u)}</label>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-ink-700">
                       <span>&ldquo;{u.quote}&rdquo;</span>
                       <TimeButton at={u.start_s} onPlay={onPlay} />
                     </div>
-                    {done && <p className="mt-1 text-xs text-gain">Applied by {done.by} on {formatDate(done.at)}.</p>}
+                    {done && <p className="mt-1.5 text-xs font-medium text-green-700">Applied by {done.by} on {formatDate(done.at)}.</p>}
                   </div>
                 </li>
               );
             })}
           </ul>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <Button busy={busy} disabled={ticked.size === 0} onClick={apply}>Apply selected</Button>
-            {ticked.size > 0 && <span className="text-sm text-muted">{[...ticked].map((f) => FIELD_LABEL[f]).join(", ")}</span>}
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Button variant="tonal" busy={busy} disabled={ticked.size === 0} onClick={apply}>Apply selected</Button>
+            {ticked.size > 0 && <span className="text-[13px] text-ink-500">{[...ticked].map((f) => FIELD_LABEL[f]).join(", ")}</span>}
           </div>
-          {error && <div className="mt-3"><Notice tone="error">{error}</Notice></div>}
-        </Panel>
+          {error && <Notice tone="error">{error}</Notice>}
+        </section>
       )}
 
-      {note && <p className="text-sm text-caution">{note}</p>}
+      {note && <Notice tone="caution">{note}</Notice>}
 
-      <details className="group rounded-panel border border-line bg-surface">
-        <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+      <details className="group rounded-control border border-sand-200 bg-white">
+        <summary className="flex min-h-11 cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm hover:bg-fill">
           <span className="font-semibold">Transcript</span>
-          <span className="text-muted">{reading.transcript.length} turns, {clock(reading.duration_s)}. <span className="group-open:hidden">Show</span><span className="hidden group-open:inline">Hide</span></span>
+          <span className="text-ink-500">{reading.transcript.length} turns, {clock(reading.duration_s)}. <span className="font-semibold text-green-600 group-open:hidden">Show</span><span className="hidden font-semibold text-green-600 group-open:inline">Hide</span></span>
         </summary>
-        <ol className="divide-y divide-line border-t border-line">
+        <ol className="border-t border-sand-100">
           {reading.transcript.map((s, i) => (
-            <li key={i} className="flex gap-3 px-4 py-2.5 text-sm">
+            <li key={i} className="flex gap-3 border-t border-sand-100 px-4 py-2.5 text-sm first:border-t-0">
               <TimeButton at={s.start_s} onPlay={onPlay} />
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-muted">{ROLE_LABEL[s.role]}, {s.speaker}</p>
-                <p className="mt-0.5 text-ink">{s.text}</p>
+                <p className="text-xs font-semibold text-ink-500">{ROLE_LABEL[s.role]}, {s.speaker}</p>
+                <p className="mt-0.5 text-ink-900">{s.text}</p>
               </div>
             </li>
           ))}
         </ol>
-        <p className="flex items-start gap-2 border-t border-line px-4 py-2.5 text-xs text-daylight-ink">
-          <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-[1px] bg-daylight" />
+        <p className="flex items-start gap-1.5 border-t border-sand-100 px-4 py-2.5 text-xs font-medium text-ai-700">
+          <span className="mt-0.5 shrink-0"><Sparkle size={12} /></span>
           Transcribed by Gemini. Speaker roles are its judgement; the recording is the record.
         </p>
       </details>

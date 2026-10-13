@@ -91,15 +91,99 @@ export function layoutGraph(nodes: GraphNode[], width: number, rowHeight: number
   return { at, height };
 }
 
-export type ThresholdBar = { id: string; label: string; date: string; amount: number; pct: number };
+/** Where a payment sits against the threshold: over it (coral), just under it (amber, within 15%), or clear (green). */
+export type BarTone = "over" | "near" | "under";
+export type ThresholdBar = { id: string; label: string; date: string; amount: number; pct: number; tone: BarTone };
 
 /** Payment rows drawn against a reporting threshold: each bar's height and the line's, as a share of the chart. */
 export function thresholdBars(evidence: EvidenceRow[], threshold: number): { bars: ThresholdBar[]; linePct: number } {
   const labels = citationLabels(evidence);
   const rows = evidence.filter((e) => e.amount !== null && (e.kind === "instruction" || e.kind === "posting"));
   const top = Math.max(threshold * 1.08, ...rows.map((r) => Number(r.amount)));
+  const tone = (n: number): BarTone => (n >= threshold ? "over" : n >= threshold * 0.85 ? "near" : "under");
   return {
-    bars: rows.map((r) => ({ id: r.id, label: labels[r.id], date: r.date, amount: Number(r.amount), pct: (Number(r.amount) / top) * 100 })),
+    bars: rows.map((r) => ({
+      id: r.id, label: labels[r.id], date: r.date, amount: Number(r.amount), pct: (Number(r.amount) / top) * 100, tone: tone(Number(r.amount)),
+    })),
     linePct: (threshold / top) * 100,
   };
+}
+
+export type FindingTone = "gain" | "caution" | "loss" | "neutral";
+/** One finding on the alert's opening card: a short title, the figure large, a sentence, and a status chip. */
+export type Finding = { title: string; figure: string; unit?: string; text: string; chip: { label: string; tone: FindingTone } };
+
+const MONEY_KINDS: ReadonlySet<EvidenceKind> = new Set(["instruction", "posting", "statement_line", "order"]);
+/** The time window each rule looks over (app/services/aml.py), so a span inside it can say so. */
+const WINDOW_DAYS: Record<string, number> = { structuring: 7, rapid_in_out: 10, linked_round_trip: 14 };
+const DAY_MS = 86_400_000;
+const shortDay = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const dollars = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+
+/** The figures behind an alert, one card each. A behaviour alert shows its measures against ordinary accounts; a
+ *  payment alert shows the money, the days it took and who else is linked. */
+export function alertFindings(alert: Pick<AlertDetail, "scenario" | "severity" | "evidence" | "graph">): Finding[] {
+  const features = alert.evidence.filter((e) => e.kind === "feature");
+  if (features.length > 0) {
+    return features.slice(0, 3).map((f) => {
+      const [head, ...rest] = f.detail.split(": ");
+      const tail = rest.join(": ");
+      const where = tail.split(", where ")[1];
+      return {
+        title: rest.length ? head : EVIDENCE_KIND.feature,
+        figure: f.amount !== null ? dollars(Number(f.amount)) : tail || f.detail,
+        text: where ? `${where.charAt(0).toUpperCase()}${where.slice(1)}.` : f.detail,
+        chip: { label: "Far from ordinary", tone: "loss" },
+      };
+    });
+  }
+  const out: Finding[] = [];
+  const money = alert.evidence.filter((e) => e.amount !== null && MONEY_KINDS.has(e.kind));
+  if (money.length > 0) {
+    const total = money.reduce((sum, e) => sum + Number(e.amount), 0);
+    out.push({
+      title: "Money in the evidence", figure: dollars(total),
+      text: `Across ${money.length} payment${money.length === 1 ? "" : "s"} and ledger rows.`,
+      chip: alert.severity === "low" ? { label: "Note", tone: "neutral" } : { label: "Worth a look", tone: "caution" },
+    });
+    const days = money.map((e) => new Date(`${e.date.slice(0, 10)}T00:00:00`).getTime());
+    const first = Math.min(...days);
+    const last = Math.max(...days);
+    const span = Math.round((last - first) / DAY_MS);
+    const window = WINDOW_DAYS[alert.scenario];
+    const firstIso = money.find((e) => new Date(`${e.date.slice(0, 10)}T00:00:00`).getTime() === first)!.date;
+    const lastIso = money.find((e) => new Date(`${e.date.slice(0, 10)}T00:00:00`).getTime() === last)!.date;
+    out.push({
+      title: "From first to last", figure: span === 0 ? "Same day" : String(span), unit: span === 0 ? undefined : span === 1 ? "day" : "days",
+      text: span === 0 ? `All on ${shortDay(firstIso)}.` : `From ${shortDay(firstIso)} to ${shortDay(lastIso)}.`,
+      chip: window !== undefined && span <= window ? { label: `Inside the rule's ${window} days`, tone: "caution" } : { label: "Note", tone: "neutral" },
+    });
+  }
+  const subject = alert.graph.nodes.find((n) => n.flagged && n.kind === "person");
+  const others = alert.graph.nodes.filter((n) => (n.kind === "person" || n.kind === "payer") && n.id !== subject?.id);
+  const sharedBank = alert.graph.nodes.some((n) => n.kind === "bank"
+    && alert.graph.edges.filter((e) => e.target === n.id || e.source === n.id).length > 1);
+  const payer = others.some((n) => n.kind === "payer");
+  out.push({
+    title: "Linked people", figure: String(others.length),
+    text: others.length ? others.map((n) => n.label).join(", ") : "No one else shares an account, a device or a payer.",
+    chip: others.length === 0 ? { label: "None linked", tone: "neutral" }
+      : sharedBank ? { label: "Share a bank account", tone: "loss" }
+        : payer ? { label: "Outside payer", tone: "caution" } : { label: "Linked", tone: "caution" },
+  });
+  return out.slice(0, 3);
+}
+
+/** The alerts page's opening sentence: how many open alerts wait, how many are high severity, and which to open. */
+export function alertsMoment(alerts: Pick<Alert, "id" | "severity" | "score" | "title">[]):
+  { tone: "alert" | "attention" | "good"; title: string; top: string | null } {
+  if (alerts.length === 0) return { tone: "good", title: "No open alerts. Monitoring runs again this evening.", top: null };
+  const rank = { high: 3, medium: 2, low: 1 } as const;
+  const top = [...alerts].sort((a, b) => rank[b.severity] - rank[a.severity] || b.score - a.score)[0];
+  const high = alerts.filter((a) => a.severity === "high").length;
+  const n = alerts.length;
+  const lead = `${n} open alert${n === 1 ? " waits" : "s wait"} for a decision`;
+  const tail = high === 0 ? "." : high === n ? (n === 1 ? ", and it is high severity." : `, all ${n} high severity.`)
+    : `; ${high} ${high === 1 ? "is" : "are"} high severity.`;
+  return { tone: high > 0 ? "alert" : "attention", title: `${lead}${tail}`, top: top.id };
 }
