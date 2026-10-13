@@ -13,13 +13,14 @@ import uuid
 
 API = sys.argv[1] if len(sys.argv) > 1 else "https://atrium-api-tvflgkcdoa-uc.a.run.app"
 ADVISOR = "daniel@atrium.demo"
-DEVICE = f"smoke-{uuid.uuid4()}"
+# One new device per persona and run: a device shared by several investors is what the fraud ring radar looks for.
+RUN = uuid.uuid4().hex[:12]
 
 
 def call(method, path, body=None, user="tom@atrium.demo", timeout=280):
     data = None if body is None else json.dumps(body).encode()
     req = urllib.request.Request(API + path, method=method, data=data, headers={
-        "Content-Type": "application/json", "X-Dev-User": user, "X-Device-Id": DEVICE})
+        "Content-Type": "application/json", "X-Dev-User": user, "X-Device-Id": f"smoke-{RUN}-{user}"})
     started = time.time()
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
