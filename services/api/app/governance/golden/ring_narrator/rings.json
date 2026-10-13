@@ -1,0 +1,59 @@
+{
+ "about": "The rings detect_rings must find exactly, and the pattern a narrative must name for two of them.",
+ "rings": [
+  {
+   "name": "device_farm",
+   "members": [
+    "lead:farm-1",
+    "lead:farm-2",
+    "lead:farm-3"
+   ],
+   "pattern": "synthetic_identity_farm",
+   "why": "Three leads from one device and one network within half an hour, each with a throwaway email."
+  },
+  {
+   "name": "mule_ring",
+   "members": [
+    "lead:mule-1",
+    "lead:mule-2",
+    "person:mule"
+   ],
+   "pattern": "mule_network",
+   "why": "Two new leads share the device that signs in to a client flagged for money in and straight out."
+  },
+  {
+   "name": "duplicate_applicant",
+   "members": [
+    "lead:dup-1",
+    "lead:dup-2"
+   ],
+   "why": "One phone number and one passport under two spellings of one name."
+  }
+ ],
+ "traps": [
+  {
+   "name": "office_network",
+   "members": [
+    "lead:office-1",
+    "lead:office-2",
+    "lead:office-3",
+    "lead:office-4",
+    "lead:office-5",
+    "lead:office-6",
+    "lead:office-7",
+    "lead:office-8",
+    "lead:office-9",
+    "lead:office-10"
+   ],
+   "why": "Ten genuine leads behind one office network and switchboard number: hubs, joined to no one."
+  },
+  {
+   "name": "cafe_network",
+   "members": [
+    "lead:cafe-1",
+    "lead:cafe-2"
+   ],
+   "why": "Two leads who share only a network address: a weak link never makes a ring."
+  }
+ ]
+}

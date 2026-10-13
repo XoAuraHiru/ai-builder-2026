@@ -13,6 +13,8 @@ from sqlalchemy import select
 from app.ai.llm import FakeLLM
 from app.ai.offline import offline_llm
 from app.governance.breakers import BreakerOpen, trip
+from app.governance.evals.framework import EvalContext
+from app.governance.evals.suites.ring_narrator import detection_on_a_golden_graph, load_golden, narratives
 from app.models import AIDecision, Account, AccountDevice, AmlAlert, IdentityCheck, Lead, LeadConversion, Person
 from app.seed.leads import DEMO_LEADS, seed_demo_leads
 from app.services.blind_index import blind_index
@@ -261,3 +263,56 @@ def test_offline_mode_writes_a_labelled_narrative_citing_real_links(db):
     out = narrate_ring(db, offline_llm(), ring)
     assert out["narrative"].summary.startswith("Offline mode") and out["dropped_citations"] == 0
     assert out["narrative"].parts[0].links == ["L1", "L2"]
+
+
+# ---- R4: the golden suites for ring_narrator -----------------------------------------------------------------------
+
+def test_the_golden_graph_holds_three_rings_and_two_traps():
+    graph, golden = load_golden()
+    found = {frozenset(r.members) for r in detect_rings(graph)}
+    assert found == {frozenset(r["members"]) for r in golden["rings"]} and len(found) == 3
+    trapped = {m for trap in golden["traps"] for m in trap["members"]}
+    assert len(trapped) == 12 and not any(trapped & ring for ring in found)
+    assert {r["name"]: r.get("pattern") for r in golden["rings"]} == {
+        "device_farm": "synthetic_identity_farm", "mule_ring": "mule_network", "duplicate_applicant": None}
+
+
+def test_the_free_suite_finds_exactly_the_golden_rings():
+    result = detection_on_a_golden_graph(EvalContext(tier="free"))
+    assert (result.model_key, result.kind, result.tier, result.passed) == ("ring_narrator", "golden", "free", True)
+    assert [c.case_id for c in result.cases] == ["device_farm", "mule_ring", "duplicate_applicant", "office_network",
+                                                 "cafe_network", "no_other_rings"]
+
+
+def test_the_free_suite_fails_when_hubs_are_not_damped(monkeypatch):
+    import app.services.rings as service
+
+    monkeypatch.setattr(service, "HUB_LIMIT", 50)  # the office switchboard now joins ten genuine leads
+    result = detection_on_a_golden_graph(EvalContext(tier="free"))
+    failed = {c.case_id for c in result.cases if c.outcome == "fail"}
+    assert result.passed is False and failed == {"office_network", "no_other_rings"}
+
+
+def _golden_reader(pattern_for, extra_links=()):
+    def respond(prompt: str) -> dict:
+        return {"pattern": pattern_for(prompt), "summary": "The members connect through shared identifiers.",
+                "parts": [{"text": "They share one device.", "links": ["L1", *extra_links]}], "next_checks": []}
+    return FakeLLM({"ring_narrative": respond})
+
+
+def test_the_live_suite_passes_when_patterns_match_and_citations_are_real():
+    llm = _golden_reader(lambda p: "mule_network" if "Dana Okoro" in p else "synthetic_identity_farm")
+    result = narratives(EvalContext(tier="live", llm=llm))
+    assert (result.kind, result.tier, result.passed) == ("golden", "live", True)
+    assert [(c.case_id, c.outcome) for c in result.cases] == [("device_farm", "pass"), ("mule_ring", "pass")]
+    assert len(llm.calls) == 2
+
+
+def test_the_live_suite_fails_a_wrong_pattern_or_a_made_up_citation():
+    wrong = narratives(EvalContext(tier="live", llm=_golden_reader(lambda p: "unclear")))
+    assert wrong.passed is False and {c.outcome for c in wrong.cases} == {"fail"}
+    invented = narratives(EvalContext(tier="live", llm=_golden_reader(
+        lambda p: "mule_network" if "Dana Okoro" in p else "synthetic_identity_farm", extra_links=("L99",))))
+    assert invented.passed is False and all("1 citation" in c.detail for c in invented.cases)
+    unreachable = narratives(EvalContext(tier="live", llm=FakeLLM({})))
+    assert unreachable.passed is False and {c.outcome for c in unreachable.cases} == {"error"}
