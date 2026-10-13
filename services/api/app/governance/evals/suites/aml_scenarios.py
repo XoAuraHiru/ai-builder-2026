@@ -4,7 +4,8 @@ from datetime import date, datetime, time, timezone
 from decimal import Decimal
 
 from app.governance import golden
-from app.governance.evals.framework import CaseResult, EvalContext, SuiteResult, every_case, run_case, scratch_db, suite
+from app.governance.evals.framework import (CaseResult, EvalContext, SuiteResult, every_case, rate, run_case, scratch_db,
+                                            suite)
 from app.models import Account, BankStatement, Instruction, Person, ReconMatch, StatementLine
 from app.seed.funds import seed_funds
 from app.services import aml
@@ -92,3 +93,38 @@ def positives_and_near_misses(ctx: EvalContext) -> SuiteResult:
         cases.append(run_case(c["id"], check))
     return every_case("aml_scenarios", "golden", "free", cases,
                       bar="Every scenario fires on its case and stays quiet on its near miss")
+
+
+MUTATION_BAR = 0.8
+MUTATION_DAY = date(2026, 10, 12)
+
+
+@suite("aml_scenarios", kind="red_team", tier="live")
+def fraud_mutations(ctx: EvalContext) -> SuiteResult:
+    """Structuring at fresh amounts under $10,000, generated from a fixed seed: three subscriptions within five days
+    must raise the structuring scenario whatever the amounts."""
+    from datetime import timedelta
+
+    from app.governance.redteam import FRAUD_MUTATIONS
+
+    cases = []
+    for m in (m for m in FRAUD_MUTATIONS if m["kind"] == "structuring_amount"):
+        def check(m=m):
+            case = {"accounts": [{"number": "ACC-0501", "full_name": "Mutation Client", "email": "mutation@example.test",
+                                  "country": "US", "opened_on": "2025-01-02"}],
+                    "instructions": [{"account": "ACC-0501", "type": "subscribe", "fund": "ATR-BAL", "amount": str(a),
+                                      "day": (MUTATION_DAY - timedelta(days=6 - 2 * k)).isoformat(),
+                                      "state": "accepted"} for k, a in enumerate(m["amounts"])]}
+            with scratch_db() as db:
+                build(db, case)
+                findings = aml.structuring(db, MUTATION_DAY)
+            caught = bool(findings)
+            return CaseResult(m["id"], "pass" if caught else "fail", expected="caught",
+                              actual={"attack": m["kind"], "output": {"amounts": m["amounts"], "alerts": len(findings)}},
+                              detail=m["why"] + (" Caught." if caught else " Missed."))
+        cases.append(run_case(m["id"], check))
+    caught = sum(c.outcome == "pass" for c in cases)
+    return rate("aml_scenarios", "red_team", "live", cases,
+                bar=f"At least {MUTATION_BAR:.0%} of structuring mutations caught",
+                metric=f"{caught} of {len(cases)} mutations caught", value=caught / len(cases) if cases else None,
+                threshold=MUTATION_BAR)

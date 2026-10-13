@@ -143,11 +143,38 @@ def test_the_live_cards_go_through_document_ai_proofing(monkeypatch):
 
     proofing = DocumentAIProofing(Settings(_env_file=None, gcp_project="p", docai_proofing_processor="abc"),
                                   client=Client())
+    printed = {}  # what each card prints, as Gemini's extraction would read it
+    for case in golden.load("identity_proofing/cases")["cases"]:
+        e = case["expect"]
+        printed[golden.path(f"identity_proofing/{case['image']}").read_bytes()] = {
+            "document_type": "national_id", "full_name": e["full_name"], "date_of_birth": e["date_of_birth"],
+            "expiry_date": e["expiry_date"], "document_number": None, "issuing_country": None, "confidence": 0.9}
+
+    class Reader:
+        """Stands in for Gemini reading the attached card, the step the product uses for the fields."""
+
+        def __init__(self, swap=False):
+            self.calls, self.swap = [], swap
+
+        def generate_json(self, *, purpose, prompt, schema, attachments=None, pro=False):
+            from app.ai.llm import LLMResult
+
+            self.calls.append(purpose)
+            fields = printed[attachments[0].data]
+            if self.swap:
+                fields = {**fields, "full_name": "Somebody Else"}
+            return LLMResult(parsed=schema.model_validate(fields), model="fake", tokens_in=1, tokens_out=1,
+                             latency_ms=1, cost_usd=0.0)
+
     monkeypatch.setattr(identity_proofing, "get_proofing", lambda: proofing)
-    result = identity_proofing.live_cards(EvalContext(tier="live", with_documents=True))
+    reader = Reader()
+    result = identity_proofing.live_cards(EvalContext(tier="live", llm=reader, with_documents=True))
     assert result.passed and len(result.cases) == 2, [c.detail for c in result.cases]
+    assert reader.calls == ["identity_extraction", "identity_extraction"]  # the product's own extraction ran
+    misread = identity_proofing.live_cards(EvalContext(tier="live", llm=Reader(swap=True), with_documents=True))
+    assert misread.passed is False and misread.counts["fail"] == 2
     monkeypatch.setattr(identity_proofing, "get_proofing", lambda: None)
-    unconfigured = identity_proofing.live_cards(EvalContext(tier="live", with_documents=True))
+    unconfigured = identity_proofing.live_cards(EvalContext(tier="live", llm=reader, with_documents=True))
     assert unconfigured.passed is False and unconfigured.counts["error"] == 2
 
 

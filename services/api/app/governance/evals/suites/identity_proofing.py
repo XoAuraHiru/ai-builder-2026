@@ -1,11 +1,12 @@
 """Identity check: the saved Document AI ID Proofing outputs of the two specimen cards map to the right fields and
 findings (free), and the same two cards sent through Document AI give the same (live, with documents only)."""
 from datetime import date
+from decimal import Decimal
 
 from app.governance import golden
-from app.governance.evals.framework import CaseResult, EvalContext, SuiteResult, every_case, run_case, suite
+from app.governance.evals.framework import CaseResult, EvalContext, SuiteResult, every_case, run_case, scratch_db, suite
 from app.models import Lead
-from app.services.identity import fields_from_document, get_proofing, identity_findings
+from app.services.identity import analyze_identity, fields_from_document, get_proofing, identity_findings
 
 
 def _document(name: str):
@@ -36,24 +37,37 @@ def saved_outputs(ctx: EvalContext) -> SuiteResult:
             return _grade(c, extracted, signals)
         cases.append(run_case(c["id"], check))
     return every_case("identity_proofing", "golden", "free", cases,
-                      bar="Both saved outputs give the right name, birth date and expiry, and the mismatch is found")
+                      bar="Both saved Document AI outputs (the text it read and its fraud signals) give the right name, "
+                          "birth date, expiry and findings, and the mismatch is found")
 
 
 @suite("identity_proofing", tier="live", needs_documents=True)
 def live_cards(ctx: EvalContext) -> SuiteResult:
+    """Both cards through the product's own pipeline (analyze_identity): Gemini reads the fields from the image,
+    Document AI ID Proofing screens it, and the rules turn both into findings."""
     proofing = get_proofing()
     cases = []
     for c in golden.load("identity_proofing/cases")["cases"]:
-        def check(c=c):
-            if proofing is None or not hasattr(proofing, "read"):
-                return CaseResult(c["id"], "error", detail="Document AI ID Proofing is not configured here.")
-            try:
-                extracted, signals = proofing.read(golden.path(f"identity_proofing/{c['image']}").read_bytes(),
-                                                   "image/png")
-            except Exception as e:  # an outage or a quota is no verdict on the model
-                return CaseResult(c["id"], "error", detail=f"Document AI could not be reached: {e}")
-            return _grade(c, extracted, signals)
-        cases.append(run_case(c["id"], check))
+        with scratch_db() as db:
+            def check(c=c, db=db):
+                if proofing is None:
+                    return CaseResult(c["id"], "error", detail="Document AI ID Proofing is not configured here.")
+                lead = Lead(full_name=c["lead"]["full_name"], email="specimen@example.test", country="US",
+                            source="web", goals="", horizon_years=1, investable_usd=Decimal("0"), device_id="golden")
+                db.add(lead)
+                db.flush()
+                data = golden.path(f"identity_proofing/{c['image']}").read_bytes()
+                found = analyze_identity(db, lead, data, "image/png", ctx.llm, proofing, date.fromisoformat(c["today"]))
+                if "documentai" not in found.source:  # Gemini read it, but the fraud screen was down: no verdict
+                    return CaseResult(c["id"], "error", detail=f"Document AI could not be reached ({found.source}).")
+                e = found.extracted
+                actual = {"full_name": e.get("full_name"), "date_of_birth": e.get("date_of_birth"),
+                          "expiry_date": e.get("expiry_date"), "findings": sorted({f["code"] for f in found.findings})}
+                expected = {**c["expect"], "findings": sorted(c["expect"]["findings"])}
+                wrong = [k for k in expected if actual.get(k) != expected[k]]
+                return CaseResult(c["id"], "fail" if wrong else "pass", expected=expected, actual=actual,
+                                  detail=c["why"] if not wrong else f"Wrong {', '.join(wrong)}. {c['why']}")
+            cases.append(run_case(c["id"], check, db=db))
     return every_case("identity_proofing", "golden", "live", cases,
-                      bar="Both cards through Document AI give the right name, birth date and expiry, and the mismatch "
-                          "is found")
+                      bar="Both cards read by Gemini and screened by Document AI give the right name, birth date and "
+                          "expiry, and the mismatch is found")

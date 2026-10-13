@@ -173,10 +173,21 @@ def test_fraud_mutations_are_deterministic_and_reported():
     assert FRAUD_MUTATIONS == __import__("app.governance.redteam", fromlist=["x"]).FRAUD_MUTATIONS
     assert FRAUD_MUTATIONS == __import__("app.governance.redteam", fromlist=["x"])._mutations()
     assert {m["kind"] for m in FRAUD_MUTATIONS} == {"structuring_amount", "new_throwaway_domain", "rotated_devices"}
-    result = trust_rules.fraud_mutations(EvalContext(tier="live"))
-    assert result.kind == "red_team" and result.cases and result.metric.endswith("caught")
-    by_kind = {}
-    for m, c in zip(FRAUD_MUTATIONS, result.cases):
-        by_kind.setdefault(m["kind"], []).append(c.outcome)
-    assert set(by_kind["structuring_amount"]) == {"pass"}  # the scenario's band catches any amount under $10,000
-    assert set(by_kind["new_throwaway_domain"]) == {"fail"}  # the fixed list has never seen them: a written limitation
+    from app.governance.evals.suites import aml_scenarios
+
+    trust = trust_rules.fraud_mutations(EvalContext(tier="live"))
+    assert trust.kind == "red_team" and len(trust.cases) == 7 and "caught" in trust.metric
+    # The rules claim neither unseen domains nor rotated devices (both are written limitations), so the misses are
+    # reported, never hidden, and they do not fail the model.
+    assert trust.passed and {c.outcome for c in trust.cases if c.case_id.startswith("domain-")} == {"fail"}
+    assert all("limitation" in c.detail for c in trust.cases if c.outcome == "fail")
+    structuring = aml_scenarios.fraud_mutations(EvalContext(tier="live"))
+    assert structuring.kind == "red_team" and structuring.passed and len(structuring.cases) == 4
+    assert {c.outcome for c in structuring.cases} == {"pass"}  # the band catches any amount under $10,000
+
+
+def test_structuring_mutations_fail_when_the_scenario_misses_them(monkeypatch):
+    from app.governance.evals.suites import aml_scenarios
+
+    monkeypatch.setattr(aml_scenarios.aml, "structuring", lambda db, today: [])
+    assert aml_scenarios.fraud_mutations(EvalContext(tier="live")).passed is False
