@@ -340,7 +340,7 @@ def validate_proposal(p: ScenarioProposal) -> Validated:
 MODEL_KEY = "scenario_mapper"
 AGENT = "investor_copilot"
 SOURCES_UNAVAILABLE = "Current sources were unavailable; the shocks rest on the model's knowledge."
-NO_SOURCES = "Gemini cited no current sources for this scenario; the shocks rest on the model's knowledge."
+NO_SOURCES = "No current sources were cited for this scenario; the shocks rest on the model's knowledge."
 NOTHING_TO_TEST = ("There is nothing to stress-test yet: this account holds no funds or shares. Invest in a fund, "
                    "then come back.")
 FACTOR_LABEL = {"us_equity": "US stocks", "intl_equity": "International stocks", "bonds": "Bonds", "cash": "Cash",
