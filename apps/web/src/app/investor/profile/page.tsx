@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { api, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { AiProse } from "@/components/ai-prose";
-import { BAND_LABEL, Button, inputClass, Loading, Notice, PageHeader, Panel, RiskBand, Section, Segmented } from "@/components/ui";
+import { BAND_LABEL, Button, inputClass, KeyMoment, Loading, Notice, PageHeader, Panel, RiskBand, Section, Segmented } from "@/components/ui";
 
 type Option = { value: string | number; label: string };
 type Question = { key: keyof Answers; text: string; options: Option[] | null };
@@ -27,9 +27,9 @@ const OPENING = "Let's set your risk profile together: five short questions, ans
 function Reasons({ band, reasons, capacity, tolerance }: { band: number; reasons: string[]; capacity: number; tolerance: number }) {
   return (
     <div className="space-y-4">
-      <RiskBand band={band} size="lg" />
-      <p className="text-sm text-ink-2">Capacity band {capacity}, tolerance band {tolerance}. Your band is the lower of the two.</p>
-      <ul className="list-disc space-y-1 pl-5 text-sm text-ink-2">{reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+      <RiskBand band={band} profile={band} size="lg" />
+      <p className="text-sm text-ink-700">Capacity band {capacity}, tolerance band {tolerance}. Your band is the lower of the two.</p>
+      <ul className="list-disc space-y-1 pl-5 text-sm text-ink-700">{reasons.map((r) => <li key={r}>{r}</li>)}</ul>
     </div>
   );
 }
@@ -88,24 +88,26 @@ export default function ProfilePage() {
 
   if (!state) return error ? <Notice tone="error">{error}</Notice> : <Loading label="Loading your risk profile" />;
   const formComplete = Object.values(form).every((v) => v !== null && v !== "");
+  const band = state.profile?.band ?? state.current_band;
   return (
     <>
       <PageHeader title="Risk profile" description="Your band, from 1 (preserve) to 5 (adventurous), is the lower of what you can afford to risk and what you are comfortable with. Atrium checks every instruction against it." />
       <div className="space-y-12">
-        <Section title="Your band now">
+        <KeyMoment tone={band ? "good" : "attention"} label={band ? "Your band now" : "One thing to do"}
+          title={band ? `Band ${band}, ${BAND_LABEL[band]}.` : "Set your risk profile, so Atrium can check every instruction against it."}>
           {state.profile ? (
             <div>
               <Reasons band={state.profile.band} reasons={state.profile.reasons} capacity={state.profile.capacity_band} tolerance={state.profile.tolerance_band} />
-              <p className="mt-3 text-xs text-muted">Set on {formatDate(state.profile.created_at)} from {state.profile.source === "conversation" ? "a conversation" : "the questionnaire"}.</p>
+              <p className="mt-3 text-xs text-ink-500">Set on {formatDate(state.profile.created_at)} from {state.profile.source === "conversation" ? "a conversation" : "the questionnaire"}.</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              <RiskBand band={state.current_band} size="lg" />
-              <p className="text-sm text-ink-2">{state.current_band ? "Set when your account opened. Retake the profile below to see the reasoning behind it." : "Not set yet. Answer the five questions below."}</p>
+            <div className="space-y-3">
+              {band && <RiskBand band={band} profile={band} size="lg" />}
+              <p className="text-sm text-ink-700">{band ? "Set when your account opened. Retake the profile below to see the reasoning behind it." : "Not set yet. Talk it through or answer the five questions below."}</p>
             </div>
           )}
-          {saved && <div className="mt-4"><Notice tone="success">{saved}</Notice></div>}
-        </Section>
+          {saved && <Notice tone="success">{saved}</Notice>}
+        </KeyMoment>
         <Section title="Retake your profile" actions={<Segmented label="How to answer" value={mode} onChange={setMode}
           options={[{ value: "chat", label: "Talk it through" }, { value: "form", label: "Answer five questions" }]} />}>
           {mode === "chat" ? (
@@ -115,42 +117,42 @@ export default function ProfilePage() {
                   {messages.map((m, i) => (
                     <li key={i} className={m.role === "user" ? "flex justify-end" : ""}>
                       {m.role === "user" ? (
-                        <p className="max-w-[80%] rounded-panel bg-ink px-4 py-2.5 text-[15px] text-white">{m.text}</p>
+                        <p className="max-w-[80%] rounded-[20px] rounded-br-md bg-green-100 px-4 py-2.5 text-[15px] text-green-900">{m.text}</p>
                       ) : m.ai ? (
                         <AiProse caption="Gemini"><p>{m.text}</p></AiProse>
                       ) : (
-                        <p className="max-w-[60ch] text-[15px] text-ink">{m.text}</p>
+                        <p className="max-w-[60ch] text-[15px] text-ink-900">{m.text}</p>
                       )}
                     </li>
                   ))}
-                  {busy && <li className="text-sm text-muted" role="status">Gemini is reading your answer…</li>}
+                  {busy && <li className="text-sm text-ink-500" role="status">Gemini is reading your answer…</li>}
                 </ol>
-                <form onSubmit={send} className="flex gap-2 border-t border-line p-3">
+                <form onSubmit={send} className="flex gap-2 border-t border-sand-100 p-3">
                   <label htmlFor="answer" className="sr-only">Your answer</label>
                   <input id="answer" className={inputClass} value={draft} maxLength={1000} onChange={(e) => setDraft(e.target.value)}
                     placeholder="Answer in your own words" disabled={busy || Boolean(preview)} />
                   <Button type="submit" busy={busy} disabled={!draft.trim() || Boolean(preview)}>Send</Button>
                 </form>
               </Panel>
-              <div className="space-y-6">
-                <div>
-                  <p className="text-sm font-medium">What Atrium has understood</p>
-                  <ul className="mt-3 space-y-2 text-sm">
+              <div className="space-y-4">
+                <Panel className="p-5">
+                  <p className="text-sm font-semibold">What Atrium has understood</p>
+                  <ul className="mt-3 space-y-2.5 text-sm">
                     {(Object.keys(SHORT) as (keyof Answers)[]).map((k) => (
                       <li key={k} className="grid grid-cols-[6.5rem_1fr] items-center gap-3">
-                        <span className="text-ink-2">{SHORT[k]}</span>
-                        <span className="h-1.5 overflow-hidden rounded-full bg-line">
-                          <motion.span className="block h-1.5 origin-left rounded-full bg-ink" initial={false} animate={{ scaleX: known[k] === null ? 0 : 1 }} />
+                        <span className="text-ink-700">{SHORT[k]}</span>
+                        <span className="h-2 overflow-hidden rounded-[4px] bg-sand-100">
+                          <motion.span className="block h-2 origin-left rounded-[4px] bg-green-500" initial={false} animate={{ scaleX: known[k] === null ? 0 : 1 }} />
                         </span>
                       </li>
                     ))}
                   </ul>
-                </div>
+                </Panel>
                 {preview && (
-                  <Panel className="space-y-4 p-4">
+                  <Panel className="space-y-4 p-5">
                     <p className="text-sm font-medium">Your result</p>
                     <Reasons band={preview.band} reasons={preview.reasons} capacity={preview.capacity_band} tolerance={preview.tolerance_band} />
-                    <p className="text-xs text-muted">Computed by Atrium&apos;s rules from your answers, not by the AI. Nothing is saved until you choose.</p>
+                    <p className="text-xs text-ink-500">Computed by Atrium&apos;s rules from your answers, not by the AI. Nothing is saved until you choose.</p>
                     <Button busy={busy} onClick={() => save(known, "conversation")}>Save this profile</Button>
                   </Panel>
                 )}
@@ -169,7 +171,7 @@ export default function ProfilePage() {
                       {q.options.map((o) => {
                         const on = form[q.key] === o.value;
                         return (
-                          <label key={String(o.value)} className={`cursor-pointer rounded-control border px-3 py-1.5 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${on ? "border-ink bg-ink text-white" : "border-line-strong hover:border-ink"}`}>
+                          <label key={String(o.value)} className={`inline-flex min-h-10 cursor-pointer items-center rounded-full border px-4 text-sm has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-green-200 ${on ? "border-green-200 bg-green-100 font-semibold text-green-800" : "border-sand-200 bg-white font-medium text-ink-900 hover:bg-fill"}`}>
                             <input type="radio" className="sr-only" name={q.key} checked={on} onChange={() => setForm({ ...form, [q.key]: o.value })} />
                             {o.label}
                           </label>
@@ -184,7 +186,7 @@ export default function ProfilePage() {
           )}
           {error && <div className="mt-4"><Notice tone="caution">{error}</Notice></div>}
         </Section>
-        <p className="text-xs text-muted">Bands: {Object.entries(BAND_LABEL).map(([b, l]) => `${b} ${l}`).join(", ")}.</p>
+        <p className="text-xs text-ink-500">Bands: {Object.entries(BAND_LABEL).map(([b, l]) => `${b} ${l}`).join(", ")}.</p>
       </div>
     </>
   );
