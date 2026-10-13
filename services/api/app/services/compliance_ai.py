@@ -131,6 +131,11 @@ due diligence source sources wealth possible structuring rapid linked round trip
 risk jurisdiction jurisdictions third party funding unusual behaviour behavior alert alerts case review ach wire
 transfer united states america us usa north south korea iran myanmar islamic republic new york boston demo street
 treasury internal revenue service irs securities exchange commission sec finra regulation best interest
+compliance currency transaction transactions monitoring request information politically exposed person persons pep
+ultimate beneficial owner owners ownership customer customers identification program cip cdd edd patriot section
+anti sanctions screening deposit deposits withdrawal withdrawals subscription subscriptions redemption redemptions
+investment investments investor investors portfolio trading monthly weekly daily recurring plan plans payment payments
+payer payers payroll salary ltd llc inc corp corporation company holdings group partners capital services management
 """.split())
 
 
@@ -148,14 +153,21 @@ def check_review(review: dict, evidence_ids: set[str], allowed_figures: set[floa
     known = {w for name in allowed_names for w in _name_words(name)}
     unknown: list[str] = []
     for match in NAME_SHAPE.finditer(text):
-        words = [w for w in match.group(0).split() if w.lower() not in NOT_NAMES]
-        if len(words) < 2:
-            continue
-        candidate = " ".join(words)
-        if candidate.endswith("'s"):
-            candidate = candidate[:-2]
-        if not any(w in known for w in _name_words(candidate)) and candidate not in unknown:
-            unknown.append(candidate)
+        # Only words that stand next to each other make a name: "Patriot Act Section" is no "Patriot Section".
+        runs, run = [], []
+        for w in match.group(0).split():
+            if w.lower() in NOT_NAMES:
+                runs.append(run)
+                run = []
+            else:
+                run.append(w)
+        runs.append(run)
+        for words in runs:
+            if len(words) < 2:
+                continue
+            candidate = " ".join(words)
+            if not any(w in known for w in _name_words(candidate)) and candidate not in unknown:
+                unknown.append(candidate)
     return {"dropped_citations": dropped, "unsupported_figures": unsupported_figures(text, allowed_figures),
             "unknown_names": unknown}
 

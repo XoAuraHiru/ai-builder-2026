@@ -46,7 +46,7 @@
      "expect": {"remitter": "Arjun Mehta", "reference": null},
      "answer": {"remitter": "Arjun Mehta", "reference": null, "channel": "CHECK"}},
     {"id": "reference-with-spaces", "narration": "ACH CREDIT NOAH WILLIAMS REF ATR 4471 CD9E", "amount": "1200.00",
-     "why": "Noah Williams quoted his reference with spaces, ATR 4471 CD9E: it is ATR followed by eight characters, so the reading is ATR-4471CD9E.",
+     "why": "Noah Williams quoted the reference with spaces, ATR 4471 CD9E: it is ATR followed by eight characters, so the reading is ATR-4471CD9E.",
      "expect": {"remitter": "Noah Williams", "reference": "ATR-4471CD9E"},
      "answer": {"remitter": "Noah Williams", "reference": "ATR-4471CD9E", "channel": "ACH"}}
   ]

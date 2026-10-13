@@ -71,6 +71,20 @@ def test_every_golden_file_with_cases_says_why():
     assert {"statement_reader/expected", "identity_proofing/cases"} <= set(found)
 
 
+def test_golden_copy_uses_no_gendered_pronouns():
+    import re
+
+    pronoun = re.compile(r"\b(he|she|him|his|her|hers|himself|herself)\b", re.I)
+    found = []
+    for path in sorted(golden.ROOT.rglob("*.json")):
+        if path.parent.name == "identity_proofing" and path.stem in ("clean", "mismatch"):
+            continue  # saved Document AI responses, not copy
+        if path.name == "docai_sample.json":
+            continue
+        found += [f"{path.name}: {m.group(0)}" for m in pronoun.finditer(path.read_text(encoding="utf-8"))]
+    assert found == []
+
+
 def test_the_saved_statement_maps_to_its_golden_lines_and_balances():
     result = statement_reader.saved_document(FREE)
     assert result.passed, [c.detail for c in result.cases if c.outcome != "pass"]
@@ -202,3 +216,22 @@ def test_check_review_names_and_figures():
               "questions": ["Did the Suspicious Activity Report team see the $1,000,000?"]}
     out = check_review(review, {"e1"}, {9400.0}, {"Grace Li", "Marcus Okonkwo"})
     assert out == {"dropped_citations": ["x"], "unsupported_figures": ["$1,000,000"], "unknown_names": ["Jane Doe"]}
+
+
+def test_the_name_check_leaves_the_words_of_a_real_case_narrative_alone():
+    from app.services.compliance_ai import check_review
+
+    sentences = [
+        "Each payment sits under the Currency Transaction Report threshold of $10,000.",
+        "Transaction Monitoring raised the alert; Request Information from the client before deciding.",
+        "Check whether Arjun Mehta is a Politically Exposed Person or the Ultimate Beneficial Owner.",
+        "The Customer Identification Program and the Patriot Act Section 326 records should be reviewed.",
+        "Monthly Recurring Plans explain the burst, and Compliance should confirm the Know Your Customer file.",
+        "The Bank Secrecy Act requires a Suspicious Activity Report; the Office of Foreign Assets Control list was screened.",
+    ]
+    review = {"triage": "escalate", "triage_reason": "", "narrative": [{"text": s, "evidence": []} for s in sentences],
+              "questions": []}
+    assert check_review(review, set(), {10000.0, 326.0}, {"Arjun Mehta"})["unknown_names"] == []
+    invented = {**review, "narrative": [{"text": "Officer Dana Whitfield of the Patriot Act Section cleared it.",
+                                         "evidence": []}]}
+    assert check_review(invented, set(), set(), {"Arjun Mehta"})["unknown_names"] == ["Dana Whitfield"]

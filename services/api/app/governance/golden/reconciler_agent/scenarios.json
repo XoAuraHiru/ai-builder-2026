@@ -3,7 +3,7 @@
   "cases": [
     {
       "id": "exact-reference",
-      "why": "The line quotes ATR-4471AB2C, Ava Thompson's reference, and pays exactly her $1,500.00: the rules match it.",
+      "why": "The line quotes ATR-4471AB2C, Ava Thompson's reference, and pays exactly the $1,500.00 owed: the rules match it.",
       "receipts": [{"id": "r1", "holder": "Ava Thompson", "account": "ACC-0101", "fund": "ATR-BAL", "amount": "1500.00", "reference": "ATR-4471AB2C", "requested_on": "2026-10-06"}],
       "lines": [{"id": "l1", "date": "2026-10-08", "amount": "1500.00", "description": "ACH CREDIT AVA THOMPSON REF ATR-4471AB2C", "remitter": "Ava Thompson", "reference": "ATR-4471AB2C"}],
       "truth": [{"lines": ["l1"], "receipts": ["r1"]}],
@@ -22,7 +22,7 @@
     },
     {
       "id": "one-character-typo",
-      "why": "The line quotes ATR-7F3K200D for Hana Sato's ATR-7F3K201D, one character away, with her exact $3,000.00 and her name: a fuzzy match the rules leave to the scorer (0.45 + 0.3 + 0.1 = 0.85).",
+      "why": "The line quotes ATR-7F3K200D for Hana Sato's ATR-7F3K201D, one character away, with the exact $3,000.00 and the holder's name: a fuzzy match the rules leave to the scorer (0.45 + 0.3 + 0.1 = 0.85).",
       "receipts": [{"id": "r1", "holder": "Hana Sato", "account": "ACC-0104", "fund": "ATR-INC", "amount": "3000.00", "reference": "ATR-7F3K201D", "requested_on": "2026-10-06"}],
       "lines": [{"id": "l1", "date": "2026-10-08", "amount": "3000.00", "description": "ACH CREDIT HANA SATO REF ATR-7F3K200D", "remitter": "Hana Sato", "reference": "ATR-7F3K200D"}],
       "truth": [{"lines": ["l1"], "receipts": ["r1"]}],
@@ -82,7 +82,7 @@
     },
     {
       "id": "fifty-cents-short",
-      "why": "Arjun Mehta's line quotes his exact reference ATR-7V6U5T4S with his name but is $0.50 short of the $800.00 owed, a bank fee taken on the way: the right match, but not exact, so the scorer proposes it (0.6 + 0.15 + 0.1 = 0.85).",
+      "why": "Arjun Mehta's line quotes the exact reference ATR-7V6U5T4S with the holder's name but is $0.50 short of the $800.00 owed, a bank fee taken on the way: the right match, but not exact, so the scorer proposes it (0.6 + 0.15 + 0.1 = 0.85).",
       "receipts": [{"id": "r1", "holder": "Arjun Mehta", "account": "ACC-0111", "fund": "ATR-BAL", "amount": "800.00", "reference": "ATR-7V6U5T4S", "requested_on": "2026-10-06"}],
       "lines": [{"id": "l1", "date": "2026-10-08", "amount": "799.50", "description": "ACH CREDIT ARJUN MEHTA REF ATR-7V6U5T4S", "remitter": "Arjun Mehta", "reference": "ATR-7V6U5T4S"}],
       "truth": [{"lines": ["l1"], "receipts": ["r1"]}],
@@ -90,7 +90,7 @@
     },
     {
       "id": "reference-written-oddly",
-      "why": "The narration writes Noah Williams's reference as REF ATR 4471 CD9E, with spaces, so the rule reading finds no reference on the line; two receipts wait for $1,200.00, so the amount cannot tell them apart. The narration still names Noah Williams and his code 4471CD9E: the line pays his receipt.",
+      "why": "The narration writes Noah Williams's reference as REF ATR 4471 CD9E, with spaces, so the rule reading finds no reference on the line; two receipts wait for $1,200.00, so the amount cannot tell them apart. The narration still names Noah Williams and the code 4471CD9E: the line pays Noah Williams's receipt.",
       "receipts": [
         {"id": "r1", "holder": "Noah Williams", "account": "ACC-0112", "fund": "ATR-GRW", "amount": "1200.00", "reference": "ATR-4471CD9E", "requested_on": "2026-10-06"},
         {"id": "r2", "holder": "Emma Walsh", "account": "ACC-0113", "fund": "ATR-GRW", "amount": "1200.00", "reference": "ATR-6E5W4A3L", "requested_on": "2026-10-06"}
