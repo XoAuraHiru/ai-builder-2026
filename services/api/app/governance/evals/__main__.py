@@ -47,6 +47,9 @@ def main(argv: list[str] | None = None) -> int:
                 llm, agent_model = get_llm(), get_agent_model()
             report = run_evals(args.tier, llm=llm, agent_model=agent_model, with_documents=args.with_documents)
             store_run(db, report, run)
+            from app.governance import monitoring
+
+            monitoring.apply_monitoring_breakers(db)  # people's decisions are evidence too
             db.commit()
         except Exception as e:
             db.rollback()

@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from app.governance import golden
 from app.governance.evals.framework import CaseResult, EvalContext, SuiteResult, every_case, rate, run_case, suite
+from app.governance.fairness import COUNTRIES, NAME_VARIANTS, variants
 from app.ml.lead_history import generate_lead_history
 from app.ml.lead_model import LeadModel, auc, score_lead
 from app.models import Lead
@@ -47,3 +48,24 @@ def twin_pairs(ctx: EvalContext) -> SuiteResult:
                               actual={"stronger": strong, "weaker": weak}, detail=c["why"])
         cases.append(run_case(c["id"], check))
     return every_case("lead_score", "golden", "free", cases, bar="The stronger lead of every twin pair scores higher")
+
+
+@suite("lead_score", kind="fairness")
+def fair_lending(ctx: EvalContext) -> SuiteResult:
+    """Twelve golden leads, each under six names and three countries: the score and its factors must not move."""
+    cases = []
+    for c in golden.load("fairness/leads")["cases"]:
+        def check(c=c):
+            seen: dict[tuple, list[str]] = {}
+            for v in variants(c["fields"], NAME_VARIANTS, COUNTRIES):
+                score, factors = score_lead(_lead(v), c["enrichment"])
+                key = (score, repr(factors.get("for")), repr(factors.get("against")))
+                seen.setdefault(key, []).append(f"{v['full_name']} ({v['country']})")
+            same = len(seen) == 1
+            actual = {"variants": sum(len(v) for v in seen.values()),
+                      "scores": [{"score": key[0], "variants": names} for key, names in seen.items()]}
+            return CaseResult(c["id"], "pass" if same else "fail", expected="one score for every variant",
+                              actual=actual, detail=c["why"] if same else f"The score moved with the name or country. {c['why']}")
+        cases.append(run_case(c["id"], check))
+    return every_case("lead_score", "fairness", "free", cases,
+                      bar="Every golden lead scores the same under six names and three countries")
