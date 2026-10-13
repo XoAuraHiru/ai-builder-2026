@@ -15,9 +15,9 @@ import { StatusChip, TableCard, tbl } from "../../../operations/_parts";
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 /** An evidence label in the engine's own voice: Geist Mono on sand. */
-const REF = "code inline-flex h-5 min-w-7 items-center justify-center rounded-[5px] bg-fill px-1 text-[11px]! text-ink-700 no-underline hover:bg-sand-200";
+const REF = "code inline-flex h-5 min-w-7 items-center justify-center rounded-[5px] bg-fill px-1 text-[11px] text-ink-700 no-underline hover:bg-sand-200";
 /** A citation Gemini made, inside its violet block. */
-const CITE = "code inline-flex h-5 min-w-7 items-center justify-center rounded-[5px] bg-white px-1 align-[2px] text-[11px]! font-medium text-ai-700 no-underline hover:bg-ai-100";
+const CITE = "code inline-flex h-5 min-w-7 items-center justify-center rounded-[5px] bg-white px-1 align-[2px] text-[11px] font-medium text-ai-700 no-underline hover:bg-ai-100";
 const FILL: Record<BarTone, string> = { under: "bg-green-500", near: "bg-amber-400", over: "bg-coral-500" };
 const KEY: Record<BarTone, string> = { under: "Clear of the threshold", near: "Within 15% under it", over: "At or over it" };
 
@@ -142,7 +142,7 @@ export default function AlertPage() {
   return (
     <>
       <PageHeader title={alert.title} back={{ href: "/compliance", label: "Alerts" }}
-        description={<>{alert.person.name}{alert.account_number && <>, account <span className="code text-[13px]!">{alert.account_number}</span></>}. Raised {formatDate(alert.raised_at)}.</>}
+        description={<>{alert.person.name}{alert.account_number && <>, account <span className="code text-[13px]">{alert.account_number}</span></>}. Raised {formatDate(alert.raised_at)}.</>}
         actions={<><Badge tone={SEVERITY_TONE[alert.severity]}>{SEVERITY_LABEL[alert.severity]} severity</Badge><Badge tone={alert.state === "escalated" ? "caution" : "neutral"}>{STATE_LABEL[alert.state]}</Badge></>} />
       <div className="space-y-12">
         <div className="space-y-4">

@@ -15,7 +15,7 @@ import { StatusChip, TableCard, tbl } from "../../operations/_parts";
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 /** A link id Gemini cites, inside its violet block: Geist Mono on white. */
-const CITE = "code inline-flex h-5 min-w-7 items-center justify-center rounded-[5px] bg-white px-1 align-[2px] text-[11px]! font-medium text-ai-700 hover:bg-ai-100";
+const CITE = "code inline-flex h-5 min-w-7 items-center justify-center rounded-[5px] bg-white px-1 align-[2px] text-[11px] font-medium text-ai-700 hover:bg-ai-100";
 const plural = (n: number, word: string, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
 const LINK = "font-semibold text-green-600 underline-offset-4 hover:text-green-800 hover:underline";
 

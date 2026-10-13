@@ -103,7 +103,7 @@ export default function AlertsPage() {
                     <span className="mt-2 block font-medium">{a.title}</span>
                     <span className="mt-0.5 line-clamp-2 block text-[13px] text-ink-700">{a.summary}</span>
                     <span className="mt-1.5 flex items-center justify-between gap-3 text-xs text-ink-500">
-                      <span>{a.person.name}{a.account_number && <span className="code text-[11px]!"> · {a.account_number}</span>}</span>
+                      <span>{a.person.name}{a.account_number && <span className="code text-[11px]"> · {a.account_number}</span>}</span>
                       <span>{a.evidence_count} row{a.evidence_count === 1 ? "" : "s"} of evidence</span>
                     </span>
                   </Link>

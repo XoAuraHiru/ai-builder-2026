@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { formatUsd } from "@/lib/format";
-import { changeText, filterRows, priceSource, profileLegend, type MarketFilter, type MarketRow, type Markets,
-  type Session } from "@/lib/markets";
+import { changeText, filterRows, priceSource, profileLegend, type MarketFilter, type MarketRow,
+  type Markets } from "@/lib/markets";
 import { SessionChip, TickerTile, WatchButton } from "@/components/market-bits";
-import { EmptyState, inputClass, Loading, Notice, PageTabsContext, Panel, RiskBand, Segmented } from "@/components/ui";
+import { EmptyState, inputClass, Loading, Notice, PageHeader, Panel, RiskBand, Segmented } from "@/components/ui";
 
 const FILTERS: { value: MarketFilter; label: string }[] = [
   { value: "all", label: "All" }, { value: "stock", label: "Stocks" }, { value: "etf", label: "ETFs" }, { value: "watchlist", label: "Watchlist" },
@@ -16,24 +16,6 @@ const DESCRIPTION = "Thirty large US companies and seventeen ETFs, traded with p
 // Phones: star, name (with the meter under it), price and change stacked. md adds the risk band, today and the
 // Trade action; xl adds the sector, as in the artboard.
 const COLS = "grid grid-cols-[28px_minmax(0,1fr)_auto] gap-x-3 md:grid-cols-[32px_minmax(0,2fr)_minmax(0,1.5fr)_96px_88px_80px] md:gap-x-4 xl:grid-cols-[32px_minmax(0,2fr)_minmax(0,1.3fr)_minmax(0,1.5fr)_110px_100px_96px]";
-
-/** M2: the page header with the market's status chip beside the title. The section tabs come from the shell, as in
- *  PageHeader, which has no slot beside the title. */
-function MarketsHeader({ session }: { session: Session | null }) {
-  const tabs = useContext(PageTabsContext);
-  return (
-    <header className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-      <div className="min-w-0 max-w-[720px]">
-        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2">
-          <h1 className="text-[30px] font-semibold leading-9 tracking-[-0.02em] sm:text-[36px] sm:leading-[42px] sm:tracking-[-0.025em]">Markets</h1>
-          {session && <SessionChip session={session} />}
-        </div>
-        <p className="mt-2 max-w-[64ch] text-[15px] leading-[22px] text-ink-700">{DESCRIPTION}</p>
-      </div>
-      {tabs && <div className="flex flex-wrap items-center gap-2">{tabs}</div>}
-    </header>
-  );
-}
 
 /** The day's change with its arrow: green up, coral down. */
 function Change({ pct, className = "" }: { pct: number; className?: string }) {
@@ -114,12 +96,12 @@ export default function MarketsPage() {
     }
   }
 
-  if (error) return <><MarketsHeader session={null} /><Notice tone="error" title="Prices are unavailable">{error}</Notice></>;
-  if (!data) return <><MarketsHeader session={null} /><Loading label="Loading prices" /></>;
+  if (error) return <><PageHeader title="Markets" description={DESCRIPTION} /><Notice tone="error" title="Prices are unavailable">{error}</Notice></>;
+  if (!data) return <><PageHeader title="Markets" description={DESCRIPTION} /><Loading label="Loading prices" /></>;
 
   return (
     <>
-      <MarketsHeader session={data.session} />
+      <PageHeader title="Markets" description={DESCRIPTION} badge={<SessionChip session={data.session} />} />
       <div className="space-y-4">
         <Panel className="flex flex-col gap-2 px-4 pb-2 pt-4 sm:px-6 sm:pt-5">
           {/* M3: search, the filter and the risk legend share one toolbar inside the table card. */}

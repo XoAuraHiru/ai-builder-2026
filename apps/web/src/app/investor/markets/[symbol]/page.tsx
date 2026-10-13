@@ -82,13 +82,11 @@ export default function SymbolPage() {
           </div>
           <p className="num text-[44px] font-medium leading-[48px] tracking-[-0.03em] sm:text-[60px] sm:leading-[60px] sm:tracking-[-0.035em]">{formatUsd(q.price)}</p>
           <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-            <span className="[&>span]:h-6.5 [&>span]:px-2.5 [&>span]:text-[13px]">
-              <ChangeChip value={change}>
-                <span aria-hidden="true">{change > 0 ? "↑" : change < 0 ? "↓" : ""}</span>
-                <span className="sr-only">{change > 0 ? "Up" : change < 0 ? "Down" : "Unchanged"} </span>
-                {formatUsd(Math.abs(change))} · {formatPct(Math.abs(q.change_pct), 2)}
-              </ChangeChip>
-            </span>
+            <ChangeChip size="md" value={change}>
+              <span aria-hidden="true">{change > 0 ? "↑" : change < 0 ? "↓" : ""}</span>
+              <span className="sr-only">{change > 0 ? "Up" : change < 0 ? "Down" : "Unchanged"} </span>
+              {formatUsd(Math.abs(change))} · {formatPct(Math.abs(q.change_pct), 2)}
+            </ChangeChip>
             <span className="text-sm text-ink-700">today</span>
             <span className="text-[13px] text-ink-500">· {priceSource(q.source, q.as_of)}</span>
           </p>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { createContext, useContext, useId, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { createContext, useContext, useId, type ButtonHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
 
 export const BAND_LABEL: Record<number, string> = { 1: "Preserve", 2: "Cautious", 3: "Balanced", 4: "Growth", 5: "Adventurous" };
 
@@ -82,13 +82,26 @@ export function groupDigits(raw: string): string {
   return fraction !== undefined ? `${grouped}.${fraction.slice(0, 2)}` : grouped;
 }
 
-export function MoneyInput({ value, onChange, placeholder, label, id }:
-  { value: string; onChange: (v: string) => void; placeholder?: string; label?: string; id?: string }) {
+export function MoneyInput({ value, onChange, placeholder, label, id, invalid }:
+  { value: string; onChange: (v: string) => void; placeholder?: string; label?: string; id?: string; invalid?: boolean }) {
   return (
     <span className="relative block">
       <span aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-500">$</span>
-      <input id={id} inputMode="decimal" aria-label={label} className={`${inputClass} num pl-8`} value={groupDigits(value)}
+      <input id={id} inputMode="decimal" aria-label={label} aria-invalid={invalid || undefined} className={`${inputClass} num pl-8`} value={groupDigits(value)}
         placeholder={placeholder} onChange={(e) => onChange(e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1"))} />
+    </span>
+  );
+}
+
+/** A select styled as a field: filled sand, 44px, the design's chevron in place of the browser's arrow. */
+export function Select({ className = "", children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <span className="relative block">
+      <select {...rest} className={`${inputClass} appearance-none pr-10 ${className}`}>{children}</select>
+      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round" className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-500">
+        <path d="m6 9 6 6 6-6" />
+      </svg>
     </span>
   );
 }
@@ -96,8 +109,8 @@ export function MoneyInput({ value, onChange, placeholder, label, id }:
 /** The section's pages (X-ray, Risk, Scenarios…), set by the shell and shown in the page header as a segmented control. */
 export const PageTabsContext = createContext<ReactNode>(null);
 
-export function PageHeader({ title, description, actions, back }:
-  { title: string; description?: ReactNode; actions?: ReactNode; back?: { href: string; label: string } }) {
+export function PageHeader({ title, description, actions, back, badge }:
+  { title: string; description?: ReactNode; actions?: ReactNode; back?: { href: string; label: string }; badge?: ReactNode }) {
   const tabs = useContext(PageTabsContext);
   return (
     <header className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
@@ -107,7 +120,10 @@ export function PageHeader({ title, description, actions, back }:
             <span aria-hidden="true">‹</span>{back.label}
           </Link>
         )}
-        <h1 className="text-[30px] font-semibold leading-9 tracking-[-0.02em] sm:text-[36px] sm:leading-[42px] sm:tracking-[-0.025em]">{title}</h1>
+        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2">
+          <h1 className="text-[30px] font-semibold leading-9 tracking-[-0.02em] sm:text-[36px] sm:leading-[42px] sm:tracking-[-0.025em]">{title}</h1>
+          {badge}
+        </div>
         {description && <p className="mt-2 max-w-[64ch] text-[15px] leading-[22px] text-ink-700">{description}</p>}
       </div>
       {(tabs || actions) && (
@@ -159,9 +175,10 @@ export function Notice({ tone = "info", title, action, children }:
 }
 
 // Status chips carry a dot so colour is never the only signal.
-type BadgeTone = "neutral" | "gain" | "caution" | "loss" | "strong" | "ai";
+type BadgeTone = "neutral" | "white" | "gain" | "caution" | "loss" | "strong" | "ai";
 const BADGE: Record<BadgeTone, { chip: string; dot: string }> = {
   neutral: { chip: "bg-fill text-ink-700", dot: "bg-ink-400" },
+  white: { chip: "bg-white text-ink-700", dot: "bg-ink-400" },
   gain: { chip: "bg-green-50 text-green-700", dot: "bg-green-500" },
   caution: { chip: "bg-amber-50 text-amber-800", dot: "bg-amber-400" },
   loss: { chip: "bg-coral-50 text-coral-700", dot: "bg-coral-500" },
@@ -169,9 +186,10 @@ const BADGE: Record<BadgeTone, { chip: string; dot: string }> = {
   ai: { chip: "bg-ai-50 text-ai-700", dot: "" },
 };
 
-export function Badge({ tone = "neutral", children }: { tone?: BadgeTone; children: ReactNode }) {
+export function Badge({ tone = "neutral", size = "md", children }: { tone?: BadgeTone; size?: "md" | "sm"; children: ReactNode }) {
+  const scale = size === "sm" ? "h-[26px] px-2.5 text-xs" : "h-7 px-3 text-[13px]";  // sm in table rows
   return (
-    <span className={`inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-[13px] font-medium ${BADGE[tone].chip}`}>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full font-medium ${scale} ${BADGE[tone].chip}`}>
       {tone === "ai" ? <Sparkle size={12} /> : <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${BADGE[tone].dot}`} />}
       {children}
     </span>
@@ -179,10 +197,12 @@ export function Badge({ tone = "neutral", children }: { tone?: BadgeTone; childr
 }
 
 /** A change chip: always with an arrow or a sign, so the direction never rests on colour. */
-export function ChangeChip({ value, tone, children }: { value?: number; tone?: "gain" | "loss" | "caution"; children: ReactNode }) {
+export function ChangeChip({ value, tone, size = "sm", children }:
+  { value?: number; tone?: "gain" | "loss" | "caution"; size?: "sm" | "md"; children: ReactNode }) {
   const t = tone ?? (value === undefined || value === 0 ? "caution" : value > 0 ? "gain" : "loss");
   const cls = t === "gain" ? "bg-green-50 text-green-700" : t === "loss" ? "bg-coral-50 text-coral-700" : "bg-amber-50 text-amber-800";
-  return <span className={`num inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-full px-2 text-xs font-semibold ${cls}`}>{children}</span>;
+  const scale = size === "md" ? "h-[26px] px-2.5 text-[13px]" : "h-[22px] px-2 text-xs";
+  return <span className={`num inline-flex items-center gap-1 whitespace-nowrap rounded-full font-semibold ${scale} ${cls}`}>{children}</span>;
 }
 
 /** A risk band as a five-step meter: green at or within the profile, amber above it. */
@@ -299,4 +319,6 @@ export const tableStyles = {
   th: "px-3 py-2.5 font-medium first:pl-0 last:pr-0",
   row: "border-b border-sand-100 last:border-b-0",
   td: "px-3 py-3 first:pl-0 last:pr-0",
+  id: "code whitespace-nowrap text-ink-700",
+  amount: "whitespace-nowrap text-right tabular-nums",
 };

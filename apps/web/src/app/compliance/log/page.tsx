@@ -58,7 +58,7 @@ export default function DecisionLogPage() {
                     <span className="code shrink-0 text-ink-700">{cost(d.cost_usd)}</span>
                   </span>
                   <span className="mt-0.5 block text-xs text-ink-500">{shortWhen(d.created_at)} · {subjectLabel(d.subject_type)}</span>
-                  <span className="code mt-1 block text-[11px]! text-ink-700">{d.model} · {tokens(d.tokens_in)} / {tokens(d.tokens_out)} tokens</span>
+                  <span className="code mt-1 block text-[11px] text-ink-700">{d.model} · {tokens(d.tokens_in)} / {tokens(d.tokens_out)} tokens</span>
                 </li>
               ))}
             </ul>

@@ -187,7 +187,7 @@ export default function BlotterPage() {
                         <StatusChip tone={s.tone}>{s.label}</StatusChip>
                         {waitingForMoney(r) && <span className="text-xs font-medium text-amber-800">Waiting for money</span>}
                         {r.reference
-                          ? <span className="code ml-auto text-[11px]! text-ink-500">{r.reference}</span>
+                          ? <span className="code ml-auto text-[11px] text-ink-500">{r.reference}</span>
                           : <span className="ml-auto text-xs text-ink-500">{formatDate(r.requested_at)}</span>}
                       </span>
                     </span>

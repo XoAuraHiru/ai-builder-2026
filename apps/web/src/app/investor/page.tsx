@@ -157,12 +157,10 @@ export default function InvestorHome() {
               {formatUsd(portfolio.total_value)}
             </p>
             <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-              <span className="[&>span]:h-6.5 [&>span]:px-2.5 [&>span]:text-[13px]">
-                <ChangeChip value={pnl}>
-                  <span className="sr-only">{pnl >= 0 ? "Up" : "Down"} </span>
-                  <span aria-hidden="true">{pnl >= 0 ? "↑" : "↓"}</span> {formatUsd(Math.abs(pnl))} · {formatPct(Math.abs(Number(portfolio.pnl_pct)), 2)}
-                </ChangeChip>
-              </span>
+              <ChangeChip size="md" value={pnl}>
+                <span className="sr-only">{pnl >= 0 ? "Up" : "Down"} </span>
+                <span aria-hidden="true">{pnl >= 0 ? "↑" : "↓"}</span> {formatUsd(Math.abs(pnl))} · {formatPct(Math.abs(Number(portfolio.pnl_pct)), 2)}
+              </ChangeChip>
               <span className="text-sm text-ink-700">on what you paid in</span>
               <span className="text-[13px] text-ink-500">· Account {account.number} · priced {formatDate(pricedOn)}</span>
             </p>
