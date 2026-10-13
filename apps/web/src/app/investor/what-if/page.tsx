@@ -3,13 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, type Portfolio } from "@/lib/api";
 import { formatMonth, formatPct, formatUsd } from "@/lib/format";
-import { currentMix, parseMoney, SERIES, scenarioKey, toggleScenario, type Fund, type Narrative, type ScenarioIn,
+import { currentMix, parseMoney, SERIES, scenarioKey, THINKING, toggleScenario, type Fund, type Narrative, type ScenarioIn,
   type ScenarioOut, type WhatIf } from "@/lib/invest";
 import { useMe } from "@/lib/session-context";
 import { FanChart } from "@/components/fan-chart";
 import { NarrativeView } from "@/components/ai-prose";
+import { AiThinking } from "@/components/ai-thinking";
+import { CountUp } from "@/components/motion";
+import { Skeleton } from "@/components/skeleton";
 import { WhyPanel } from "@/components/why-panel";
-import { Button, Field, Loading, MoneyInput, Notice, PageHeader, Panel, RiskBand, Section, Sparkle, tableStyles } from "@/components/ui";
+import { Button, Field, MoneyInput, Notice, PageHeader, Panel, RiskBand, Section, Sparkle, tableStyles } from "@/components/ui";
+import { LoadingRegion, SectionTitleSkeleton } from "../_parts/shapes";
 
 const message = (e: unknown) => (e instanceof ApiError ? e.message : "Atrium could not reach its server. Try again.");
 
@@ -44,7 +48,7 @@ function OutcomeTable({ result, active, onSelect }: { result: WhatIf; active: nu
               <tr key={label} className={tableStyles.row}>
                 <td className={`${tableStyles.td} text-ink-700`}>{label}</td>
                 {result.scenarios.map((s, i) => (
-                  <td key={i} className={`${tableStyles.td} num text-right ${i === active ? "font-semibold" : ""}`}>{value(s)}</td>
+                  <td key={i} className={`${tableStyles.td} num text-right ${i === active ? "font-semibold" : ""}`}><CountUp text={value(s)} /></td>
                 ))}
               </tr>
             ))}
@@ -52,6 +56,30 @@ function OutcomeTable({ result, active, onSelect }: { result: WhatIf; active: nu
         </table>
       </Panel>
     </Section>
+  );
+}
+
+/** The studio while the first 10,000 futures run: the projection card with its scenario chips and the fan's frame,
+ *  then the outcomes table. The controls beside it are real from the start. */
+function WhatIfSkeleton() {
+  return (
+    <LoadingRegion label="Simulating 10,000 futures" className="space-y-10">
+      <div className="rounded-panel border border-sand-200 bg-white p-4 sm:p-6">
+        <span className="mb-4 flex flex-wrap gap-2"><Skeleton className="h-9 w-40 rounded-full" /><Skeleton className="h-9 w-32 rounded-full" /></span>
+        <Skeleton className="aspect-[720/340] w-full rounded-[10px]" />
+        <Skeleton className="mt-3 h-3 w-[min(520px,90%)]" />
+      </div>
+      <div>
+        <SectionTitleSkeleton />
+        <div className="rounded-panel border border-sand-200 bg-white px-6 py-2">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span key={i} className="grid grid-cols-[minmax(0,1.6fr)_repeat(2,minmax(0,1fr))] items-center gap-4 border-b border-sand-100 py-3.5 last:border-b-0">
+              <Skeleton className="h-3.5 w-4/5" /><Skeleton className="ml-auto h-3.5 w-20" /><Skeleton className="ml-auto h-3.5 w-20" />
+            </span>
+          ))}
+        </div>
+      </div>
+    </LoadingRegion>
   );
 }
 
@@ -166,6 +194,12 @@ export default function WhatIfStudio() {
             <legend className="text-sm font-medium">Compare</legend>
             <p className="text-xs text-ink-500">Choose up to three.</p>
             <ul className="mt-2 space-y-1">
+              {options.length === 0 && [0, 1, 2, 3, 4].map((i) => (
+                <li key={i} aria-hidden="true" className="flex min-h-10 items-center justify-between gap-2 px-2.5">
+                  <span className="flex items-center gap-2"><Skeleton className="h-4 w-4 rounded-[4px]" /><Skeleton className="h-3.5 w-28" /></span>
+                  <Skeleton className="h-2 w-20" />
+                </li>
+              ))}
               {options.map((o) => {
                 const on = selected.has(scenarioKey(o.scenario));
                 return (
@@ -188,7 +222,7 @@ export default function WhatIfStudio() {
         </Panel>
         <div className="min-w-0 space-y-10">
           {error && <Notice tone="error">{error}</Notice>}
-          {!result ? <Loading label="Simulating 10,000 futures" /> : (
+          {!result ? <WhatIfSkeleton /> : (
             <>
               <section aria-label="Projection" className="rounded-panel border border-sand-200 bg-white p-4 sm:p-6">
                 <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -207,10 +241,8 @@ export default function WhatIfStudio() {
               </section>
               <OutcomeTable result={result} active={active} onSelect={setActive} />
               <Section title="What this means for you" description="Gemini reads the figures above and explains them. It cannot change them.">
-                {narrative ? <NarrativeView narrative={narrative} /> : (
-                  <Button variant="ai" busy={explaining} onClick={explain}>
-                    {!explaining && <Sparkle />}{explaining ? "Gemini is reading the figures" : "Explain these results"}
-                  </Button>
+                {narrative ? <NarrativeView narrative={narrative} /> : explaining ? <AiThinking {...THINKING.whatIf} /> : (
+                  <Button variant="ai" onClick={explain}><Sparkle />Explain these results</Button>
                 )}
                 {explainError && <div className="mt-3"><Notice tone="caution">{explainError}</Notice></div>}
               </Section>
