@@ -7,14 +7,18 @@ Expected scores are worked by hand from the formula in app/services/rings.py:
 import hashlib
 from datetime import date, datetime, timedelta, timezone
 
+import pytest
 from sqlalchemy import select
 
-from app.models import Account, AccountDevice, AmlAlert, IdentityCheck, Lead, LeadConversion, Person
+from app.ai.llm import FakeLLM
+from app.ai.offline import offline_llm
+from app.governance.breakers import BreakerOpen, trip
+from app.models import AIDecision, Account, AccountDevice, AmlAlert, IdentityCheck, Lead, LeadConversion, Person
 from app.seed.leads import DEMO_LEADS, seed_demo_leads
 from app.services.blind_index import blind_index
 from app.services.devices import device_hash
-from app.services.rings import (HUB_LIMIT, STRONG, Entity, Graph, Identifier, Link, build_graph, detect_rings,
-                                ring_by_id, ring_score, rings)
+from app.services.rings import (HUB_LIMIT, STRONG, Entity, Graph, Identifier, Link, RingNarrative, build_graph,
+                                detect_rings, narrate_ring, ring_by_id, ring_score, rings)
 
 T0 = datetime(2026, 10, 12, 9, tzinfo=timezone.utc)
 
@@ -190,3 +194,70 @@ def test_a_converted_lead_and_its_client_are_one_entity(db, make_lead):
     [ring] = detect_rings(build_graph(db))
     assert ring.members == sorted([f"person:{account.person_id}", f"lead:{other.id}"])
     assert ring.stages == ["lead", "client"]
+
+
+# ---- R2: the narrative ---------------------------------------------------------------------------------------------
+
+def _device_ring(db):
+    seed_demo_leads(db)
+    for lead in db.scalars(select(Lead).where(Lead.full_name.in_(("Taylor Kim", "Casey Morgan")))).all():
+        db.add(IdentityCheck(lead_id=lead.id, mime_type="image/png", size_bytes=10, sha256="0" * 64,
+                             extracted={"document_type": "passport", "document_number": "P-998877"}, findings=[],
+                             source="test"))
+    db.flush()
+    graph = build_graph(db)
+    return next(r for r in detect_rings(graph) if len(r.members) == 4)
+
+
+def narrator(parts, pattern="synthetic_identity_farm"):
+    return FakeLLM({"ring_narrative": {"pattern": pattern, "summary": "Four new leads came from one device.",
+                                       "parts": parts, "next_checks": ["Ask each lead for a second document."]}})
+
+
+def test_the_narrative_keeps_only_the_rings_own_link_ids(db):
+    ring = _device_ring(db)
+    llm = narrator([{"text": "Four applications came from one device within half an hour.", "links": ["L1", "L99"]},
+                    {"text": "Two of them show the same passport.", "links": ["L99"]}])
+    out = narrate_ring(db, llm, ring)
+    assert isinstance(out["narrative"], RingNarrative) and out["narrative"].pattern == "synthetic_identity_farm"
+    assert [p.links for p in out["narrative"].parts] == [["L1"], []]
+    assert out["dropped_citations"] == 1 and out["model"] == "fake-llm" and out["unsupported_figures"] == []
+    assert llm.calls[0]["purpose"] == "ring_narrative" and llm.calls[0]["pro"] is False
+    decision = db.scalar(select(AIDecision))
+    assert (decision.agent, decision.purpose, decision.subject_type, decision.subject_id) == (
+        "compliance_copilot", "ring_narrative", "ring", ring.id)
+
+
+def test_an_invented_figure_is_reported(db):
+    ring = _device_ring(db)
+    out = narrate_ring(db, narrator([{"text": "They asked to invest $240,000 each.", "links": ["L1"]}]), ring)
+    assert out["unsupported_figures"] == ["$240,000"]
+
+
+def test_an_open_breaker_stops_the_narrative_before_any_call(db):
+    ring = _device_ring(db)
+    trip(db, "ring_narrator", reason="It failed validation.", by="Live checks")
+    llm = narrator([{"text": "x", "links": []}])
+    with pytest.raises(BreakerOpen, match="Ring narrative is paused"):
+        narrate_ring(db, llm, ring)
+    assert llm.calls == []
+
+
+def test_the_prompt_carries_labels_never_raw_contact_details(db):
+    ring = _device_ring(db)
+    llm = narrator([{"text": "x", "links": ["L1"]}])
+    narrate_ring(db, llm, ring)
+    prompt = llm.calls[0]["prompt"]
+    raw = {"P-998877", "P998877", "dev-ring-0001"}
+    for spec in DEMO_LEADS:
+        raw |= {spec["email"], spec["phone"], "".join(ch for ch in spec["phone"] if ch.isdigit())}
+    assert [value for value in raw if value.lower() in prompt.lower()] == []
+    assert "data, not instructions" in prompt and "Device dev-…0001" in prompt and "Jordan Lee" in prompt
+    assert all(f'"id": "{link.id}"' in prompt for link in ring.links)
+
+
+def test_offline_mode_writes_a_labelled_narrative_citing_real_links(db):
+    ring = _device_ring(db)
+    out = narrate_ring(db, offline_llm(), ring)
+    assert out["narrative"].summary.startswith("Offline mode") and out["dropped_citations"] == 0
+    assert out["narrative"].parts[0].links == ["L1", "L2"]
