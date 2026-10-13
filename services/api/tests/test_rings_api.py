@@ -99,6 +99,7 @@ def test_the_strongest_ring_spans_leads_and_a_client(api):
     assert strongest["stages"] == ["lead", "client"] and strongest["score"] == 100
     assert (strongest["strongest"], strongest["strongest_kind"]) == ("Device dev-…0001", "device")
     assert len(strongest["strongest_members"]) == 5 and strongest["identifiers"] == 2 and strongest["links"] == 9
+    assert strongest["strong_identifiers"] == 1  # the device; the network is weak
     sofia = next(m for m in strongest["members"] if m["label"] == "Sofia Rossi")
     assert sofia["kind"] == "client" and sofia["flags"][0] == "AML: money in and straight out" and sofia["flagged"]
     assert (strongest["case_alert_id"], strongest["flagged_leads"]) == (None, 0)
@@ -147,7 +148,9 @@ def test_a_case_opens_once_on_the_client_with_the_most_flags(api, db, seeded):
     alert = db.get(AmlAlert, opened.json()["alert_id"])
     assert (alert.scenario, alert.severity, alert.state, alert.person_id, alert.account_id) == (
         "ring", "high", "open", seeded["sofia"].person_id, seeded["sofia"].id)
-    assert alert.title == "Possible fraud ring of 5 identities" and "Device dev-…0001" in alert.summary
+    assert alert.title == "Possible fraud ring of 5 identities"
+    assert alert.summary == ("5 identities across leads and clients share Device dev-…0001. Opened from the fraud ring "
+                             "radar by Omar Haddad.")
     assert [e["id"] for e in alert.evidence] == [f"L{n}" for n in range(1, 10)]
     assert {e["kind"] for e in alert.evidence} == {"ring_link"} and all(e["amount"] is None for e in alert.evidence)
     assert opened.json()["ring"]["case_alert_id"] == alert.id

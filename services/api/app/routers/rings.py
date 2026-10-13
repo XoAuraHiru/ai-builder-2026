@@ -10,7 +10,7 @@ from app.db import get_db
 from app.governance.breakers import BreakerOpen
 from app.routers.operations import me
 from app.services.devices import aware
-from app.services.rings import (Graph, Ring, RingError, build_graph, case_for, detect_rings, flag_leads,
+from app.services.rings import (STRONG, Graph, Ring, RingError, build_graph, case_for, detect_rings, flag_leads,
                                 flagged_lead_ids, link_detail, narrate_ring, open_case)
 
 router = APIRouter(prefix="/compliance", tags=["rings"])
@@ -33,6 +33,7 @@ def ring_out(db: Session, ring: Ring, graph: Graph) -> dict:
                          "ring_flagged": e.kind == "lead" and e.id.split(":", 1)[1] in flagged} for e in members],
             "stages": ring.stages, "strongest": ring.strongest, "strongest_kind": ring.strongest_kind,
             "strongest_members": ring.strongest_members, "identifiers": len(ring.identifiers),
+            "strong_identifiers": sum(graph.identifiers[i].kind in STRONG for i in ring.identifiers),
             "links": len(ring.links), "created_span_hours": ring.created_span_hours,
             "case_alert_id": case.id if case else None,
             "case": {"id": case.id, "title": case.title, "state": case.state} if case else None,

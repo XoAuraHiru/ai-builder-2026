@@ -466,12 +466,9 @@ def open_case(db: Session, ring: Ring, by: Person, graph: Graph | None = None) -
                         .order_by(Account.opened_on, Account.number).limit(1))
     now = utcnow()
     sharing = len(ring.strongest_members)
-    lead_and_client = " across leads and clients" if ring.stages == ["lead", "client"] else ""
-    first = (f"{len(ring.members)} identities share {ring.strongest}" if sharing == len(ring.members)
-             else f"{sharing} of {len(ring.members)} identities share {ring.strongest}")
-    summary = (f"{first}{lead_and_client}, among {len(ring.identifiers)} shared "
-               f"identifier{'s' if len(ring.identifiers) != 1 else ''}. Ring score {ring.score} of 100. Opened from "
-               f"the fraud ring radar by {by.full_name}.")
+    who = f"{len(ring.members)} identities" + (" across leads and clients" if ring.stages == ["lead", "client"] else "")
+    summary = (f"{who if sharing == len(ring.members) else f'{sharing} of {who}'} share {ring.strongest}. "
+               f"Opened from the fraud ring radar by {by.full_name}.")
     evidence = [{"kind": "ring_link", "id": link.id, "date": aware(link.seen_at or now).date().isoformat(),
                  "amount": None, "detail": link_detail(link, graph)} for link in ring.links]
     alert = AmlAlert(scenario=RING_SCENARIO, title=f"Possible fraud ring of {len(ring.members)} identities",
