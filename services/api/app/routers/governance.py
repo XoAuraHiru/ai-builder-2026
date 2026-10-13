@@ -163,13 +163,15 @@ def start_live_checks(db: Session = Depends(get_db), user: CurrentUser = Depends
     if blocker:
         raise HTTPException(status_code=409, detail=blocker)
     run = start_run(db, tier="live", trigger="button", requested_by=person)
-    db.commit()
+    db.commit()  # the blocker sees this run at once, so a second click is refused while the job starts
     try:
-        launcher.launch_job(settings.evals_job)
+        execution = launcher.launch_job(settings.evals_job)
     except launcher.LaunchError as e:
         finish_failed(db, run, e)
         db.commit()
         raise HTTPException(status_code=503, detail=f"The live checks could not be started: {e}") from e
+    run.summary = {**(run.summary or {}), "execution": execution.rsplit("/", 1)[-1]}  # the job adopts only this run
+    db.commit()
     return run_out(run)
 
 

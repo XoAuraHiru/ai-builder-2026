@@ -17,12 +17,14 @@ def _token() -> str:
 
 
 def launch_job(job_name: str) -> str:
-    """Run the job (projects/<p>/locations/<r>/jobs/<name>) and return the operation's name."""
+    """Run the job (projects/<p>/locations/<r>/jobs/<name>) and return the execution it started (the operation's
+    metadata names it; the operation's own name when it does not), so the run can be tied to that execution."""
     try:
         request = urllib.request.Request(f"https://run.googleapis.com/v2/{job_name}:run", data=b"{}", method="POST",
                                          headers={"Authorization": f"Bearer {_token()}",
                                                   "Content-Type": "application/json"})
         with urllib.request.urlopen(request, timeout=15) as response:
-            return json.load(response).get("name", "")
+            operation = json.load(response)
+        return (operation.get("metadata") or {}).get("name") or operation.get("name", "")
     except Exception as e:
         raise LaunchError(str(e)) from e

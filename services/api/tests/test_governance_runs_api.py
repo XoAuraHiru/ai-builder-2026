@@ -24,6 +24,53 @@ def test_the_button_starts_the_job_once_and_then_waits(client, staff, monkeypatc
     assert launched == [JOB]
 
 
+def test_the_run_remembers_which_execution_the_button_started(client, db, staff, monkeypatch):
+    from app.models import EvalRun
+
+    monkeypatch.setattr(get_settings(), "evals_job", JOB)
+    monkeypatch.setattr(launcher, "launch_job", lambda name: f"{JOB}/executions/atrium-evals-abc12")
+    run = client.post("/governance/evals/run", headers=OMAR).json()
+    assert db.get(EvalRun, run["id"]).summary["execution"] == "atrium-evals-abc12"
+
+
+def test_each_job_execution_takes_only_its_own_run(db):
+    from datetime import datetime, timedelta, timezone
+
+    from app.governance.evals.runner import adopt_or_start, start_run
+
+    now = datetime(2026, 10, 14, 15, tzinfo=timezone.utc)
+    asked = start_run(db, tier="live", trigger="button", requested_by="Omar Haddad", now=now)
+    asked.summary = {"execution": "atrium-evals-abc12"}
+    db.flush()
+    deploy_run = adopt_or_start(db, tier="live", trigger="deploy", now=now + timedelta(minutes=1),
+                                execution="atrium-evals-zz999")
+    assert deploy_run.id != asked.id and deploy_run.trigger == "deploy"
+    mine = adopt_or_start(db, tier="live", trigger="deploy", now=now + timedelta(minutes=1),
+                          execution="atrium-evals-abc12")
+    assert mine.id == asked.id
+
+
+def test_the_launcher_returns_the_execution_the_job_started(monkeypatch):
+    import io
+    import json
+
+    class Response(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    def fake_urlopen(request, timeout=0):
+        if "metadata" in request.full_url:
+            return Response(json.dumps({"access_token": "tok"}).encode())
+        return Response(json.dumps({"name": "operations/op-1",
+                                    "metadata": {"name": f"{JOB}/executions/atrium-evals-abc12"}}).encode())
+
+    monkeypatch.setattr(launcher.urllib.request, "urlopen", fake_urlopen)
+    assert launcher.launch_job(JOB) == f"{JOB}/executions/atrium-evals-abc12"
+
+
 def test_a_job_that_cannot_start_marks_the_run_failed(client, staff, monkeypatch):
     monkeypatch.setattr(get_settings(), "evals_job", JOB)
 

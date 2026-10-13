@@ -89,13 +89,18 @@ def start_run(db: Session, *, tier: str, trigger: str, requested_by: str | None 
     return run
 
 
-def adopt_or_start(db: Session, *, tier: str, trigger: str, now: datetime | None = None) -> EvalRun:
-    """The job takes over a run the button asked for in the last ten minutes; otherwise it starts its own."""
+def adopt_or_start(db: Session, *, tier: str, trigger: str, now: datetime | None = None,
+                   execution: str | None = None) -> EvalRun:
+    """The job takes over the run the button asked for in the last ten minutes; otherwise it starts its own. On Cloud
+    Run the execution's name tells which: an execution adopts only the run that started it, so a deploy's execution
+    and a button's never write into one run. Without one (a local run), the latest button run is taken."""
     now = now or utcnow()
     asked = db.scalars(select(EvalRun).where(EvalRun.status == "running", EvalRun.trigger == "button",
                                              EvalRun.started_at >= now - timedelta(minutes=10))
-                       .order_by(EvalRun.started_at.desc())).first()
-    return asked or start_run(db, tier=tier, trigger=trigger, now=now)
+                       .order_by(EvalRun.started_at.desc())).all()
+    if execution:
+        asked = [r for r in asked if (r.summary or {}).get("execution") == execution]
+    return asked[0] if asked else start_run(db, tier=tier, trigger=trigger, now=now)
 
 
 def summarise(report: RunReport) -> dict:
