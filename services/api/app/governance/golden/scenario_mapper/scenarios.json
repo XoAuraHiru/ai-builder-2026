@@ -1,0 +1,17 @@
+{
+ "about": "Plain-English scenarios with the direction any sound mapping must give. A sector without its own shock is judged by its region's stock shock, the way the engine applies it.",
+ "cases": [
+  {"id": "rates-up-2", "text": "Interest rates rise by 2 percentage points", "expect": {"bonds": "negative"},
+   "why": "Bond prices fall when yields rise."},
+  {"id": "oil-150", "text": "Oil reaches $150 a barrel", "expect": {"energy": "positive"},
+   "why": "Oil and gas producers earn more when oil is dear."},
+  {"id": "ai-down-40", "text": "AI stocks fall 40%", "expect": {"technology": "negative"},
+   "why": "The companies behind AI are in the technology sector."},
+  {"id": "us-recession", "text": "The US enters a deep recession", "expect": {"us_equity": "negative"},
+   "why": "Earnings fall in a recession, and US stocks with them."},
+  {"id": "dollar-down-15", "text": "The dollar falls 15%", "expect": {"intl_equity": "positive"},
+   "why": "Dollar weakness lifts foreign assets in dollar terms."},
+  {"id": "fed-to-zero", "text": "The Fed cuts rates to zero", "expect": {"bonds": "positive"},
+   "why": "Bond prices rise when yields fall."}
+ ]
+}

@@ -110,6 +110,63 @@ def _brief(prompt: str) -> dict:
             "points": ["Every step of the run is listed with its outcome."], "watch": []}
 
 
+# Scenario Studio offline: keyword rules stand in for Gemini, so local runs show a plausible, clearly labelled proposal.
+_SCENARIO_RULES = [
+    ("oil|crude|opec", "crisis_2008", [("energy", 30, "Oil and gas producers earn more when oil is dear."),
+                                       ("consumer_cyclical", -15, "Fuel costs squeeze spending on everything else."),
+                                       ("us_equity", -8, "Higher costs weigh on most companies.")]),
+    ("recession|downturn|depression|unemployment", "crisis_2008", [
+        ("us_equity", -25, "Earnings fall in a recession."), ("intl_equity", -20, "Recessions spread abroad."),
+        ("bonds", 4, "Investors move to high-grade bonds."), ("financial_services", -30, "Loan losses rise.")]),
+    (r"\bai\b|artificial intelligence|tech", "rates_2022", [
+        ("technology", -40, "The companies behind AI reprice."), ("communication_services", -20, "AI platforms fall too."),
+        ("us_equity", -8, "The rest of the market follows a little.")]),
+    (r"(cut|lower|zero|fall)\w*.*\brates?\b|\brates?\b.*(cut|zero|fall)", "none", [
+        ("bonds", 6, "Bond prices rise when yields fall."), ("us_equity", 5, "Cheaper money lifts valuations."),
+        ("cash", -1, "Cash earns less.")]),
+    (r"(rise|hike|up|climb|jump)\w*.*\brates?\b|\brates?\b.*(rise|hike|up|climb)|inflation", "rates_2022", [
+        ("bonds", -8, "Bond prices fall when yields rise."), ("us_equity", -10, "Higher rates lower valuations."),
+        ("realestate", -15, "Property is financed with debt.")]),
+    ("dollar", "none", [("intl_equity", 8, "A weaker dollar lifts foreign assets in dollar terms.")]),
+    ("pandemic|virus|lockdown|shutdown", "pandemic_2020", [
+        ("us_equity", -20, "A sudden shutdown hits earnings."), ("intl_equity", -20, "Shutdowns are global."),
+        ("energy", -35, "Travel and demand for fuel collapse.")]),
+]
+_OUT_OF_SCOPE = re.compile(r"\b(poem|story|song|joke|approve|approved)\b|\b(buy|sell)\s+\d|system:", re.I)
+
+
+def _scenario_text(prompt: str) -> str:
+    return prompt.split("<scenario>")[-1].split("</scenario>")[0].strip()
+
+
+def _scenario_context(prompt: str) -> dict:
+    return {"text": "Offline mode: no web search was run, so there is no current context.", "sources": []}
+
+
+def _scenario_proposal(prompt: str) -> dict:
+    text = _scenario_text(prompt)
+    if _OUT_OF_SCOPE.search(text):
+        return {"in_scope": False, "refusal": "Offline mode: Scenario Studio models market scenarios, such as a rate "
+                                             "rise or an oil shock; it cannot help with this request."}
+    shocks: dict[str, tuple[float, str]] = {}
+    analogue = "none"
+    for pattern, closest, rules in _SCENARIO_RULES:
+        if re.search(pattern, text, re.I):
+            analogue = closest if analogue == "none" else analogue
+            for factor, pct, reason in rules:
+                if factor not in shocks or abs(pct) > abs(shocks[factor][0]):
+                    shocks[factor] = (pct, f"Offline rule: {reason}")
+    if not shocks:
+        shocks = {"us_equity": (-10.0, "Offline rule: a broad market fall."),
+                  "bonds": (2.0, "Offline rule: high-grade bonds hold up.")}
+    return {"in_scope": True, "title": f"Offline mode: {text}"[:120], "horizon_months": 12,
+            "shocks": [{"factor": f, "pct": pct, "reason": reason} for f, (pct, reason) in shocks.items()],
+            "analogue": analogue,
+            "analogue_reason": "Offline rule: the closest replay by keyword." if analogue != "none" else "",
+            "assumptions": ["Offline mode: keyword rules stand in for Gemini; connect Gemini for shocks grounded in "
+                            "today's news."]}
+
+
 def offline_llm() -> FakeLLM:
     return FakeLLM({
         "lead_enrichment": _enrich,
@@ -123,4 +180,6 @@ def offline_llm() -> FakeLLM:
         "statement_normalise": _statement,
         "aml_case_review": _case,
         "ops_brief": _brief,
+        "scenario_context": _scenario_context, "scenario_proposal": _scenario_proposal,
+        "scenario_narrative": _narrative,
     }, model="offline")
