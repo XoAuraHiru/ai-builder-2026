@@ -163,7 +163,7 @@ def render(name: str, token: str, model_index: list[int]) -> dict:
             if i:
                 entries.append(f"file '{silence.as_posix()}'")
             entries.append(f"file '{p.as_posix()}'")
-        listing.write_text("\n".join(entries) + "\n", encoding="utf-8")
+        listing.write_text("\n".join(entries) + "\n", encoding="utf-8", newline="\n")
         out = CALLS / f"{name}.mp3"
         _run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(listing),
               "-c:a", "libmp3lame", "-b:a", "64k", "-ar", str(SAMPLE_RATE), "-ac", "1", str(out)])
@@ -175,7 +175,7 @@ def render(name: str, token: str, model_index: list[int]) -> dict:
     script["rendered_with"] = {"model": MODELS[model_index[0]] or "chirp3-hd",
                                "voices": {k: voice_name(v["voice"], MODELS[model_index[0]])
                                           for k, v in script["speakers"].items()}}
-    path.write_text(json.dumps(script, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(script, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
     measured = duration_s(out)
     return {"name": name, "lines": len(durations), "sum_of_parts_s": expected, "mp3_s": round(measured, 2),
             "bytes": out.stat().st_size}
