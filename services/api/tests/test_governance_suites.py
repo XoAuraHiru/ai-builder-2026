@@ -55,3 +55,83 @@ def test_a_scenario_that_never_fires_fails_its_positive(monkeypatch):
     monkeypatch.setitem(aml_scenarios.SCENARIOS, "structuring", lambda db, today: [])
     result = aml_scenarios.positives_and_near_misses(FREE)
     assert [c.case_id for c in result.cases if c.outcome == "fail"] == ["structuring-positive"]
+
+
+# Task M2: documents
+from app.governance.evals.suites import identity_proofing, statement_reader  # noqa: E402
+
+
+def test_every_golden_file_with_cases_says_why():
+    found = []
+    for path in sorted(golden.ROOT.rglob("*.json")):
+        name = path.relative_to(golden.ROOT).with_suffix("").as_posix()
+        data = golden.load(name)
+        if "cases" in data:
+            found.append(name)
+    assert {"statement_reader/expected", "identity_proofing/cases"} <= set(found)
+
+
+def test_the_saved_statement_maps_to_its_golden_lines_and_balances():
+    result = statement_reader.saved_document(FREE)
+    assert result.passed, [c.detail for c in result.cases if c.outcome != "pass"]
+    assert len(result.cases) == 11 and result.cases[-1].case_id == "balances"
+
+
+def test_the_statement_suite_fails_when_the_side_is_taken_from_the_labels(monkeypatch):
+    import app.services.statements as statements
+
+    monkeypatch.setattr(statements, "_side", lambda props, description: (
+        "deposit" if any(n.startswith("transaction_deposit") and not n.endswith(("_date", "_description"))
+                         for n in props) else "withdrawal"))
+    result = statement_reader.saved_document(FREE)
+    assert result.passed is False
+    assert {c.case_id for c in result.cases if c.outcome == "fail"} >= {"line-6", "line-9", "balances"}
+
+
+def test_messy_csvs_parse_to_their_golden_lines():
+    result = statement_reader.messy_csvs(FREE)
+    assert result.passed and len(result.cases) == 3, [c.detail for c in result.cases if c.outcome != "pass"]
+
+
+def test_the_saved_identity_outputs_map_to_the_right_fields_and_findings():
+    result = identity_proofing.saved_outputs(FREE)
+    assert result.passed and len(result.cases) == 2, [(c.detail, c.actual) for c in result.cases if c.outcome != "pass"]
+
+
+def test_document_ai_saying_not_an_id_is_a_finding(make_lead):
+    from datetime import date
+
+    from app.services.identity import ExtractedId, FraudSignals, identity_findings
+
+    extracted = ExtractedId(document_type="other", full_name="Ava Thompson", confidence=0.9)
+    found = identity_findings(make_lead(), extracted, FraudSignals(is_identity_document="NOT_AN_ID"), date(2026, 10, 13))
+    assert [(f["code"], f["source"]) for f in found] == [("I00", "documentai")]
+
+
+def test_the_live_cards_go_through_document_ai_proofing(monkeypatch):
+    from app.config import Settings
+    from app.services.identity import DocumentAIProofing
+
+    saved = {}
+    for case in golden.load("identity_proofing/cases")["cases"]:
+        saved[golden.path(f"identity_proofing/{case['image']}").read_bytes()] = \
+            golden.path(f"identity_proofing/{case['document']}").read_text(encoding="utf-8")
+
+    class Client:
+        def processor_path(self, project, location, processor):
+            return f"projects/{project}/locations/{location}/processors/{processor}"
+
+        def process_document(self, request):
+            from google.cloud import documentai
+
+            document = documentai.Document.from_json(saved[request.raw_document.content], ignore_unknown_fields=True)
+            return documentai.ProcessResponse(document=document)
+
+    proofing = DocumentAIProofing(Settings(_env_file=None, gcp_project="p", docai_proofing_processor="abc"),
+                                  client=Client())
+    monkeypatch.setattr(identity_proofing, "get_proofing", lambda: proofing)
+    result = identity_proofing.live_cards(EvalContext(tier="live", with_documents=True))
+    assert result.passed and len(result.cases) == 2, [c.detail for c in result.cases]
+    monkeypatch.setattr(identity_proofing, "get_proofing", lambda: None)
+    unconfigured = identity_proofing.live_cards(EvalContext(tier="live", with_documents=True))
+    assert unconfigured.passed is False and unconfigured.counts["error"] == 2

@@ -1,0 +1,57 @@
+{
+  "about": "The golden reading of docai_sample.json, the Bank Statement Parser's output for Atrium's synthetic sample statement, written by reading the document's text (not by running the mapping). The statement prints a running balance after every line, so each line's side is fixed by whether the balance rose or fell. Opening $250,000.00 plus $16,803.42 of credits less $25.00 of debits is the closing $266,778.42.",
+  "opening": "250000.00",
+  "closing": "266778.42",
+  "cases": [
+    {"id": "line-1", "date": "2026-10-12", "amount": "1500.00", "side": "credit", "description": "ACH CREDIT PRIYA RAMAN REF ATR-1A2B3C4D",
+     "why": "Printed 10/12/2026 with 1,500.00 in the deposits column; the balance rises from 250,000.00 to 251,500.00."},
+    {"id": "line-2", "date": "2026-10-12", "amount": "2500.00", "side": "credit", "description": "WIRE IN LUCAS MOREAU ATR3C4D7F3K",
+     "why": "Printed 10/12/2026 with 2,500.00; the balance rises from 251,500.00 to 254,000.00."},
+    {"id": "line-3", "date": "2026-10-12", "amount": "3000.00", "side": "credit", "description": "ACH CREDIT HANA SATO REF ATR-7F3K201D",
+     "why": "Printed 10/12/2026 with 3,000.00; the balance rises from 254,000.00 to 257,000.00."},
+    {"id": "line-4", "date": "2026-10-12", "amount": "5000.00", "side": "credit", "description": "ONLINE TRANSFER FROM TOM BECKER",
+     "why": "Printed 10/12/2026 with 5,000.00; the balance rises from 257,000.00 to 262,000.00."},
+    {"id": "line-5", "date": "2026-10-12", "amount": "787.50", "side": "credit", "description": "ACH CREDIT SOFIA ROSSI PART 1 OF 2",
+     "why": "Printed 10/12/2026 with 787.50; the balance rises from 262,000.00 to 262,787.50."},
+    {"id": "line-6", "date": "2026-10-12", "amount": "462.50", "side": "credit", "description": "ACH CREDIT SOFIA ROSSI PART 2 OF 2",
+     "why": "Printed 10/12/2026 with 462.50; the balance rises from 262,787.50 to 263,250.00. The parser labels this cell a withdrawal, but the balance and the narration both say it came in."},
+    {"id": "line-7", "date": "2026-10-12", "amount": "800.00", "side": "credit", "description": "ACH CREDIT ARJUN MEHTA REF ATR-7V6U5T4S",
+     "why": "Printed 10/12/2026 with 800.00; the balance rises from 263,250.00 to 264,050.00."},
+    {"id": "line-8", "date": "2026-10-12", "amount": "3.42", "side": "credit", "description": "INTEREST PAID",
+     "why": "Printed 10/12/2026 with 3.42; the balance rises from 264,050.00 to 264,053.42."},
+    {"id": "line-9", "date": "2026-10-12", "amount": "25.00", "side": "debit", "description": "MONTHLY SERVICE FEE",
+     "why": "Printed 10/12/2026 with 25.00 in the withdrawals column; the balance falls from 264,053.42 to 264,028.42. The parser labels the amount cell a deposit, but the balance and the narration both say it went out."},
+    {"id": "line-10", "date": "2026-10-12", "amount": "2750.00", "side": "credit", "description": "WIRE IN KESTREL TRADING LTD REF INV 2231",
+     "why": "Printed 10/12/2026 with 2,750.00; the balance rises from 264,028.42 to the closing 266,778.42."}
+  ],
+  "csv": {
+    "messy_currency": {
+      "why": "One signed Amount column with dollar signs and thousands separators; a withdrawal is written in parentheses or with a leading minus. Dates are month/day/year.",
+      "lines": [
+        {"date": "2026-10-06", "amount": "1500.00", "description": "ACH CREDIT AVA THOMPSON REF ATR-4471AB2C"},
+        {"date": "2026-10-07", "amount": "12250.00", "description": "WIRE IN KENJI WATANABE ATR9F3K2D1A"},
+        {"date": "2026-10-08", "amount": "-25.00", "description": "MONTHLY SERVICE FEE"},
+        {"date": "2026-10-08", "amount": "-40.00", "description": "OUTGOING WIRE FEE"},
+        {"date": "2026-10-09", "amount": "200.00", "description": "ONLINE TRANSFER FROM OLIVIA BROOKS"}
+      ]
+    },
+    "messy_columns": {
+      "why": "Debit and Credit in separate columns under Posting Date and Narration headers: a credit is money in, a debit money out. Dates are day, month name, year.",
+      "lines": [
+        {"date": "2026-10-06", "amount": "1500.00", "description": "ACH CREDIT PRIYA RAMAN REF ATR-1A2B3C4D"},
+        {"date": "2026-10-07", "amount": "-25.00", "description": "MONTHLY SERVICE FEE"},
+        {"date": "2026-10-08", "amount": "5000.00", "description": "ONLINE TRANSFER FROM TOM BECKER"},
+        {"date": "2026-10-09", "amount": "-2750.00", "description": "WIRE OUT RETURNED FUNDS KESTREL TRADING"}
+      ]
+    },
+    "messy_bom": {
+      "why": "A byte-order mark before the header, spaces around the header names, blank rows, a row of empty cells and an END OF STATEMENT footer without a date: only the four dated rows are transactions.",
+      "lines": [
+        {"date": "2026-10-06", "amount": "3000.00", "description": "ACH CREDIT HANA SATO REF ATR-7F3K201D"},
+        {"date": "2026-10-07", "amount": "787.50", "description": "ACH CREDIT SOFIA ROSSI PART 1 OF 2"},
+        {"date": "2026-10-07", "amount": "462.50", "description": "ACH CREDIT SOFIA ROSSI PART 2 OF 2"},
+        {"date": "2026-10-08", "amount": "3.42", "description": "INTEREST PAID"}
+      ]
+    }
+  }
+}

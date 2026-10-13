@@ -1,0 +1,25 @@
+{
+  "about": "The two SPECIMEN cards from tools/make_specimen_id.py (copied here as PNGs so the live check can send them), each read once by Document AI ID Proofing and saved as clean.json and mismatch.json. The card fields come from the printed text Document AI read; the fraud signals from its entities. Both cards print SPECIMEN - NOT A REAL DOCUMENT, and Document AI says of both: NOT_AN_ID, SUSPICIOUS_WORDS_FOUND (the word SPECIMEN), POSSIBLE_IMAGE_MANIPULATION, and PASS for online duplicates. The lead is Emma Walsh, as on the clean card.",
+  "cases": [
+    {
+      "id": "clean-card",
+      "document": "clean.json",
+      "image": "specimen-match.png",
+      "lead": {"full_name": "Emma Walsh"},
+      "today": "2026-10-13",
+      "expect": {"full_name": "Emma Walsh", "date_of_birth": "1984-05-12", "expiry_date": "2030-08-31",
+                 "findings": ["I00", "I04", "I06"]},
+      "why": "The card prints Emma Walsh, born 1984-05-12, expiring 2030-08-31: the name matches the form, the holder is an adult and the card is in date, so no I01, I02 or I03. Document AI's NOT_AN_ID is I00, its possible image manipulation I04, and the SPECIMEN wording I06."
+    },
+    {
+      "id": "mismatch-card",
+      "document": "mismatch.json",
+      "image": "specimen-mismatch.png",
+      "lead": {"full_name": "Emma Walsh"},
+      "today": "2026-10-13",
+      "expect": {"full_name": "Emily Walters", "date_of_birth": "1979-11-03", "expiry_date": "2024-02-29",
+                 "findings": ["I00", "I01", "I03", "I04", "I06"]},
+      "why": "The card prints Emily Walters, born 1979-11-03, expiring 2024-02-29. The form says Emma Walsh, so the name mismatch I01 is raised, and the card expired before Oct 13, 2026, so I03. The Document AI signals are the same as the clean card's: I00, I04 and I06."
+    }
+  ]
+}
