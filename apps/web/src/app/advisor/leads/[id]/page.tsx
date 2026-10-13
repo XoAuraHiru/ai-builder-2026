@@ -7,6 +7,7 @@ import { api, ApiError, apiUpload } from "@/lib/api";
 import { formatDate, formatUsd } from "@/lib/format";
 import { TRUST_LABEL, trustTone, type Lead } from "@/lib/leads";
 import { AiProse } from "@/components/ai-prose";
+import { CallsSection } from "@/components/calls-section";
 import { ProposalBadges, ProposalSections, type Proposal } from "@/components/proposal-view";
 import { TrustBadge } from "@/components/score-badge";
 import { WhyPanel } from "@/components/why-panel";
@@ -188,6 +189,7 @@ export default function LeadDetail() {
             </div>
           )}
         </Section>
+        <CallsSection leadId={id} onChange={load} />
         <Section title="Proposal" description="Gemini Pro writes a personalised proposal from the simulation and the fund documents. It is a draft for you to review; nothing is sent."
           actions={latest ? <Link href={`/advisor/leads/${id}/proposal`} className="text-sm underline underline-offset-4">Open the printable proposal</Link> : undefined}>
           <Button variant={latest ? "secondary" : "primary"} busy={busy === "proposal"} disabled={risky}
