@@ -8,9 +8,12 @@ import {
   agreementLine, canPause, caseValue, driftLine, GENERATIVE, MONITORED, passShare, STATUS_LABEL, STATUS_TONE, suiteStatus, suiteTitle,
   type Breaker, type CaseRow, type ModelCard, type Monitoring, type Suite,
 } from "@/lib/governance";
+import { CountUp } from "@/components/motion";
+import { Skeleton, SkeletonText } from "@/components/skeleton";
 import { CodeField, DemoAuthenticator } from "@/components/step-up";
-import { Badge, Button, Field, inputClass, KeyMoment, Loading, Notice, PageHeader, Section } from "@/components/ui";
-import { Bar, StatusChip, tbl } from "../../../operations/_parts";
+import { Badge, Button, Field, inputClass, KeyMoment, Notice, PageHeader, Section } from "@/components/ui";
+import { Arrive, Bar, Confirmed, StatusChip, tbl } from "../../../operations/_parts";
+import { DetailHeaderSkeleton, LoadingRegion, MomentSkeleton, SectionTitleSkeleton } from "../../../operations/_skeletons";
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 const OUTCOME = { pass: { label: "Pass", tone: "gain" }, fail: { label: "Fail", tone: "loss" }, error: { label: "No result", tone: "caution" } } as const;
@@ -31,7 +34,7 @@ function SuiteMeter({ suite, compare }: { suite: Suite; compare?: Suite }) {
     <div className="space-y-2.5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <span className="flex items-baseline gap-2">
-          <span className="num text-[30px] font-medium leading-[34px] tracking-[-0.02em]">{share}%</span>
+          <span className="num text-[30px] font-medium leading-[34px] tracking-[-0.02em]"><CountUp text={`${share}%`} /></span>
           <span className="text-sm text-ink-700">{suite.metric}</span>
         </span>
         <span className="code text-ink-500">{suite.cost_usd > 0 ? `$${suite.cost_usd.toFixed(4)}` : "$0.0000 · no AI cost"}</span>
@@ -42,17 +45,18 @@ function SuiteMeter({ suite, compare }: { suite: Suite; compare?: Suite }) {
   );
 }
 
+/** A suite's cases; the first dozen arrive one after another, the rest with the twelfth. */
 function CaseTable({ cases }: { cases: CaseRow[] }) {
   return (
     <>
       <ul className="divide-y divide-sand-100 md:hidden">
-        {cases.map((c) => (
-          <li key={c.case_id} className="space-y-1.5 py-3 text-sm">
+        {cases.map((c, i) => (
+          <Arrive as="li" index={i} key={c.case_id} className="space-y-1.5 py-3 text-sm">
             <p className="flex flex-wrap items-center gap-2"><Outcome outcome={c.outcome} /><span className={tbl.id}>{c.case_id}</span></p>
             <p className="wrap-break-word"><span className="text-ink-500">Expected </span>{caseValue(c.expected)}</p>
             <p className="wrap-break-word"><span className="text-ink-500">Got </span>{caseValue(c.actual)}</p>
             <p className="text-ink-700">{c.detail}</p>
-          </li>
+          </Arrive>
         ))}
       </ul>
       <div className={`${tbl.wrap} hidden md:block`}>
@@ -61,14 +65,14 @@ function CaseTable({ cases }: { cases: CaseRow[] }) {
             <tr><th className={tbl.th}>Case</th><th className={tbl.th}>Outcome</th><th className={tbl.th}>Expected</th><th className={tbl.th}>Got</th><th className={tbl.th}>Why</th></tr>
           </thead>
           <tbody>
-            {cases.map((c) => (
-              <tr key={c.case_id} className={`${tbl.row} align-top`}>
+            {cases.map((c, i) => (
+              <Arrive as="tr" index={i} key={c.case_id} className={`${tbl.row} align-top`}>
                 <td className={`${tbl.td} ${tbl.id}`}>{c.case_id}</td>
                 <td className={tbl.td}><Outcome outcome={c.outcome} /></td>
                 <td className={`${tbl.td} max-w-[22ch] wrap-break-word text-ink-700`}>{caseValue(c.expected)}</td>
                 <td className={`${tbl.td} max-w-[26ch] wrap-break-word`}>{caseValue(c.actual)}</td>
                 <td className={`${tbl.td} max-w-[48ch] text-ink-700`}>{c.detail}</td>
-              </tr>
+              </Arrive>
             ))}
           </tbody>
         </table>
@@ -80,10 +84,10 @@ function CaseTable({ cases }: { cases: CaseRow[] }) {
 function AttackList({ cases }: { cases: CaseRow[] }) {
   return (
     <ul className="space-y-2">
-      {cases.map((c) => {
+      {cases.map((c, i) => {
         const a = asRecord(c.actual) as Attack;
         return (
-          <li key={c.case_id} className="rounded-control bg-fill px-4 py-3.5">
+          <Arrive as="li" index={i} key={c.case_id} className="rounded-control bg-fill px-4 py-3.5">
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <Outcome outcome={c.outcome} />
               <span className={tbl.id}>{c.case_id}</span>
@@ -92,7 +96,7 @@ function AttackList({ cases }: { cases: CaseRow[] }) {
             {a.attack && <p className="mt-2 font-mono text-xs leading-5 text-ink-700 wrap-break-word">“{a.attack}”</p>}
             <p className="mt-2 text-sm text-ink-700">{c.detail}</p>
             {a.output !== undefined && <p className="mt-1.5 wrap-break-word text-xs text-ink-500">The target answered: {caseValue(a.output)}</p>}
-          </li>
+          </Arrive>
         );
       })}
     </ul>
@@ -102,7 +106,7 @@ function AttackList({ cases }: { cases: CaseRow[] }) {
 function FairnessList({ cases }: { cases: CaseRow[] }) {
   return (
     <ul className="divide-y divide-sand-100">
-      {cases.map((c) => {
+      {cases.map((c, i) => {
         const actual = asRecord(c.actual);
         const differing = (actual.differing as Record<string, unknown>[] | undefined) ?? [];
         const scores = (actual.scores as { score: number; variants: string[] }[] | undefined) ?? [];
@@ -111,7 +115,7 @@ function FairnessList({ cases }: { cases: CaseRow[] }) {
           ? scores.map((s) => `score ${s.score} for ${s.variants.length} variant${s.variants.length === 1 ? "" : "s"}`).join("; ")
           : pairs;
         return (
-          <li key={c.case_id} className="py-3 text-sm">
+          <Arrive as="li" index={i} key={c.case_id} className="py-3 text-sm">
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <Outcome outcome={c.outcome} /><span className={tbl.id}>{c.case_id}</span>
               {result && <span className="text-ink-700">{result.charAt(0).toUpperCase() + result.slice(1)}</span>}
@@ -127,7 +131,7 @@ function FairnessList({ cases }: { cases: CaseRow[] }) {
                 ))}
               </div>
             ))}
-          </li>
+          </Arrive>
         );
       })}
     </ul>
@@ -162,17 +166,20 @@ function BreakerPanel({ modelKey, breaker, pausable, onChange }:
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [changed, setChanged] = useState<"reset" | "paused" | null>(null);  // what just went through: it confirms
   const open = breaker.state === "open";
 
   async function change() {
     setBusy(true);
     setError("");
+    setChanged(null);
     try {
       await api(`/governance/breakers/${modelKey}/${open ? "reset" : "open"}`, {
         method: "POST", body: JSON.stringify(open ? { reason, code } : { reason }),
       });
       setReason("");
       setCode("");
+      setChanged(open ? "reset" : "paused");
       await onChange();
     } catch (e) {
       setError(msg(e, open ? "The breaker could not be reset. Try again." : "The model could not be paused. Try again."));
@@ -188,6 +195,8 @@ function BreakerPanel({ modelKey, breaker, pausable, onChange }:
         <h2 id="breaker" className="text-base font-semibold">Breaker</h2>
         <StatusChip tone={open ? "loss" : "gain"}>{open ? "Open: the model is paused" : "Closed: the model is running"}</StatusChip>
       </div>
+      {changed === "reset" && !open && <Confirmed>Breaker reset: the model is running again, and the reset is in its history.</Confirmed>}
+      {changed === "paused" && open && <Confirmed tone="neutral">Paused: its fallback stands in until someone resets the breaker.</Confirmed>}
       {breaker.message && <Notice tone="error" title="Paused">{breaker.message}</Notice>}
       {!open && !pausable ? (
         <p className="text-sm text-ink-700">Nothing can stand in for this model, so pausing it would change nothing. When a check fails, it shows Failing instead.</p>
@@ -266,6 +275,49 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
+/** One suite's card while it loads: its title and chip, the pass share and its bar, then a few cases. */
+function SuiteSkeleton() {
+  return (
+    <div className="space-y-5 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
+      <span className="flex items-start justify-between gap-3">
+        <span className="flex flex-col gap-2"><Skeleton className="h-4 w-36" /><Skeleton className="h-3 w-72 max-w-[70vw]" /></span>
+        <Skeleton className="h-[26px] w-28 rounded-full" />
+      </span>
+      <span className="flex flex-col gap-2.5">
+        <span className="flex items-baseline gap-2"><Skeleton className="h-8 w-20 rounded-[10px]" /><Skeleton className="h-3.5 w-32" /></span>
+        <Skeleton className="h-2 w-full rounded-full" />
+      </span>
+      <div className="divide-y divide-sand-100">
+        {[0, 1, 2].map((i) => (
+          <span key={i} className="flex items-center gap-4 py-3"><Skeleton className="h-3 w-28" /><Skeleton className="h-[26px] w-14 rounded-full" /><Skeleton className="h-3.5 flex-1" /></span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** A model card while it loads: header, the validation sentence, its facts and limitations, the suites, the breaker. */
+function ModelCardSkeleton() {
+  return (
+    <LoadingRegion label="Loading the model">
+      <DetailHeaderSkeleton badges={3} />
+      <div className="space-y-12">
+        <MomentSkeleton />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] xl:items-start">
+          <div className="divide-y divide-sand-100 rounded-panel border border-sand-200 bg-white px-5 py-2 sm:px-6">
+            {[0, 1, 2, 3].map((i) => <span key={i} className="grid gap-2 py-3.5 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-4"><Skeleton className="h-3 w-24" /><Skeleton className="h-3.5 w-4/5" /></span>)}
+          </div>
+          <div className="flex flex-col gap-3 rounded-panel border border-sand-200 bg-white p-5 sm:p-6"><Skeleton className="h-3 w-32" /><SkeletonText lines={3} /></div>
+        </div>
+        <div>
+          <SectionTitleSkeleton width="w-28" />
+          <div className="space-y-4"><SuiteSkeleton /><SuiteSkeleton /></div>
+        </div>
+      </div>
+    </LoadingRegion>
+  );
+}
+
 export default function ModelCardPage() {
   const { key } = useParams<{ key: string }>();
   const [card, setCard] = useState<ModelCard | null>(null);
@@ -281,7 +333,7 @@ export default function ModelCardPage() {
     load().catch((e) => setError(msg(e, "Atrium could not load this model. Try again.")));
   }, [load]);
 
-  if (!card) return error ? <Notice tone="error">{error}</Notice> : <Loading label="Loading the model" />;
+  if (!card) return error ? <Notice tone="error">{error}</Notice> : <ModelCardSkeleton />;
   const top = moment(card);
   const watch = monitoring && MONITORED.has(card.key) ? agreementLine(card.key, monitoring.agreement[card.key], monitoring.window_days)
     : monitoring && card.key === "lead_score" ? driftLine(monitoring.drift.lead_score)
