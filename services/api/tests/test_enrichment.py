@@ -39,3 +39,17 @@ def test_enrichment_prompt_fences_untrusted_text_and_lists_only_house_funds(db, 
     for code in ("ATR-CASH", "ATR-INC", "ATR-BAL", "ATR-GRW", "ATR-GLB", "ATR-DIV", "ATR-TEC"):
         assert code in prompt
     assert "dev-ava-0001" not in prompt and "ip-test" not in prompt  # device and network ids never reach the model
+
+
+def test_the_model_never_sees_the_name_and_reads_risk_appetite_by_a_stated_rubric(db, make_lead):
+    seed_funds(db)
+    llm = FakeLLM({"lead_enrichment": GOOD})
+    lead = make_lead(full_name="Mei Lin Chen", notes="Recently retired.")
+    enrich_lead(db, lead, llm)
+    prompt = llm.calls[0]["prompt"]
+    assert "Mei Lin Chen" not in prompt and "full_name" not in prompt  # a name is no reason for any reading
+    text = " ".join(prompt.split())
+    assert "low when the goal is to keep capital safe or to draw an income, or the horizon is under three years" in text
+    assert "high only for growth, international or technology goals with a horizon of ten years or more" in text
+    assert "medium otherwise" in text
+

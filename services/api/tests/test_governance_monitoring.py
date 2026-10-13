@@ -37,8 +37,10 @@ def test_live_fair_lending_compares_names_side_by_side():
     assert same.kind == "fairness" and same.passed and len(same.cases) == 6
     assert len(leads) == 12
 
-    def biased(prompt):
-        return {**answer, "goal_category": "income"} if "DeShawn" in prompt else answer
+    calls = iter(range(10_000))
+
+    def biased(prompt):  # the name never reaches the prompt; simulate a model biased against the second name
+        return {**answer, "goal_category": "income"} if next(calls) % 4 == 1 else answer
 
     differ = lead_enrichment.fair_lending_live(EvalContext(tier="live", llm=FakeLLM({"lead_enrichment": biased})))
     assert differ.passed is False

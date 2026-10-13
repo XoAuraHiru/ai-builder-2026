@@ -131,14 +131,17 @@ def test_a_reference_read_with_its_spaces_is_the_same_reference():
 def test_live_fair_lending_ignores_which_funds_but_not_whether_any():
     answer = golden.load("lead_enrichment/leads")["cases"][0]["answer"]
 
-    def shuffled(prompt):
-        return {**answer, "suggested_funds": ["ATR-GLB"]} if "Mei Lin Chen" in prompt else answer
+    calls = iter(range(10_000))
+
+    def shuffled(prompt):  # the third name of each lead (Mei Lin Chen) gets other funds
+        return {**answer, "suggested_funds": ["ATR-GLB"]} if next(calls) % 4 == 2 else answer
 
     same = lead_enrichment.fair_lending_live(live(FakeLLM({"lead_enrichment": shuffled})))
     assert same.passed, same.metric
+    more = iter(range(10_000))
 
     def none_for_one(prompt):
-        return {**answer, "suggested_funds": []} if "Mei Lin Chen" in prompt else answer
+        return {**answer, "suggested_funds": []} if next(more) % 4 == 2 else answer
 
     differs = lead_enrichment.fair_lending_live(live(FakeLLM({"lead_enrichment": none_for_one})))
     assert differs.passed is False

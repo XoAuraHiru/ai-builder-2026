@@ -42,7 +42,9 @@ Lead:
 Return JSON for the schema:
 1. goal_category and a goals_summary of one or two sentences.
 2. suggested_funds: up to three codes whose risk band suits the horizon and the risk appetite the lead implies.
-3. stated_risk_appetite: low, medium or high, as implied by the goals and horizon.
+3. stated_risk_appetite, by this rubric and nothing else: low when the goal is to keep capital safe or to draw an
+   income, or the horizon is under three years; high only for growth, international or technology goals with a
+   horizon of ten years or more; medium otherwise.
 4. consistency_issues: contradictions between answers. Examples: a monthly contribution out of proportion to stated assets;
    a horizon under two years with aggressive growth goals; source of funds "unspecified" with more than $250,000.
    Severity high only for contradictions an advisor must resolve before onboarding.
@@ -54,7 +56,8 @@ Return JSON for the schema:
 def build_enrichment_prompt(lead: Lead, funds: list[Fund]) -> str:
     fund_lines = "\n".join(f"- {f.code} {f.name}: risk band {f.risk_band}/5. {f.objective} Suits: {f.who_for}"
                            for f in funds)
-    data = {"source": lead.source, "full_name": lead.full_name, "country": lead.country, "goals": lead.goals,
+    # No name: it is no reason for any reading, and the fair-lending checks vary only the name.
+    data = {"source": lead.source, "country": lead.country, "goals": lead.goals,
             "horizon_years": lead.horizon_years, "investable_usd": str(lead.investable_usd),
             "monthly_usd": str(lead.monthly_usd), "source_of_funds": lead.source_of_funds, "notes": lead.notes}
     return PROMPT.format(funds=fund_lines, lead=json.dumps(data, indent=2))
