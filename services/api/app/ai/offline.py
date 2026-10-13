@@ -110,6 +110,31 @@ def _brief(prompt: str) -> dict:
             "points": ["Every step of the run is listed with its outcome."], "watch": []}
 
 
+def _call(prompt: str) -> dict:
+    """A demo call (recognised by its size, then by its file name) reads as its script; any other recording says
+    that offline mode cannot listen. The promise rules still run over the advisor's words."""
+    from app.seed.calls import DEMO_DIR, demo_script
+
+    m = re.search(r"Recording: (.*) \((\d+) bytes", prompt)
+    filename, size = (m.group(1), int(m.group(2))) if m else ("", -1)
+    names = [p.stem for p in sorted(DEMO_DIR.glob("*.mp3"))]
+    name = next((n for n in names if (DEMO_DIR / f"{n}.mp3").stat().st_size == size), None)
+    name = name or next((n for n in names if filename.lower() == f"{n}.mp3"), None)
+    if name is None:
+        return {"duration_s": 0, "summary": "Offline mode: connect Gemini to listen to this recording.",
+                "transcript": [{"start_s": 0, "speaker": "Atrium", "role": "unknown",
+                                "text": "Offline mode: connect Gemini to transcribe this recording."}],
+                "action_items": [], "facts": [], "updates": [], "flags": []}
+    script = demo_script(name)
+    roles = {k: v["role"] for k, v in script["speakers"].items()}
+    return {"duration_s": script["duration_s"],
+            "summary": "Offline mode: this is the demo call's script, not a reading; connect Gemini for the summary, "
+                       "the proposed updates and the conduct flags. The promise rules still check the advisor's words.",
+            "transcript": [{"start_s": line["start_s"], "speaker": line["speaker"], "role": roles[line["speaker"]],
+                            "text": line["text"]} for line in script["lines"]],
+            "action_items": [], "facts": [], "updates": [], "flags": []}
+
+
 def offline_llm() -> FakeLLM:
     return FakeLLM({
         "lead_enrichment": _enrich,
@@ -123,4 +148,5 @@ def offline_llm() -> FakeLLM:
         "statement_normalise": _statement,
         "aml_case_review": _case,
         "ops_brief": _brief,
+        "call_analysis": _call,
     }, model="offline")

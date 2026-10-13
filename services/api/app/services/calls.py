@@ -6,6 +6,7 @@ when the advisor applies them. The audio is never stored, only the reading."""
 import hashlib
 import json
 import re
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from difflib import SequenceMatcher
 from typing import Literal
@@ -18,6 +19,7 @@ from app.ai.llm import LLM, Attachment
 from app.events import emit
 from app.governance.breakers import ensure_closed
 from app.models import Lead, LeadCall, Person
+from app.models.base import utcnow
 from app.services.compliance import _rule_findings
 
 MODEL_KEY = "call_analyst"
@@ -474,3 +476,44 @@ def analyze_call(db: Session, llm: LLM, lead: Lead, *, data: bytes, mime_type: s
                               "flags": [f.kind for f in kept.flags], "updates": [u.field for u in kept.updates],
                               "dropped": dropped})
     return call
+
+
+def _write(lead: Lead, field: str, value: str) -> None:
+    if field == "horizon_years":
+        lead.horizon_years = int(value)
+    elif field in ("investable_usd", "monthly_usd"):
+        setattr(lead, field, Decimal(value).quantize(Decimal("0.01")))
+    else:
+        setattr(lead, field, value)
+
+
+def apply_updates(db: Session, lead: Lead, call: LeadCall, fields: list[str], *, by: Person,
+                  now: datetime | None = None) -> list[str]:
+    """Write the updates the advisor ticked to the lead, once each, and rescore it. Returns the fields written now;
+    a field already applied from this call is skipped. Raises CallError for a field the call did not propose."""
+    from app.ml.lead_model import score_lead
+    from app.services.trust import apply_trust
+
+    offered = {u["field"]: u for u in (call.reading or {}).get("updates", [])}
+    missing = [f for f in fields if f not in offered]
+    if missing:
+        raise CallError(f"This call proposed no update to {', '.join(missing)}.")
+    done = {a["field"] for a in call.applied or []}
+    at = (now or utcnow()).isoformat()
+    written: list[dict] = []
+    for field in dict.fromkeys(fields):
+        value = parse_value(field, offered[field]["proposed"])
+        if field in done or value is None:
+            continue
+        previous = current_value(lead, field)
+        _write(lead, field, value)
+        written.append({"field": field, "value": value, "previous": previous, "by": by.full_name, "at": at})
+    if not written:
+        return []
+    call.applied = [*(call.applied or []), *written]
+    lead.lead_score, lead.lead_score_factors = score_lead(lead, lead.enrichment)
+    apply_trust(db, lead)
+    emit("LeadUpdatedFromCall", {"lead_id": lead.id, "call_id": call.id, "fields": [w["field"] for w in written],
+                                 "by": by.full_name})
+    db.flush()
+    return [w["field"] for w in written]
