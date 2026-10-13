@@ -28,7 +28,9 @@ function OutcomeTable({ result, active, onSelect }: { result: WhatIf; active: nu
   rows.push([`Fees over ${result.years} years`, (s) => `${formatUsd(s.fee_cost, 0)} (${formatPct(s.fee_bps / 100, 2)} a year)`]);
   return (
     <Section title={`After ${result.years} year${result.years === 1 ? "" : "s"}`} description={`You pay in ${formatUsd(result.contributed, 0)} in total.`}>
-      <Panel className={`${tableStyles.wrap} px-6 py-2`}>
+      {/* relative: the counting figures' screen-reader copies are positioned, so they scroll with the table instead of
+          widening the page on a phone. */}
+      <Panel className={`${tableStyles.wrap} relative px-6 py-2`}>
         <table className={`${tableStyles.table} min-w-[480px]`}>
           <thead className={tableStyles.head}>
             <tr>
