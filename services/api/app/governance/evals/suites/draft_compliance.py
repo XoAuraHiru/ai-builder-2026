@@ -22,6 +22,7 @@ def rules_on_phrases(ctx: EvalContext) -> SuiteResult:
 
 
 GEMINI_BAR = 0.9
+PROMISE_RULES = ("guarantee", "promissory")
 
 
 @suite("draft_compliance", tier="live")
@@ -36,7 +37,9 @@ def gemini_on_phrases(ctx: EvalContext) -> SuiteResult:
                                                      collect=collected)
                 if "gemini" not in report.reviewed_by:
                     return CaseResult(c["id"], "error", detail="Gemini could not be reached; only the rules ran.")
-                found = collected[0][0].parsed.findings
+                # The golden label is about promises; a performance or disclosure remark on an honest sentence is
+                # Gemini covering other parts of the Marketing Rule, not a disagreement.
+                found = [f for f in collected[0][0].parsed.findings if f.rule in PROMISE_RULES]
                 flagged = bool(found)
                 return CaseResult(c["id"], "pass" if flagged == c["promissory"] else "fail",
                                   expected={"flagged": c["promissory"]},
@@ -44,6 +47,7 @@ def gemini_on_phrases(ctx: EvalContext) -> SuiteResult:
             cases.append(run_case(c["id"], check, db=db))
     agreed = sum(c.outcome == "pass" for c in cases)
     return rate("draft_compliance", "golden", "live", cases,
-                bar=f"Gemini agrees with the golden label on at least {GEMINI_BAR:.0%} of ten sentences",
+                bar=f"Gemini flags a guarantee or a promise exactly where the golden label says, on at least "
+                    f"{GEMINI_BAR:.0%} of ten sentences",
                 metric=f"Gemini agreed on {agreed} of {len(cases)} sentences", value=share_passing(cases),
                 threshold=GEMINI_BAR)

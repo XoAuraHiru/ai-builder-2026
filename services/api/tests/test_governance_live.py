@@ -98,6 +98,52 @@ def test_draft_compliance_live_that_flags_everything_disagrees():
     assert result.passed is False
 
 
+def test_gemini_is_judged_on_promises_not_on_its_other_marketing_rule_remarks():
+    phrases = golden.load("draft_compliance/phrases")["cases"]
+
+    def review(prompt):
+        found = next(p for p in phrases if p["text"] in prompt)
+        if found["promissory"]:
+            return found["answer"]
+        # Honest sentences may still draw a performance or disclosure remark; that is not a promise.
+        return {"findings": [{"phrase": found["text"][:40], "rule": "unbalanced_performance", "explanation": "x",
+                              "suggestion": "y"}]}
+
+    result = draft_compliance.gemini_on_phrases(live(FakeLLM({"compliance_review": review})))
+    assert result.passed and result.counts["pass"] == 10, [(c.case_id, c.actual) for c in result.cases]
+
+
+def test_narrations_are_graded_on_geminis_own_reading_not_the_rules_filling_in():
+    result = narration_reader.golden_narrations(live(FakeLLM({"statement_normalise": {"lines": []}})))
+    assert result.passed is False and result.counts["pass"] == 0
+    assert all("Gemini gave no reading" in c.detail for c in result.cases)
+
+
+def test_a_reference_read_with_its_spaces_is_the_same_reference():
+    cases = golden.load("narration_reader/narrations")["cases"]
+    answers = [{**c["answer"], "reference": "ATR 4471 CD9E"} if c["id"] == "reference-with-spaces" else c["answer"]
+               for c in cases]
+    lines = {"lines": [{"line_no": n, **a} for n, a in enumerate(answers, start=1)]}
+    result = narration_reader.golden_narrations(live(FakeLLM({"statement_normalise": lines})))
+    assert result.counts["pass"] == 12, [(c.case_id, c.actual) for c in result.cases if c.outcome != "pass"]
+
+
+def test_live_fair_lending_ignores_which_funds_but_not_whether_any():
+    answer = golden.load("lead_enrichment/leads")["cases"][0]["answer"]
+
+    def shuffled(prompt):
+        return {**answer, "suggested_funds": ["ATR-GLB"]} if "Mei Lin Chen" in prompt else answer
+
+    same = lead_enrichment.fair_lending_live(live(FakeLLM({"lead_enrichment": shuffled})))
+    assert same.passed, same.metric
+
+    def none_for_one(prompt):
+        return {**answer, "suggested_funds": []} if "Mei Lin Chen" in prompt else answer
+
+    differs = lead_enrichment.fair_lending_live(live(FakeLLM({"lead_enrichment": none_for_one})))
+    assert differs.passed is False
+
+
 def test_the_agent_suite_without_a_real_agent_records_the_scorer_path_as_no_result():
     from app.agents.runtime import get_agent_model
 

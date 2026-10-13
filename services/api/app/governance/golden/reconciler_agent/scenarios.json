@@ -62,6 +62,7 @@
       ],
       "lines": [{"id": "l1", "date": "2026-10-08", "amount": "3000.00", "description": "WIRE IN KENJI WATANABE", "remitter": "Kenji Watanabe", "reference": null}],
       "truth": [{"lines": ["l1"], "receipts": ["r1", "r2"]}],
+      "known_gap": "A proposal pairs lines with one subscription, so one deposit for two subscriptions cannot be proposed: the pair is shown but left out of recall.",
       "decoys": []
     },
     {

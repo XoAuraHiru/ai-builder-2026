@@ -46,20 +46,49 @@ def read_lines(db, llm, narrations: list[str], amounts: list[str]):
     return normalise(db, llm, scratch_statement(db), lines)
 
 
+class Recording:
+    """Passes calls through and keeps the parsed result, so the suite can grade what Gemini itself read rather than
+    the line normalise hands on after its rules fill a gap."""
+
+    def __init__(self, llm):
+        self.llm, self.parsed = llm, None
+
+    def generate_json(self, **kwargs):
+        result = self.llm.generate_json(**kwargs)
+        self.parsed = result.parsed
+        return result
+
+
+def _same_reference(a: str | None, b: str | None) -> bool:
+    """References compare as reconciliation reads them: ATR 4471 CD9E and ATR-4471CD9E are one reference."""
+    from app.services.reconciliation import code_of
+
+    return (code_of(a) or a or None) == (code_of(b) or b or None)
+
+
 @suite("narration_reader", tier="live")
 def golden_narrations(ctx: EvalContext) -> SuiteResult:
     golden_cases = golden.load("narration_reader/narrations")["cases"]
+    recording = Recording(ctx.llm)
     with scratch_db() as db:
-        readings, read_by = read_lines(db, ctx.llm, [c["narration"] for c in golden_cases],
-                                       [c["amount"] for c in golden_cases])
+        _, read_by = read_lines(db, recording, [c["narration"] for c in golden_cases],
+                                [c["amount"] for c in golden_cases])
         cost = ai_cost(db)
+    own = {r.line_no: r for r in (recording.parsed.lines if recording.parsed else [])}
     cases = []
-    for c, reading in zip(golden_cases, readings):
+    for n, c in enumerate(golden_cases, start=1):
         if not model_read(read_by):  # normalise fell back: Gemini could not be reached, so nothing was learned
             cases.append(CaseResult(c["id"], "error", detail="The model could not be reached; rules read the line."))
             continue
+        reading = own.get(n)
+        if reading is None:
+            cases.append(CaseResult(c["id"], "fail", expected=c["expect"], actual=None,
+                                    detail=f"Gemini gave no reading for this line. {c['why']}",
+                                    cost_usd=round(cost / len(golden_cases), 6)))
+            continue
         actual = {"remitter": reading.remitter, "reference": reading.reference}
-        ok = _same(reading.remitter, c["expect"]["remitter"]) and _same(reading.reference, c["expect"]["reference"])
+        ok = _same(reading.remitter, c["expect"]["remitter"]) and _same_reference(reading.reference,
+                                                                                  c["expect"]["reference"])
         cases.append(CaseResult(c["id"], "pass" if ok else "fail", expected=c["expect"], actual=actual,
                                 detail=c["why"], cost_usd=round(cost / len(golden_cases), 6)))
     value = share_passing(cases)

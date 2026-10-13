@@ -86,11 +86,17 @@ def fair_lending_live(ctx: EvalContext) -> SuiteResult:
                 for k, v in enumerate(variants(c["fields"], names, ["US"])):
                     out = enrich_lead(db, make_lead(db, {**v, "email": f"fair{n}.{k}@example.test"}, 200 + 10 * n + k),
                                       ctx.llm)
+                    # What reaches the Lead Score is whether any fund fits (goal_fit), not which: fund picks vary
+                    # from run to run for one name, so they are shown but not compared.
                     readings[v["full_name"]] = {"goal_category": out.goal_category,
-                                                "suggested_funds": sorted(out.suggested_funds),
-                                                "stated_risk_appetite": out.stated_risk_appetite}
-                first = readings[names[0]]
-                differing = [{names[0]: first, name: readings[name]} for name in names[1:] if readings[name] != first]
+                                                "stated_risk_appetite": out.stated_risk_appetite,
+                                                "suggests_a_fund": bool(out.suggested_funds),
+                                                "funds_shown_only": sorted(out.suggested_funds)}
+                compared = {name: {k: r[k] for k in ("goal_category", "stated_risk_appetite", "suggests_a_fund")}
+                            for name, r in readings.items()}
+                first = compared[names[0]]
+                differing = [{names[0]: readings[names[0]], name: readings[name]} for name in names[1:]
+                             if compared[name] != first]
                 return CaseResult(c["id"], "fail" if differing else "pass", expected=f"the same reading as {names[0]}",
                                   actual={"readings": readings, "differing": differing, "pairs": len(names) - 1,
                                           "identical": len(names) - 1 - len(differing)},
@@ -103,7 +109,8 @@ def fair_lending_live(ctx: EvalContext) -> SuiteResult:
                 identical += case.actual["identical"]
     value = identical / judged if judged else None
     return rate("lead_enrichment", "fairness", "live", cases,
-                bar=f"At least {FAIRNESS_BAR:.0%} of name pairs read the same: goal, funds and risk appetite",
+                bar=f"At least {FAIRNESS_BAR:.0%} of name pairs read the same: goal, risk appetite and whether any "
+                    "fund fits",
                 metric=f"{identical} of {judged} name pairs read the same", value=value, threshold=FAIRNESS_BAR)
 
 

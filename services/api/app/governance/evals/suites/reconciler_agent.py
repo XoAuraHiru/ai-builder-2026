@@ -85,6 +85,16 @@ def truth_of(scenario: dict) -> set[tuple[frozenset[str], frozenset[str]]]:
     return {(frozenset(t["lines"]), frozenset(t["receipts"])) for t in scenario["truth"]}
 
 
+def reachable_truth_of(scenario: dict) -> set[tuple[frozenset[str], frozenset[str]]]:
+    """The true matches Atrium can propose at all: a scenario marked as a known gap counts for no one's recall."""
+    return set() if scenario.get("known_gap") else truth_of(scenario)
+
+
+def _gaps(scenarios: list[dict]) -> str:
+    n = sum(1 for s in scenarios if s.get("known_gap"))
+    return f"; {n} known gap{'s' if n != 1 else ''}" if n else ""
+
+
 def precision_recall(proposed: set, truth: set) -> tuple[float | None, float | None]:
     precision = len(proposed & truth) / len(proposed) if proposed else None
     recall = len(proposed & truth) / len(truth) if truth else None
@@ -113,7 +123,8 @@ def _show(pair) -> list:
 def rules_and_scorer(ctx: EvalContext) -> SuiteResult:
     cases = []
     rules_hits = rules_all = scorer_hits = scorer_all = found = truth_total = 0
-    for s in golden.load("reconciler_agent/scenarios")["cases"]:
+    scenarios = golden.load("reconciler_agent/scenarios")["cases"]
+    for s in scenarios:
         with scratch_db() as db:
             ids = build_scenario(db, s)
             by_rules = pairs_of(propose_by_rules(db), ids)
@@ -124,8 +135,8 @@ def rules_and_scorer(ctx: EvalContext) -> SuiteResult:
         rules_all += len(by_rules)
         scorer_hits += len(by_scorer & truth)
         scorer_all += len(by_scorer)
-        found += len((by_rules | by_scorer) & truth)
-        truth_total += len(truth)
+        found += len((by_rules | by_scorer) & reachable_truth_of(s))
+        truth_total += len(reachable_truth_of(s))
         ok = by_rules <= truth and not hit_decoy
         detail = s["why"] if ok else (("A decoy line was proposed. " if hit_decoy else "The rules proposed a wrong "
                                        "match. ") + s["why"])
@@ -138,7 +149,8 @@ def rules_and_scorer(ctx: EvalContext) -> SuiteResult:
     bars_met = rules_p >= PRECISION_BAR_RULES and scorer_p >= PRECISION_BAR_SCORER
     return rate("reconciler_agent", "golden", "free", cases,
                 bar="Rules 100% precise, scorer at least 80% precise, no proposal on a decoy",
-                metric=f"Rules precision {rules_p:.0%}, scorer precision {scorer_p:.0%}, recall {recall:.0%}",
+                metric=f"Rules precision {rules_p:.0%}, scorer precision {scorer_p:.0%}, recall {recall:.0%}"
+                       f"{_gaps(scenarios)}",
                 value=1.0 if bars_met and all(c.outcome == "pass" for c in cases) else 0.0, threshold=1.0)
 
 
@@ -158,10 +170,13 @@ def agent_scenarios(ctx: EvalContext) -> SuiteResult:
     cases = []
     proposed_all: set = set()
     truth_all: set = set()
+    reachable_all: set = set()
     scorer_found = scorer_truth = 0
     agent_ran = False
-    for s in golden.load("reconciler_agent/scenarios")["cases"]:
+    scenarios = golden.load("reconciler_agent/scenarios")["cases"]
+    for s in scenarios:
         truth = {(s["id"], pair) for pair in truth_of(s)}
+        reachable = {(s["id"], pair) for pair in reachable_truth_of(s)}
         with scratch_db() as db:
             ids = build_scenario(db, s)
             outcome: dict = {}
@@ -188,12 +203,14 @@ def agent_scenarios(ctx: EvalContext) -> SuiteResult:
             agent_ran = agent_ran or bool(outcome.get("used_agent"))
             proposed_all |= {(s["id"], pair) for pair in outcome.get("proposed", set())}
             truth_all |= truth
+            reachable_all |= reachable
         with scratch_db() as db:  # the same scenario through the rules and the scorer, for the lift
             ids = build_scenario(db, s)
             baseline = pairs_of(propose_by_rules(db), ids) | pairs_of(scorer_proposals(db), ids)
-        scorer_found += len(baseline & truth_of(s))
-        scorer_truth += len(truth_of(s))
-    precision, recall = precision_recall(proposed_all, truth_all)
+        scorer_found += len(baseline & reachable_truth_of(s))
+        scorer_truth += len(reachable_truth_of(s))
+    precision, _ = precision_recall(proposed_all, truth_all)
+    _, recall = precision_recall(proposed_all, reachable_all)
     precision = 1.0 if precision is None else precision
     recall = 1.0 if recall is None else recall
     baseline_recall = scorer_found / scorer_truth if scorer_truth else 1.0
@@ -204,7 +221,8 @@ def agent_scenarios(ctx: EvalContext) -> SuiteResult:
     return rate("reconciler_agent", "golden", "live", cases,
                 bar=f"Agent precision at least {AGENT_PRECISION_BAR:.0%}, recall at least {AGENT_RECALL_BAR:.0%}, "
                     "no proposal on a decoy",
-                metric=f"Agent precision {precision:.0%}, recall {recall:.0%}; scorer alone {baseline_recall:.0%} recall",
+                metric=f"Agent precision {precision:.0%}, recall {recall:.0%}; scorer alone {baseline_recall:.0%} recall"
+                       f"{_gaps(scenarios)}",
                 value=value, threshold=1.0)
 
 

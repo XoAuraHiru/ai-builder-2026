@@ -162,6 +162,15 @@ def test_the_rules_are_exact_and_the_scorer_is_mostly_right():
     assert len(result.cases) == 10
 
 
+def test_a_match_no_part_of_atrium_can_propose_is_a_known_gap_not_a_miss():
+    scenarios = {s["id"]: s for s in golden.load("reconciler_agent/scenarios")["cases"]}
+    assert scenarios["combined-payment"]["known_gap"]
+    assert reconciler_agent.reachable_truth_of(scenarios["combined-payment"]) == set()
+    assert reconciler_agent.reachable_truth_of(scenarios["split-payment"]) == reconciler_agent.truth_of(scenarios["split-payment"])
+    metric = reconciler_agent.rules_and_scorer(FREE).metric
+    assert "recall 62%" in metric and "1 known gap" in metric
+
+
 def test_a_scorer_that_proposes_on_any_amount_hits_a_decoy(monkeypatch):
     import app.services.reconciliation as reconciliation
 
