@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { formatUsd } from "@/lib/format";
-import { attentionHeadline, sourceLabel, STAGE_LABEL, timeAgo, topSignals, triage, type Lead } from "@/lib/leads";
+import { attentionHeadline, SCORING_STEPS, sourceLabel, STAGE_LABEL, timeAgo, topSignals, triage, type Lead } from "@/lib/leads";
 import { initials } from "@/lib/personas";
 import { useMe } from "@/lib/session-context";
 import { LEAD_ROW, LeadsSkeleton } from "@/components/advisor-skeletons";
@@ -13,12 +13,6 @@ import { Stagger, StaggerItem } from "@/components/motion";
 import { TrustBadge, TrustMeter, TrustScoreCard } from "@/components/score-badge";
 import { Button, KeyMoment, Notice, PageHeader, Section } from "@/components/ui";
 
-// What scoring does, in order: Gemini reads the form, the Lead Score model scores fit, the rules weigh trust.
-const SCORING_STEPS = [
-  "Gemini is reading each new lead's answers",
-  "Scoring fit with the Lead Score model",
-  "Weighing contacts, devices and documents for the Trust Score",
-];
 // Rows past the first dozen are below the fold: they show at once rather than queue behind the ones in view.
 const STAGGERED = 12;
 

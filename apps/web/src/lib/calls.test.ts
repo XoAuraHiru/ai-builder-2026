@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  clock, demoFor, demoName, droppedNote, FIELD_LABEL, figuresWarning, FLAG_LABEL, flagsHeadline, highFlags, sortFlags, updateLine,
+  callMarks, callShare, clock, demoFor, demoName, droppedNote, FIELD_LABEL, figuresWarning, FLAG_LABEL, flagsHeadline, highFlags, sortFlags, sweepDelay, updateLine,
   type CallFlag, type LeadCall,
 } from "./calls";
 
@@ -100,5 +100,24 @@ describe("demoName", () => {
     expect(demoName(call("demo", "discovery.mp3"))).toBe("discovery");
     expect(demoName(call("upload", "pressure.mp3"))).toBeNull();
     expect(demoName(call("demo", "attack.mp3"))).toBeNull();
+  });
+});
+
+describe("the call's timeline", () => {
+  it("places each moment at its share of the call, clamped to the call", () => {
+    expect(callShare(45, 180)).toBe(0.25);
+    expect([callShare(-3, 180), callShare(200, 180)]).toEqual([0, 1]);
+    expect(callShare(30, 0, 60)).toBe(0.5);  // no length: the last flag ends the line
+  });
+  it("lists the flags in the order they were said", () => {
+    const marks = callMarks([flag("promissory", "high", 120), flag("confusion", "medium", 30), flag("pressure", "high", 90)], 180);
+    expect(marks.map((m) => m.flag.start_s)).toEqual([30, 90, 120]);
+    expect(marks.map((m) => Math.round(m.share * 100))).toEqual([17, 50, 67]);
+  });
+  it("delays each flag until the sweep along the call reaches it", () => {
+    expect(sweepDelay(0, 180)).toBe(0);
+    expect(sweepDelay(90, 180)).toBe(0.3);
+    expect(sweepDelay(180, 180)).toBe(0.6);
+    expect(sweepDelay(90, 180, 1)).toBe(0.5);
   });
 });

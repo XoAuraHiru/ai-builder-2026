@@ -118,6 +118,24 @@ export function updateLine(update: Pick<CallUpdate, "field" | "current" | "propo
   return `${FIELD_LABEL[update.field]}: ${fieldValue(update.field, update.current)} → ${fieldValue(update.field, update.proposed)}`;
 }
 
+/** How far into a call a moment falls, from 0 to 1. A call with no length reads as ending at its last flag. */
+export function callShare(at: number, duration: number, last = 0): number {
+  const length = duration > 0 ? duration : Math.max(last, at, 1);
+  return Math.max(0, Math.min(1, at / length));
+}
+
+/** The flags along the call's timeline, in the order they were said, each at its share of the call's length. */
+export function callMarks<T extends Pick<CallFlag, "start_s">>(flags: T[], duration: number): { flag: T; share: number }[] {
+  const last = Math.max(0, ...flags.map((f) => f.start_s));
+  return [...flags].sort((a, b) => a.start_s - b.start_s).map((flag) => ({ flag, share: callShare(flag.start_s, duration, last) }));
+}
+
+/** When a moment arrives as the reading lands: a sweep runs along the call in `sweep` seconds and each flag appears
+ *  as it is passed, so flags arrive in the order they were said whatever order they are listed in. */
+export function sweepDelay(at: number, duration: number, sweep = 0.6, last = 0): number {
+  return Math.round(callShare(at, duration, last) * sweep * 1000) / 1000;
+}
+
 /** The demo calls and the synthetic leads they were recorded with; the API refuses a demo call on any other lead. */
 const DEMO_LEAD: Record<string, DemoCall> = { "ruth.alvarez@example.test": "pressure", "emma.walsh@example.com": "discovery" };
 

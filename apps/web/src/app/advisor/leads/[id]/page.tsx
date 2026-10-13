@@ -5,14 +5,18 @@ import { useParams } from "next/navigation";
 import { api, ApiError, apiUpload } from "@/lib/api";
 import { demoFor } from "@/lib/calls";
 import { formatDate, formatUsd } from "@/lib/format";
-import { sourceLabel, topSignals, trustTone, type Lead } from "@/lib/leads";
+import { SCORING_STEPS, sourceLabel, topSignals, trustTone, type Lead } from "@/lib/leads";
+import { LeadSkeleton } from "@/components/advisor-skeletons";
 import { AiProse } from "@/components/ai-prose";
+import { AiThinking } from "@/components/ai-thinking";
 import { CallsSection } from "@/components/calls-section";
 import { CardSection } from "@/components/card-section";
+import { Confirmed } from "@/components/form-feedback";
+import { Reveal, Stagger } from "@/components/motion";
 import { ProposalBadges, ProposalSections, type Proposal } from "@/components/proposal-view";
 import { LeadScoreStat, SignalRow, TrustScoreCard } from "@/components/score-badge";
 import { WhyPanel } from "@/components/why-panel";
-import { Badge, Button, ButtonLink, Field, Figure, inputClass, Loading, Notice, PageHeader, Sparkle, tableStyles } from "@/components/ui";
+import { Badge, Button, ButtonLink, Field, Figure, inputClass, Notice, PageHeader, Sparkle, tableStyles } from "@/components/ui";
 
 type Finding = { code: string; label: string; weight: number; evidence: string; source: string; blocking: boolean };
 type IdentityResult = { id: string; extracted: Record<string, string | number | null>; findings: Finding[]; source: string;
@@ -28,6 +32,29 @@ const ACTIONS: Record<string, string> = {
 const STAGE_NAME: Record<string, string> = { new: "New", qualified: "Qualified", proposal: "Proposal", onboarding: "Onboarding", disqualified: "Disqualified" };
 const FILE_INPUT = "block w-full text-[13px] text-ink-700 file:mr-3 file:h-10 file:cursor-pointer file:rounded-full file:border file:border-sand-200 file:bg-white file:px-4 file:text-sm file:font-medium file:text-ink-900 hover:file:bg-fill";
 const message = (e: unknown) => (e instanceof ApiError ? e.message : String(e));
+
+// What each AI call on this page does, in order, for the violet panel that waits where its answer will appear.
+const IDENTITY_STEPS = [
+  "Gemini is reading the name, date of birth, number and expiry",
+  "Document AI is screening the image for tampering",
+  "Comparing the document with the form",
+];
+const PROPOSAL_STEPS = [
+  "Simulating their own numbers and choosing a fund mix",
+  "Finding the fund documents to cite",
+  "Gemini Pro is writing the proposal from the simulation and the fund documents",
+  "Gemini Pro is citing a fund document or the simulation in every section",
+];
+const DRAFT_STEPS = [
+  "The Lead Intelligence agent is reading the lead's profile",
+  "Drafting a first email that names at most two house funds",
+  "Checking the draft against the marketing rules",
+];
+const ASK_STEPS = [
+  "The concierge is routing your question to Lead Intelligence or Trust and Fraud",
+  "The agent is reading the lead's profile and trust report",
+  "Writing the answer",
+];
 
 function MarketingFindings({ findings }: { findings: Compliance["findings"] }) {
   return (
@@ -97,7 +124,7 @@ export default function LeadDetail() {
   }
 
   if (error) return <Notice tone="error" title="Could not load this lead">{error}</Notice>;
-  if (!lead) return <Loading label="Loading the lead" />;
+  if (!lead) return <LeadSkeleton />;
   const factors = lead.lead_score_factors;
   const tone = trustTone(lead.trust_band);
   const risky = lead.trust_band === "high_risk" || lead.trust_band === "blocked";
@@ -123,19 +150,20 @@ export default function LeadDetail() {
           <Notice tone="error">{actionError.stage || actionError.load || `AI scoring failed: ${actionError.rescore}`}</Notice>
         )}
         {lead.scoring_error && (
-          <Notice tone="caution" title="The AI analysis is missing" action={<Button variant="secondary" size="sm" busy={busy === "rescore"}
+          <Notice tone="caution" title="The AI analysis is missing" action={<Button variant="secondary" size="sm" disabled={busy === "rescore"}
             onClick={() => run("rescore", async () => { setLead(await api<Lead>(`/leads/${id}/rescore`, { method: "POST" })); })}>Retry AI scoring</Button>}>
             {lead.scoring_error}. The rule-based scores below are complete.
           </Notice>
         )}
         {!lead.scored_at && (
           <Notice tone="caution" title="Not scored yet"
-            action={<Button variant="tonal" size="sm" busy={busy === "rescore"} onClick={() => run("rescore", async () => { setLead(await api<Lead>(`/leads/${id}/rescore`, { method: "POST" })); await load(); })}>
-              {busy === "rescore" ? "Scoring with Gemini" : "Score this lead"}
+            action={<Button variant="tonal" size="sm" disabled={busy === "rescore"} onClick={() => run("rescore", async () => { setLead(await api<Lead>(`/leads/${id}/rescore`, { method: "POST" })); await load(); })}>
+              Score this lead
             </Button>}>
             Gemini reads the answers; the Lead Score and the Trust Score follow.
           </Notice>
         )}
+        {busy === "rescore" && <AiThinking compact steps={SCORING_STEPS} usually="a few seconds" />}
 
         <div className="grid gap-4 lg:grid-cols-2">
           <LeadScoreStat score={lead.lead_score} probability={factors?.probability}>
@@ -202,16 +230,17 @@ export default function LeadDetail() {
           <div className="flex flex-wrap items-center gap-3">
             <input type="file" aria-label="Identity document" accept="image/png,image/jpeg,application/pdf" className={`${FILE_INPUT} max-w-[420px] flex-1`}
               onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            <Button variant="secondary" disabled={!file} busy={busy === "identity"} onClick={() => run("identity", async () => {
+            <Button variant="secondary" disabled={!file || busy === "identity"} onClick={() => run("identity", async () => {
               const form = new FormData();
               form.append("file", file!);
               setIdentity(await apiUpload<IdentityResult>(`/leads/${id}/documents`, form));
               await load();
-            })}>{busy === "identity" ? "Analysing" : "Analyse document"}</Button>
+            })}>Analyse document</Button>
           </div>
           {fail("identity")}
+          {busy === "identity" && <div className="mt-5"><AiThinking compact steps={IDENTITY_STEPS} usually="about 8 s" /></div>}
           {identity && (
-            <div className="mt-5 space-y-4">
+            <Reveal className="mt-5 space-y-4">
               <dl className="grid gap-x-8 gap-y-3 rounded-control bg-fill px-4 py-4 sm:grid-cols-3">
                 {Object.entries(identity.extracted).map(([k, v]) => (
                   <div key={k}>
@@ -220,13 +249,13 @@ export default function LeadDetail() {
                   </div>
                 ))}
               </dl>
-              {identity.findings.length === 0 ? <Notice tone="success">No findings: the document matches the form.</Notice> : (
-                <ul className="border-b border-sand-100">
+              {identity.findings.length === 0 ? <Confirmed title="No findings">The document matches the form.</Confirmed> : (
+                <Stagger as="ul" className="border-b border-sand-100">
                   {identity.findings.map((f) => <SignalRow key={f.code} signal={f} evidence />)}
-                </ul>
+                </Stagger>
               )}
               <p className="text-xs text-ink-500">Checked by <span className="code text-[11px]">{identity.source}</span>.</p>
-            </div>
+            </Reveal>
           )}
         </CardSection>
 
@@ -235,13 +264,13 @@ export default function LeadDetail() {
         <CardSection title="Proposal"
           description="Gemini Pro writes a personalised proposal from the simulation and the fund documents. It is a draft for you to review; nothing is sent."
           actions={latest ? <ButtonLink href={`/advisor/leads/${id}/proposal`} variant="quiet" size="sm">Open the printable proposal</ButtonLink> : undefined}>
-          <Button variant="ai" busy={busy === "proposal"} disabled={risky}
+          <Button variant="ai" disabled={risky || busy === "proposal"}
             onClick={() => run("proposal", async () => { await api<Proposal>(`/leads/${id}/proposal`, { method: "POST" }); await load(); })}>
-            {busy !== "proposal" && <Sparkle />}
-            {busy === "proposal" ? "Gemini Pro is writing, which can take up to a minute" : latest ? "Write a new version" : "Write a proposal"}
+            <Sparkle />{latest ? "Write a new version" : "Write a proposal"}
           </Button>
           {risky && <p className="mt-2 text-[13px] text-ink-500">Resolve the trust review before preparing a proposal.</p>}
           {fail("proposal")}
+          {busy === "proposal" && <div className="mt-6"><AiThinking steps={PROPOSAL_STEPS} usually="about 30 s" /></div>}
           {latest && (
             <div className="mt-6 space-y-4">
               <ProposalBadges proposal={latest} />
@@ -253,13 +282,14 @@ export default function LeadDetail() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           <CardSection title="First reply" description="The Lead Intelligence agent drafts it and checks it against the marketing rules.">
-            <Button variant="ai" busy={busy === "draft"} onClick={() => run("draft", async () => {
+            <Button variant="ai" disabled={busy === "draft"} onClick={() => run("draft", async () => {
               setDraft(await api<Draft>(`/leads/${id}/draft-reply`, { method: "POST" }));
               await load();
-            })}>{busy !== "draft" && <Sparkle />}{busy === "draft" ? "The agent is writing" : "Draft the first reply"}</Button>
+            })}><Sparkle />Draft the first reply</Button>
             {fail("draft")}
+            {busy === "draft" && <div className="mt-5"><AiThinking compact steps={DRAFT_STEPS} usually="a few seconds" /></div>}
             {draft && (
-              <div className="mt-5 space-y-3">
+              <Reveal className="mt-5 space-y-3">
                 <Field label="Subject">
                   <input className={inputClass} value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} />
                 </Field>
@@ -268,9 +298,9 @@ export default function LeadDetail() {
                 </Field>
                 <p className="flex items-center gap-1.5 text-xs font-medium text-ai-700"><Sparkle size={12} />Drafted by Gemini. Edit it before you send it.</p>
                 {draft.compliance.ok
-                  ? <Notice tone="success">Marketing-rule check passed ({draft.compliance.reviewed_by.join(" and ")}).</Notice>
+                  ? <Confirmed title="Marketing-rule check passed">Reviewed by {draft.compliance.reviewed_by.join(" and ")}.</Confirmed>
                   : <MarketingFindings findings={draft.compliance.findings} />}
-              </div>
+              </Reveal>
             )}
           </CardSection>
           <CardSection title="Ask the concierge" description="Routes your question to the Lead Intelligence or the Trust and Fraud agent.">
@@ -282,9 +312,10 @@ export default function LeadDetail() {
               });
             }}>
               <input className={inputClass} aria-label="Your question" placeholder="Why is this lead flagged?" value={question} onChange={(e) => setQuestion(e.target.value)} />
-              <Button type="submit" variant="ai" busy={busy === "ask"} disabled={question.trim().length < 3}>{busy !== "ask" && <Sparkle />}Ask</Button>
+              <Button type="submit" variant="ai" disabled={question.trim().length < 3 || busy === "ask"}><Sparkle />Ask</Button>
             </form>
             {fail("ask")}
+            {busy === "ask" && <div className="mt-5"><AiThinking compact steps={ASK_STEPS} usually="a few seconds" /></div>}
             {answer && <div className="mt-5"><AiProse caption="Answered by the advisor concierge on Gemini"><p className="whitespace-pre-wrap">{answer}</p></AiProse></div>}
           </CardSection>
         </div>
@@ -306,10 +337,12 @@ export default function LeadDetail() {
             {risky && override.trim().length < 5 && <p className="mt-2 text-[13px] text-ink-500">Write the override reason first.</p>}
             {fail("convert")}
           </CardSection>
+        ) : converted ? (
+          <Confirmed title="Converted to client">
+            Account <span className="code text-[12px]">{converted.account_number}</span> is open. They can sign in as {lead.email}.
+          </Confirmed>
         ) : (
-          <Notice tone="success" title="Client">
-            Converted{converted ? ` with account ${converted.account_number}` : ""}. They can sign in as {lead.email}.
-          </Notice>
+          <Notice tone="success" title="Client">Converted. They can sign in as {lead.email}.</Notice>
         )}
 
         <CardSection title="AI activity on this lead" description="Every model call, with its purpose, model, confidence and cost.">

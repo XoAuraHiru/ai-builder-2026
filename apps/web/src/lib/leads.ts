@@ -67,7 +67,15 @@ export function deviceId(storage: KeyValueStore): string {
   return id;
 }
 
-export type Triage = { attention: Lead[]; call: Lead[]; clients: Lead[]; unscored: Lead[]; closed: Lead[] };
+/** What scoring a lead does, in order, for the panel that waits on it: Gemini reads the form, the Lead Score model
+ *  scores fit, and the fixed trust rules weigh the contact details, the device and any documents. */
+export const SCORING_STEPS = [
+  "Gemini is reading the lead's answers",
+  "Scoring fit with the Lead Score model",
+  "Weighing contacts, devices and documents for the Trust Score",
+];
+
+export type Triage ={ attention: Lead[]; call: Lead[]; clients: Lead[]; unscored: Lead[]; closed: Lead[] };
 
 /** Leads in the order an advisor should see them: the risky ones first, then the ones worth a call by fit. */
 export function triage(leads: Lead[]): Triage {
