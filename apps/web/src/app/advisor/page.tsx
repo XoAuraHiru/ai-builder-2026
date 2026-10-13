@@ -144,7 +144,7 @@ export default function Leads() {
           <KeyMoment tone="alert" label="Look at these first" title={attentionHeadline(t.attention)}>
             <Stagger as="ul" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {t.attention.map((l) => (
-                <StaggerItem as="li" key={l.id}>
+                <StaggerItem as="li" key={l.id} className="min-w-0">
                   <Link href={`/advisor/leads/${l.id}`} aria-label={`${l.full_name}, Trust Score ${l.trust_score ?? "not scored"}. Open the lead`}
                     className="group block h-full rounded-panel">
                     <TrustScoreCard score={l.trust_score} band={l.trust_band} signals={topSignals(l)} fit={l.lead_score} limit={3}

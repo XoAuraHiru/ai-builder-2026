@@ -10,7 +10,7 @@ import { TRUST_SEGMENTS } from "@/lib/leads";
 /** The lead row's columns, shared by the list and its skeleton so the two line up. */
 export const LEAD_ROW = "md:grid md:grid-cols-[minmax(0,2.2fr)_110px_minmax(170px,1.3fr)_120px] md:items-center md:gap-6";
 
-function Loading({ label, children }: { label: string; children: ReactNode }) {
+function LoadingRegion({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div role="status" aria-live="polite">
       <span className="sr-only">{label}…</span>
@@ -54,12 +54,12 @@ function Meter({ small = false }: { small?: boolean }) {
 /** A Trust Score card: who (or its title), the band chip, the score, the meter and its signal rows. */
 export function TrustCardSkeleton({ person = false, signals = 3, footer = false }: { person?: boolean; signals?: number; footer?: boolean }) {
   return (
-    <Card className="flex flex-col gap-[18px]">
+    <Card className="flex min-w-0 flex-col gap-[18px]">
       <div className="flex items-start justify-between gap-3">
         {person ? (
           <span className="flex min-w-0 flex-1 items-center gap-3">
             <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
-            <span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-3.5 w-28" /><Skeleton className="h-3 w-36 max-w-full" /></span>
+            <span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-3.5 w-28 max-w-full" /><Skeleton className="h-3 w-36 max-w-full" /></span>
           </span>
         ) : <Skeleton className="mt-1 h-4 w-28" />}
         <Chip />
@@ -134,7 +134,7 @@ function SectionHead() {
 /** The leads list: its header and scoring action, the opening card with the leads to look at first, and the rows. */
 export function LeadsSkeleton({ label = "Loading the leads" }: { label?: string }) {
   return (
-    <Loading label={label}>
+    <LoadingRegion label={label}>
       <Header title="w-36" lines={2} action={<Skeleton className="h-11 w-44 rounded-full" />} />
       <div className="space-y-12">
         <div className="flex flex-col gap-6 rounded-panel border border-sand-200 bg-white p-6 sm:p-7">
@@ -144,8 +144,8 @@ export function LeadsSkeleton({ label = "Loading the leads" }: { label?: string 
           </span>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             <TrustCardSkeleton person />
-            <div className="hidden sm:block"><TrustCardSkeleton person /></div>
-            <div className="hidden xl:block"><TrustCardSkeleton person /></div>
+            <div className="hidden min-w-0 sm:block"><TrustCardSkeleton person /></div>
+            <div className="hidden min-w-0 xl:block"><TrustCardSkeleton person /></div>
           </div>
         </div>
         <div>
@@ -158,7 +158,7 @@ export function LeadsSkeleton({ label = "Loading the leads" }: { label?: string 
           </div>
         </div>
       </div>
-    </Loading>
+    </LoadingRegion>
   );
 }
 
@@ -178,7 +178,7 @@ function SectionCard({ lines = 3, children }: { lines?: number; children?: React
 /** A lead: the header with the stage, the Lead Score and Trust Score cards, the profile, and the sections below. */
 export function LeadSkeleton() {
   return (
-    <Loading label="Loading the lead">
+    <LoadingRegion label="Loading the lead">
       <Header back title="w-56" action={<span className="flex items-center gap-2.5"><Skeleton className="h-3.5 w-10" /><Skeleton className="h-11 w-44 rounded-control" /></span>} />
       <div className="space-y-6">
         <div className="grid gap-4 lg:grid-cols-2">
@@ -200,14 +200,14 @@ export function LeadSkeleton() {
           <span className="flex flex-wrap gap-2.5"><Skeleton className="h-11 w-56 rounded-full" /><Skeleton className="h-11 w-44 rounded-full" /></span>
         </SectionCard>
       </div>
-    </Loading>
+    </LoadingRegion>
   );
 }
 
 /** The printable proposal: the way back and the print button, its badges, then the document itself. */
 export function ProposalSkeleton() {
   return (
-    <Loading label="Loading the proposal">
+    <LoadingRegion label="Loading the proposal">
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Skeleton className="h-9 w-36 rounded-full" /><Skeleton className="h-11 w-48 rounded-full" />
@@ -238,7 +238,7 @@ export function ProposalSkeleton() {
           </div>
         </div>
       </div>
-    </Loading>
+    </LoadingRegion>
   );
 }
 
@@ -261,7 +261,7 @@ function HoldBannerSkeleton({ open }: { open: boolean }) {
 /** The held orders: the first banner open on its checks, trust, review note and decision, and the next one closed. */
 export function HeldSkeleton() {
   return (
-    <Loading label="Loading held orders">
+    <LoadingRegion label="Loading held orders">
       <div className="space-y-6">
         <div className="space-y-4">
           <HoldBannerSkeleton open />
@@ -282,6 +282,6 @@ export function HeldSkeleton() {
         </div>
         <HoldBannerSkeleton open={false} />
       </div>
-    </Loading>
+    </LoadingRegion>
   );
 }
