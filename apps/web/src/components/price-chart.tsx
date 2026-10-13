@@ -1,6 +1,8 @@
 "use client";
 
+import { motion, useReducedMotion } from "motion/react";
 import { useRef, useState } from "react";
+import { EASE } from "@/components/motion";
 import { formatDate, formatMonth, formatUsd } from "@/lib/format";
 import { areaPath, linear, linePath, nearestIndex, niceTicks, type Point } from "@/lib/scale";
 
@@ -9,10 +11,12 @@ const H = 240;
 const M = { top: 12, right: 12, bottom: 26, left: 60 };
 const QUARTERS = ["01", "04", "07", "10"];
 
-/** About a year of daily closes on a linear scale, with the close and the date under the pointer. */
+/** About a year of daily closes on a linear scale, with the close and the date under the pointer. The line draws
+ *  itself once, left to right, when the chart appears; the shading under it follows. */
 export function PriceChart({ points, label }: { points: { day: string; close: number }[]; label: string }) {
   const ref = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
+  const reduce = useReducedMotion();
   if (points.length < 2) return <p className="text-sm text-ink-500">There is not enough price history to draw a chart.</p>;
 
   const closes = points.map((p) => p.close);
@@ -47,8 +51,10 @@ export function PriceChart({ points, label }: { points: { day: string; close: nu
         {marks.map(({ i, day }) => (
           <text key={day} x={x(i)} y={H - 8} textAnchor="middle" className="num fill-ink-500 text-[11px]">{formatMonth(day.slice(0, 7))}</text>
         ))}
-        <path d={areaPath(line, floor)} fill={up ? "var(--color-green-500)" : "var(--color-coral-500)"} fillOpacity={0.08} />
-        <path d={linePath(line)} fill="none" stroke={up ? "var(--color-green-500)" : "var(--color-coral-500)"} strokeWidth={2} strokeLinejoin="round" />
+        <motion.path d={areaPath(line, floor)} fill={up ? "var(--color-green-500)" : "var(--color-coral-500)"} fillOpacity={0.08}
+          initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.35, ease: EASE }} />
+        <motion.path d={linePath(line)} fill="none" stroke={up ? "var(--color-green-500)" : "var(--color-coral-500)"} strokeWidth={2} strokeLinejoin="round"
+          initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.6, ease: EASE }} />
         {point && hover !== null && (
           <g>
             <line x1={x(hover)} x2={x(hover)} y1={M.top} y2={H - M.bottom} stroke="var(--color-sand-300)" />

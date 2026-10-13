@@ -6,11 +6,17 @@ import { formatMonth } from "@/lib/format";
 import { ANALOGUE_TITLE, canMap, clampedNote, EXAMPLES, FACTOR_LABEL, formatShock, impactTitle, INITIAL_STUDIO,
   recoveryText, signedPct, signedUsd0, sliderRows, studio, windowText, type HoldingChange, type History, type Impact,
   type MapResult, type Narrative, type Replay, type SliderRow, type Studio } from "@/lib/scenarios";
+import { THINKING } from "@/lib/invest";
 import { useMe } from "@/lib/session-context";
 import { NarrativeView } from "@/components/ai-prose";
+import { AiThinking } from "@/components/ai-thinking";
+import { GrowBar, Stagger, StaggerItem } from "@/components/motion";
+import { Skeleton, SkeletonText } from "@/components/skeleton";
 import { WhyPanel } from "@/components/why-panel";
-import { Button, ButtonLink, EmptyState, Field, inputClass, KeyMoment, Loading, Notice, PageHeader, Panel,
+import { Button, ButtonLink, EmptyState, Field, inputClass, KeyMoment, Notice, PageHeader, Panel,
   Section, Sparkle } from "@/components/ui";
+import { SignedCount } from "../_parts/figures";
+import { LoadingRegion, MomentSkeleton, SectionTitleSkeleton } from "../_parts/shapes";
 
 const message = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 const DESCRIPTION = "Replay real market history on what you hold, or describe a scenario and see what it could do. "
@@ -31,7 +37,7 @@ function ChangeBars({ holdings }: { holdings: HoldingChange[] }) {
   const widest = Math.max(1, ...holdings.map((h) => Math.abs(h.change_usd)));
   return (
     <ul className="space-y-3">
-      {holdings.map((h) => {
+      {holdings.map((h, i) => {
         const loss = h.change_usd < 0;
         return (
           <li key={h.symbol} className="text-sm">
@@ -42,8 +48,7 @@ function ChangeBars({ holdings }: { holdings: HoldingChange[] }) {
               </span>
             </div>
             <span className="mt-1.5 block h-1.5 rounded-full bg-sand-100" aria-hidden="true">
-              <span className={`block h-1.5 rounded-full ${loss ? "bg-coral-500" : "bg-green-500"}`}
-                style={{ width: `${(Math.abs(h.change_usd) / widest) * 100}%` }} />
+              <GrowBar pct={(Math.abs(h.change_usd) / widest) * 100} delay={0.05 * i} className={loss ? "bg-coral-500" : "bg-green-500"} />
             </span>
           </li>
         );
@@ -55,14 +60,14 @@ function ChangeBars({ holdings }: { holdings: HoldingChange[] }) {
 function ReplayCard({ replay }: { replay: Replay }) {
   const loss = replay.loss_usd < 0;
   return (
-    <Panel className="scroll-mt-24 p-6">
+    <Panel className="h-full scroll-mt-24 p-6">
       <article id={`replay-${replay.key}`} aria-labelledby={`replay-${replay.key}-title`}
         className="grid gap-x-8 gap-y-4 md:grid-cols-2 xl:grid-cols-1">
         <div className="min-w-0">
           <h3 id={`replay-${replay.key}-title`} className="font-semibold">{replay.title}</h3>
           <p className="text-xs text-ink-500">{windowText(replay.start, replay.end)}</p>
           <p className={`num mt-3 text-[30px] font-medium leading-[34px] tracking-[-0.02em] ${loss ? "text-coral-700" : "text-green-700"}`}>
-            {signedUsd0(replay.loss_usd)}
+            <SignedCount text={signedUsd0(replay.loss_usd)} />
           </p>
           <p className="mt-1.5 text-sm text-ink-700">{signedPct(replay.loss_pct)} of what you hold today</p>
         </div>
@@ -139,7 +144,8 @@ function ScenarioResult({ s, onShock, onExplain }:
   return (
     <div className="space-y-10">
       <p className="sr-only" aria-live="polite">{`If this happened: ${total}`}</p>
-      <KeyMoment tone={loss ? "alert" : "good"} label={`If this happened: ${p.title}`} title={total}>
+      <KeyMoment tone={loss ? "alert" : "good"} label={`If this happened: ${p.title}`}
+        title={<><SignedCount text={signedUsd0(impact.total_usd)} />, or {signedPct(impact.total_pct)} of your portfolio</>}>
         <p className="max-w-[62ch] text-[15px] text-ink-700">
           Over about {p.horizon_months} month{p.horizon_months === 1 ? "" : "s"}, with the shocks below applied to what you hold today.
           {updating && <span className="ml-2 text-xs text-ink-500">Updating…</span>}
@@ -200,12 +206,46 @@ function ScenarioResult({ s, onShock, onExplain }:
       </div>
 
       <Section title="What this means for you" description="Gemini reads the figures above and explains them. It cannot change them.">
-        {narrative ? <NarrativeView narrative={narrative} /> : (
-          <Button variant="ai" busy={explaining} onClick={onExplain}>{!explaining && <Sparkle />}{explaining ? "Gemini is reading the result" : "Explain this result"}</Button>
+        {narrative ? <NarrativeView narrative={narrative} /> : explaining ? <AiThinking {...THINKING.scenarioExplain} /> : (
+          <Button variant="ai" onClick={onExplain}><Sparkle />Explain this result</Button>
         )}
         {explainError && <div className="mt-3"><Notice tone="caution">{explainError}</Notice></div>}
       </Section>
     </div>
+  );
+}
+
+/** Scenarios while history is replayed: the hardest-stretch card, the three replay cards and the scenario box. */
+function ScenariosSkeleton() {
+  return (
+    <LoadingRegion label="Replaying 2008, 2020 and 2022 on what you hold" className="space-y-12">
+      <MomentSkeleton actions={1}><Skeleton className="h-3.5 w-[min(420px,85%)]" /></MomentSkeleton>
+      <div>
+        <SectionTitleSkeleton />
+        <div className="grid gap-4 xl:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="grid gap-x-8 gap-y-4 rounded-panel border border-sand-200 bg-white p-6 md:grid-cols-2 xl:grid-cols-1">
+              <span className="flex flex-col gap-2">
+                <Skeleton className="h-4 w-44" />
+                <Skeleton className="h-3 w-52 max-w-full" />
+                <Skeleton className="mt-2 h-[34px] w-36 rounded-[10px]" />
+                <Skeleton className="h-3.5 w-48 max-w-full" />
+              </span>
+              <SkeletonText lines={3} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <SectionTitleSkeleton />
+        <div className="space-y-4 rounded-panel border border-sand-200 bg-white p-6">
+          <span className="flex flex-col gap-2"><Skeleton className="h-3.5 w-20" /><Skeleton className="h-3 w-80 max-w-full" /></span>
+          <Skeleton className="h-[68px] rounded-control" />
+          <span className="flex flex-wrap gap-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-9 w-40 rounded-full" />)}</span>
+          <Skeleton className="h-11 w-48 rounded-full" />
+        </div>
+      </div>
+    </LoadingRegion>
   );
 }
 
@@ -273,7 +313,7 @@ export default function ScenariosPage() {
   const header = <PageHeader title="Scenarios" description={DESCRIPTION} />;
   if (!account) return <>{header}<EmptyState title="No investment account yet">Choose an investor persona to stress-test a portfolio.</EmptyState></>;
   if (historyError) return <>{header}<Notice tone="error" title="Could not load your scenarios">{historyError}</Notice></>;
-  if (!history) return <>{header}<Loading label="Replaying 2008, 2020 and 2022 on what you hold" /></>;
+  if (!history) return <>{header}<ScenariosSkeleton /></>;
   if (history.empty) {
     return <>{header}<EmptyState title="Nothing to stress-test yet" action={<ButtonLink href="/investor/funds">Browse the funds</ButtonLink>}>
       Scenarios replay market history on the funds and shares you hold. Cash alone does not move with markets.
@@ -286,8 +326,8 @@ export default function ScenariosPage() {
       {header}
       <div className="space-y-12">
         {worst && (
-          <KeyMoment tone={worst.loss_usd < 0 ? "alert" : "good"} label="The hardest stretch since 2007, on what you hold"
-            title={`${signedUsd0(worst.loss_usd)} (${signedPct(worst.loss_pct)}) in ${worst.title.replace(/^The /, "the ")}`}
+          <KeyMoment tone={worst.loss_usd < 0 ? "alert" : "good"} label="Your hardest stretch since 2007"
+            title={<><SignedCount text={signedUsd0(worst.loss_usd)} /> ({signedPct(worst.loss_pct)}) in {worst.title.replace(/^The /, "the ")}</>}
             actions={<ButtonLink href="#your-scenario" variant="secondary">Try your own scenario</ButtonLink>}>
             <p className="max-w-[62ch] text-[15px] text-ink-700">
               {windowText(worst.start, worst.end)}. {recoveryText(worst.recovery_months)}.
@@ -296,9 +336,9 @@ export default function ScenariosPage() {
         )}
 
         <Section title="History" description="What the three hardest stretches of recent markets would do to what you hold today, from month-end closes.">
-          <div className="grid gap-4 xl:grid-cols-3">
-            {history.replays.map((r) => <ReplayCard key={r.key} replay={r} />)}
-          </div>
+          <Stagger className="grid gap-4 xl:grid-cols-3">
+            {history.replays.map((r) => <StaggerItem key={r.key}><ReplayCard replay={r} /></StaggerItem>)}
+          </Stagger>
         </Section>
 
         <Section id="your-scenario" title="Your scenario"
@@ -321,18 +361,17 @@ export default function ScenariosPage() {
                 ))}
               </div>
               <div>
-                <Button busy={s.mapping} disabled={!canMap(s, text)} onClick={() => map(text)}>
-                  {s.mapping ? "Gemini is reading the scenario…" : "See what it could do"}
-                </Button>
+                <Button busy={s.mapping} disabled={!canMap(s, text)} onClick={() => map(text)}>See what it could do</Button>
               </div>
             </Panel>
           )}
+          {s.mapping && <div className="mt-4"><AiThinking {...THINKING.scenarioMap} /></div>}
           {s.mapError && (
             <div role="alert" className="mt-4"><Notice tone="caution" title="The scenario was not mapped">{s.mapError}</Notice></div>
           )}
         </Section>
 
-        {result && (
+        {result && !s.mapping && (
           <div ref={resultRef} className="scroll-mt-24 space-y-6">
             {!result.proposal.in_scope && (
               <div role="status"><Notice tone="info" title="Gemini did not turn this into shocks">{result.proposal.refusal}</Notice></div>

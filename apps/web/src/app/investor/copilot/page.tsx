@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { api, ApiError } from "@/lib/api";
-import { questionFrom } from "@/lib/invest";
+import { questionFrom, THINKING } from "@/lib/invest";
 import { useMe } from "@/lib/session-context";
 import { AiProse } from "@/components/ai-prose";
+import { AiThinking } from "@/components/ai-thinking";
+import { EASE, Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { WhyPanel } from "@/components/why-panel";
 import { Button, EmptyState, Notice, PageHeader, Sparkle } from "@/components/ui";
 
@@ -33,20 +35,6 @@ const TOOL_DETAIL: Record<string, string> = {
   get_quote: "The latest delayed price, its risk band and sector.",
   preview_trade: "The Pre-trade Guardian's checks on a possible order. Nothing was placed.",
 };
-
-/** Gemini at work: a violet line moving along a sand track, since what is coming is Gemini's writing. */
-function Thinking() {
-  const reduce = useReducedMotion();
-  return (
-    <div role="status" className="space-y-2">
-      <p className="text-sm text-ink-500">The copilot is checking your data and the fund documents…</p>
-      <div className="h-[3px] w-48 overflow-hidden rounded-full bg-sand-100">
-        <motion.span className="block h-full w-1/3 rounded-full bg-ai-500" animate={reduce ? undefined : { x: ["-100%", "300%"] }}
-          transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }} />
-      </div>
-    </div>
-  );
-}
 
 export default function CopilotPage() {
   const me = useMe();
@@ -97,16 +85,16 @@ export default function CopilotPage() {
         {turns.length === 0 && (
           <section aria-labelledby="try-asking" className="mb-8 flex flex-col gap-3.5 rounded-panel bg-ai-50 px-5 py-5 sm:px-6 sm:py-[22px]">
             <h2 id="try-asking" className="inline-flex items-center gap-2 text-sm font-semibold text-ai-700"><Sparkle />Try asking</h2>
-            <ul className="grid gap-2 sm:grid-cols-2">
+            <Stagger as="ul" className="grid gap-2 sm:grid-cols-2">
               {SUGGESTIONS.map((s) => (
-                <li key={s}>
+                <StaggerItem as="li" key={s}>
                   <button type="button" onClick={() => ask(s)}
                     className="h-full w-full rounded-control bg-white px-3.5 py-2.5 text-left font-serif text-base leading-[22px] text-ink-900 transition-shadow hover:ring-2 hover:ring-ai-100">
                     {s}
                   </button>
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </Stagger>
             <p className="text-xs leading-[18px] text-ai-700">Answers come from your own figures and Atrium&apos;s fund documents.</p>
           </section>
         )}
@@ -114,21 +102,22 @@ export default function CopilotPage() {
           {turns.map((t, i) => (
             <li key={i} className={t.role === "user" ? "flex justify-end" : ""}>
               {t.role === "user" ? (
-                <p className="max-w-[80%] rounded-[20px] rounded-br-md bg-green-100 px-4 py-2.5 text-[15px] text-green-900">{t.text}</p>
+                <motion.p initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.26, ease: EASE }}
+                  className="max-w-[80%] rounded-[20px] rounded-br-md bg-green-100 px-4 py-2.5 text-[15px] text-green-900">{t.text}</motion.p>
               ) : (
                 <div className="space-y-3">
                   <AiProse caption="Written by Gemini from your data and Atrium's fund documents"><p className="whitespace-pre-line">{t.text}</p></AiProse>
                   {(t.trace?.length || t.sources?.length) ? (
-                    <WhyPanel title="what the copilot checked" model="Investor Copilot agent on Gemini (Vertex AI, ADK)"
+                    <Reveal delay={0.2}><WhyPanel title="what the copilot checked" model="Investor Copilot agent on Gemini (Vertex AI, ADK)"
                       evidence={[...(t.trace ?? []).map((x) => ({ label: x.label, detail: TOOL_DETAIL[x.tool] ?? x.tool })),
-                        ...(t.sources ?? []).map((s) => ({ label: "Fund document", detail: `${s.title}, found by ${s.retriever === "vertex-ai-search" ? "Vertex AI Search" : s.retriever.includes("unavailable") ? "the local index (Vertex AI Search was unavailable)" : "the local index"}.` }))]} />
+                        ...(t.sources ?? []).map((s) => ({ label: "Fund document", detail: `${s.title}, found by ${s.retriever === "vertex-ai-search" ? "Vertex AI Search" : s.retriever.includes("unavailable") ? "the local index (Vertex AI Search was unavailable)" : "the local index"}.` }))]} /></Reveal>
                   ) : null}
                 </div>
               )}
             </li>
           ))}
+          {busy && <li><AiThinking compact {...THINKING.copilot} /></li>}
         </ol>
-        {busy && <div className="mt-6"><Thinking /></div>}
         {error && <div className="mt-6"><Notice tone="caution">{error}</Notice></div>}
         <div ref={end} />
         <form onSubmit={(e) => { e.preventDefault(); ask(draft); }}

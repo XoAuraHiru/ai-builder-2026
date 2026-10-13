@@ -1,6 +1,8 @@
 "use client";
 
+import { motion, useReducedMotion } from "motion/react";
 import { useRef, useState } from "react";
+import { EASE } from "@/components/motion";
 import { compactUsd, formatMonth, formatUsd } from "@/lib/format";
 import { areaPath, linear, linePath, logTicks, nearestIndex, niceTicks, type Point } from "@/lib/scale";
 
@@ -8,11 +10,13 @@ const W = 720;
 const H = 260;
 const M = { top: 16, right: 16, bottom: 28, left: 56 };
 
-/** Growth of $10,000 on a log scale (equal percentage moves look the same size), with the largest fall shaded. */
+/** Growth of $10,000 on a log scale (equal percentage moves look the same size), with the largest fall shaded. The
+ *  line draws itself once when the chart appears, and the shading under it follows. */
 export function GrowthChart({ points, shade }:
   { points: { month: string; value: number }[]; shade?: { from: string; to: string; label: string } }) {
   const ref = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
+  const reduce = useReducedMotion();
   const values = points.map((p) => p.value);
   const lo = Math.min(...values) * 0.9;
   const hi = Math.max(...values) * 1.08;
@@ -56,8 +60,10 @@ export function GrowthChart({ points, shade }:
         {yearMarks.map(({ i, month }) => (
           <text key={month} x={x(i)} y={H - 8} textAnchor="middle" className="num fill-ink-500 text-[11px]">{month.slice(0, 4)}</text>
         ))}
-        <path d={areaPath(line, floor)} fill="var(--color-green-500)" fillOpacity={0.08} />
-        <path d={linePath(line)} fill="none" stroke="var(--color-green-500)" strokeWidth={2} strokeLinejoin="round" />
+        <motion.path d={areaPath(line, floor)} fill="var(--color-green-500)" fillOpacity={0.08}
+          initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.35, ease: EASE }} />
+        <motion.path d={linePath(line)} fill="none" stroke="var(--color-green-500)" strokeWidth={2} strokeLinejoin="round"
+          initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.6, ease: EASE }} />
         {point && hover !== null && (
           <g>
             <line x1={x(hover)} x2={x(hover)} y1={M.top} y2={H - M.bottom} stroke="var(--color-sand-300)" />

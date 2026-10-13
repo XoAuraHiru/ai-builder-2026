@@ -1,17 +1,70 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useContext, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { formatMonth, formatPct } from "@/lib/format";
-import type { Fund } from "@/lib/invest";
+import { THINKING, type Fund } from "@/lib/invest";
 import { useMe } from "@/lib/session-context";
 import { AiProse } from "@/components/ai-prose";
+import { AiThinking } from "@/components/ai-thinking";
 import { GrowthChart } from "@/components/line-chart";
 import { YearBars } from "@/components/year-bars";
 import { TickerTile } from "@/components/market-bits";
-import { BAND_LABEL, Button, ButtonLink, Figure, KeyMoment, Loading, Notice, PageHeader, Panel, RiskBand, Section, Sparkle,
-  tableStyles } from "@/components/ui";
+import { Skeleton } from "@/components/skeleton";
+import { BAND_LABEL, Button, ButtonLink, Figure, KeyMoment, Notice, PageHeader, PageTabsContext, Panel, RiskBand, Section,
+  Sparkle, tableStyles } from "@/components/ui";
+import { FigureSkeleton, LoadingRegion, MomentSkeleton, SectionTitleSkeleton } from "../../_parts/shapes";
+
+/** A fund while it loads: its name, the who-it-is-for card with four figures, the two charts and the holdings. The
+ *  way back to all funds is real from the start. */
+function FundSkeleton() {
+  const tabs = useContext(PageTabsContext);
+  return (
+    <>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div className="min-w-0 max-w-[720px] flex-1">
+          <Link href="/investor/funds" className="mb-2 inline-flex min-h-8 items-center gap-1.5 text-[13px] font-medium text-ink-500 hover:text-ink-900">
+            <span aria-hidden="true">‹</span>All funds
+          </Link>
+          <span aria-hidden="true" className="flex flex-col gap-3">
+            <Skeleton className="h-9 w-72 max-w-full rounded-[10px] sm:h-[42px]" />
+            <Skeleton className="h-3.5 w-[min(520px,90%)]" />
+          </span>
+        </div>
+        {tabs && <div className="flex flex-wrap items-center gap-2">{tabs}</div>}
+      </div>
+      <LoadingRegion label="Loading the fund" className="space-y-12">
+        <MomentSkeleton>
+          <span className="flex gap-[3px]">{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-3 w-7 rounded-[3px]" />)}</span>
+          <div className="grid gap-x-8 gap-y-6 border-t border-sand-100 pt-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => <FigureSkeleton key={i} />)}
+          </div>
+        </MomentSkeleton>
+        <div className="grid grid-cols-1 gap-x-4 gap-y-12 xl:grid-cols-2">
+          {["aspect-[720/260]", "aspect-[720/190]"].map((shape) => (
+            <div key={shape}>
+              <SectionTitleSkeleton />
+              <div className="rounded-panel border border-sand-200 bg-white p-4 sm:p-6"><Skeleton className={`${shape} w-full rounded-[10px]`} /></div>
+            </div>
+          ))}
+        </div>
+        <div>
+          <SectionTitleSkeleton description={false} />
+          <div className="rounded-panel border border-sand-200 bg-white px-6 py-2">
+            {[0, 1, 2, 3].map((i) => (
+              <span key={i} className="flex items-center justify-between gap-4 border-b border-sand-100 py-3.5 last:border-b-0">
+                <Skeleton className="h-7 w-10 rounded-tile" /><Skeleton className="h-3.5 w-10" /><Skeleton className="h-3.5 w-14" />
+                <Skeleton className="hidden h-3.5 w-24 sm:block" /><Skeleton className="h-3.5 w-12" />
+              </span>
+            ))}
+          </div>
+        </div>
+      </LoadingRegion>
+    </>
+  );
+}
 
 type Facts = {
   window_start: string; window_end: string; annual_return_pct: number; annual_volatility_pct: number;
@@ -77,7 +130,7 @@ export default function FundPage() {
   }
 
   if (error) return <Notice tone="error" title="Could not load this fund">{error}</Notice>;
-  if (!data) return <Loading label="Loading the fund" />;
+  if (!data) return <FundSkeleton />;
   const { fund, facts } = data;
   const titles = Object.fromEntries(data.sections.map((s) => [s.id, s.title]));
   const investor = isInvestor;
@@ -170,7 +223,7 @@ export default function FundPage() {
               </AiProse>
             </div>
           ) : investor ? (
-            <Button variant="ai" busy={busy} onClick={askFit}>{!busy && <Sparkle />}{busy ? "Gemini is reading the fund documents" : "Ask Gemini whether it fits me"}</Button>
+            busy ? <AiThinking {...THINKING.fundFit} /> : <Button variant="ai" onClick={askFit}><Sparkle />Ask Gemini whether it fits me</Button>
           ) : (
             <p className="text-sm text-ink-500">Personal readings are for investors.</p>
           )}

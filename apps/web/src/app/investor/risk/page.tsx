@@ -3,12 +3,16 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { formatMonth, formatPct, formatUsd } from "@/lib/format";
-import { heat, verdictText, type Fund, type Narrative, type RiskReport } from "@/lib/invest";
+import { heat, THINKING, verdictText, type Fund, type Narrative, type RiskReport } from "@/lib/invest";
 import { useMe } from "@/lib/session-context";
 import { NarrativeView } from "@/components/ai-prose";
+import { AiThinking } from "@/components/ai-thinking";
+import { GrowBar } from "@/components/motion";
+import { Skeleton } from "@/components/skeleton";
 import { WhyPanel } from "@/components/why-panel";
 import { RiskScale } from "@/components/risk-scale";
-import { Button, ButtonLink, EmptyState, Figure, KeyMoment, Loading, Notice, PageHeader, Panel, Section, Sparkle } from "@/components/ui";
+import { Button, ButtonLink, EmptyState, Figure, KeyMoment, Notice, PageHeader, Panel, Section, Sparkle } from "@/components/ui";
+import { FigureSkeleton, LoadingRegion, MomentSkeleton, ScaleSkeleton, SectionTitleSkeleton } from "../_parts/shapes";
 
 const MOMENT = {
   above: { tone: "attention", label: "Above your risk profile" },
@@ -17,13 +21,61 @@ const MOMENT = {
   no_profile: { tone: "attention", label: "No risk profile to compare with" },
 } as const;
 
-function Bar({ label, pct, fill }: { label: string; pct: number; fill: string }) {
+function Bar({ label, pct, fill, delay }: { label: string; pct: number; fill: string; delay: number }) {
   return (
     <div className="grid grid-cols-[3.5rem_1fr_3.5rem] items-center gap-3">
       <span className="text-xs text-ink-500">{label}</span>
-      <span className="h-2 rounded-[4px] bg-sand-100"><span className={`block h-2 rounded-[4px] ${fill}`} style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} /></span>
+      <span className="h-2 rounded-[4px] bg-sand-100"><GrowBar pct={pct} delay={delay} className={fill} /></span>
       <span className="num text-right text-xs text-ink-700">{formatPct(pct)}</span>
     </div>
+  );
+}
+
+/** The risk report while history is replayed: the verdict card with its scale, six figures, then where the risk comes
+ *  from and how the funds move together. */
+function RiskSkeleton() {
+  return (
+    <LoadingRegion label="Replaying your mix through market history" className="space-y-12">
+      <MomentSkeleton actions={2}><ScaleSkeleton /></MomentSkeleton>
+      <div>
+        <SectionTitleSkeleton description={false} />
+        <div className="grid gap-x-8 gap-y-8 rounded-panel border border-sand-200 bg-white p-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }, (_, i) => <FigureSkeleton key={i} />)}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-x-4 gap-y-12 xl:grid-cols-2">
+        <div>
+          <SectionTitleSkeleton />
+          <div className="space-y-5 rounded-panel border border-sand-200 bg-white p-6">
+            <Skeleton className="h-3 w-56" />
+            {[0, 1].map((i) => (
+              <span key={i} className="flex flex-col gap-2">
+                <Skeleton className="h-3.5 w-36" />
+                {[0, 1].map((j) => (
+                  <span key={j} className="grid grid-cols-[3.5rem_1fr_3.5rem] items-center gap-3">
+                    <Skeleton className="h-3 w-10" /><Skeleton className="h-2 rounded-[4px]" /><Skeleton className="ml-auto h-3 w-9" />
+                  </span>
+                ))}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div>
+          <SectionTitleSkeleton />
+          <div className="rounded-panel border border-sand-200 bg-white p-6">
+            <div className="grid max-w-[360px] grid-cols-[minmax(0,1.6fr)_repeat(2,minmax(0,1fr))] gap-2">
+              <span />
+              <Skeleton className="mx-auto h-3 w-12" /><Skeleton className="mx-auto h-3 w-12" />
+              {[0, 1].map((i) => (
+                <span key={i} className="contents">
+                  <Skeleton className="h-3 w-4/5 self-center" /><Skeleton className="h-8 rounded-tile" /><Skeleton className="h-8 rounded-tile" />
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </LoadingRegion>
   );
 }
 
@@ -62,7 +114,7 @@ export default function RiskPage() {
 
   if (!account || empty) return <><PageHeader title="Risk" /><EmptyState title="No risk to measure yet" action={<ButtonLink href="/investor/orders">Make your first investment</ButtonLink>}>{empty || "Choose an investor persona."}</EmptyState></>;
   if (error) return <><PageHeader title="Risk" /><Notice tone="error" title="Could not load your risk report">{error}</Notice></>;
-  if (!report) return <><PageHeader title="Risk" /><Loading label="Replaying your mix through market history" /></>;
+  if (!report) return <><PageHeader title="Risk" description={<><Skeleton className="mt-1 h-3.5 w-[min(560px,85vw)]" /><Skeleton className="mt-2 h-3.5 w-24" /></>} /><RiskSkeleton /></>;
 
   const r = report;
   const codes = Object.keys(r.weights);
@@ -98,11 +150,11 @@ export default function RiskPage() {
                 <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-2 w-3.5 rounded-[3px] bg-green-500" />Share of the swings</span>
               </p>
               <ul className="space-y-5">
-                {codes.map((c) => (
+                {codes.map((c, i) => (
                   <li key={c} className="space-y-1.5 text-sm">
                     <p className="font-medium">{name(c)}</p>
-                    <Bar label="Money" pct={r.weights[c] * 100} fill="bg-sand-300" />
-                    <Bar label="Risk" pct={r.risk_contributions_pct[c]} fill="bg-green-500" />
+                    <Bar label="Money" pct={r.weights[c] * 100} fill="bg-sand-300" delay={0.1 * i} />
+                    <Bar label="Risk" pct={r.risk_contributions_pct[c]} fill="bg-green-500" delay={0.1 * i + 0.05} />
                   </li>
                 ))}
               </ul>
@@ -133,8 +185,8 @@ export default function RiskPage() {
           )}
         </div>
         <Section title="What this means for you" description="Gemini reads the figures above and explains them. It cannot change them.">
-          {narrative ? <NarrativeView narrative={narrative} /> : (
-            <Button variant="ai" busy={busy} onClick={explain}>{!busy && <Sparkle />}{busy ? "Gemini is reading your risk report" : "Explain my risk"}</Button>
+          {narrative ? <NarrativeView narrative={narrative} /> : busy ? <AiThinking {...THINKING.risk} /> : (
+            <Button variant="ai" onClick={explain}><Sparkle />Explain my risk</Button>
           )}
           {explainError && <div className="mt-3"><Notice tone="caution">{explainError}</Notice></div>}
         </Section>

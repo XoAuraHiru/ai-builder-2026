@@ -10,7 +10,44 @@ import { SessionChip, TickerTile, WatchButton } from "@/components/market-bits";
 import { OrderTicket } from "@/components/order-ticket";
 import { readShareOrder } from "@/lib/analyzer";
 import { PriceChart } from "@/components/price-chart";
-import { ChangeChip, EmptyState, Loading, Notice, PageHeader, Panel, RiskBand, Section } from "@/components/ui";
+import { CountUp } from "@/components/motion";
+import { Skeleton, SkeletonText } from "@/components/skeleton";
+import { ChangeChip, EmptyState, Notice, PageHeader, Panel, RiskBand, Section } from "@/components/ui";
+import { LoadingRegion, SectionTitleSkeleton } from "../../_parts/shapes";
+
+/** A symbol while its price loads: the price card, the order ticket beside it, the year's chart and the facts. */
+function SymbolSkeleton() {
+  return (
+    <LoadingRegion label="Loading the price" className="grid gap-x-4 gap-y-10 xl:grid-cols-[minmax(0,1fr)_380px] xl:grid-rows-[auto_1fr]">
+      <div className="flex min-w-0 flex-col gap-3 rounded-panel border border-sand-200 bg-white p-6 xl:col-start-1">
+        <span className="flex items-center justify-between gap-3">
+          <span className="flex items-center gap-3"><Skeleton className="h-8 w-11 rounded-tile" /><Skeleton className="h-3.5 w-10" /></span>
+          <Skeleton className="h-7 w-48 rounded-full" />
+        </span>
+        <Skeleton className="h-12 w-[min(280px,75%)] rounded-[12px] sm:h-[60px]" />
+        <span className="flex flex-wrap items-center gap-2.5"><Skeleton className="h-[26px] w-36 rounded-full" /><Skeleton className="h-3.5 w-56 max-w-full" /></span>
+      </div>
+      <div className="min-w-0 max-w-[520px] xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:max-w-none">
+        <div className="flex flex-col gap-4 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
+          <span className="flex flex-wrap gap-2"><Skeleton className="h-11 w-36 rounded-full" /><Skeleton className="h-11 w-40 rounded-full" /></span>
+          <span className="flex flex-col gap-2"><Skeleton className="h-3.5 w-16" /><Skeleton className="h-3 w-28" /><Skeleton className="h-11 rounded-control" /></span>
+          <Skeleton className="h-3.5 w-48" />
+          <Skeleton className="h-11 rounded-full" />
+        </div>
+      </div>
+      <div className="min-w-0 space-y-10 xl:col-start-1">
+        <div>
+          <SectionTitleSkeleton />
+          <div className="rounded-panel border border-sand-200 bg-white p-4 sm:p-6"><Skeleton className="aspect-[3/1] w-full rounded-[10px]" /></div>
+        </div>
+        <div>
+          <SectionTitleSkeleton description={false} />
+          <div className="rounded-panel border border-sand-200 bg-white p-6"><SkeletonText lines={3} className="max-w-[68ch]" /></div>
+        </div>
+      </div>
+    </LoadingRegion>
+  );
+}
 
 export default function SymbolPage() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -56,7 +93,7 @@ export default function SymbolPage() {
 
   const back = { href: "/investor/markets", label: "Markets" };
   if (error) return <><PageHeader title="Markets" back={back} /><Notice tone="error" title="This price is unavailable">{error}</Notice></>;
-  if (!detail) return <><PageHeader title={symbol.toUpperCase()} back={back} /><Loading label="Loading the price" /></>;
+  if (!detail) return <><PageHeader title={symbol.toUpperCase()} back={back} description={<Skeleton className="mt-1 h-3.5 w-64 max-w-full" />} /><SymbolSkeleton /></>;
 
   const q = detail.quote;
   const change = Number(q.change);
@@ -71,7 +108,7 @@ export default function SymbolPage() {
     <>
       <PageHeader title={detail.name} back={back} description={[detail.symbol, kindWords].filter(Boolean).join(". ") + "."}
         actions={<WatchButton symbol={detail.symbol} watched={detail.watched} onToggle={toggleWatch} withLabel />} />
-      <div className="grid gap-x-4 gap-y-10 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid gap-x-4 gap-y-10 xl:grid-cols-[minmax(0,1fr)_380px] xl:grid-rows-[auto_1fr]">
         <Panel className="flex min-w-0 flex-col gap-3 p-6 xl:col-start-1">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="flex items-center gap-3">
@@ -80,7 +117,7 @@ export default function SymbolPage() {
             </span>
             <SessionChip session={detail.session} />
           </div>
-          <p className="num text-[44px] font-medium leading-[48px] tracking-[-0.03em] sm:text-[60px] sm:leading-[60px] sm:tracking-[-0.035em]">{formatUsd(q.price)}</p>
+          <p className="num text-[44px] font-medium leading-[48px] tracking-[-0.03em] sm:text-[60px] sm:leading-[60px] sm:tracking-[-0.035em]"><CountUp text={formatUsd(q.price)} /></p>
           <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <ChangeChip size="md" value={change}>
               <span aria-hidden="true">{change > 0 ? "↑" : change < 0 ? "↓" : ""}</span>

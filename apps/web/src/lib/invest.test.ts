@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { riskState, type RiskReport } from "./invest";
+import { riskState, splitSign, THINKING, type RiskReport, type Thinking } from "./invest";
 import { currentMix, parseMoney, scenarioKey, toggleScenario, verdictText } from "./invest";
 import { copilotHref, findingCard, findingCards, heat, overlapLine, questionFrom, scaleMarks, sectorRows, shortName, topExposures,
   type XRay } from "./invest";
@@ -158,5 +158,45 @@ describe("riskState", () => {
     expect(riskState({ status: "rejected", reason: new Error("A price is unavailable right now.") }))
       .toEqual({ error: "A price is unavailable right now." });
     expect(riskState({ status: "rejected", reason: "boom" })).toEqual({ error: "Atrium could not check your mix right now." });
+  });
+});
+
+describe("THINKING", () => {
+  it("gives every Gemini wait at least two short, plain steps", () => {
+    for (const [call, t] of Object.entries(THINKING)) {
+      expect(t.steps.length, call).toBeGreaterThanOrEqual(2);
+      for (const step of t.steps) {
+        expect(step.length, step).toBeGreaterThan(8);
+        expect(step.length, step).toBeLessThanOrEqual(64);  // one line in the panel on a phone, near enough
+        expect(step, step).not.toMatch(/(\.|…|\.\.\.)$/);    // AiThinking adds no ellipsis and neither do the steps
+      }
+      expect(new Set(t.steps).size, call).toBe(t.steps.length);
+    }
+  });
+
+  it("names Gemini in the first step or two, so the wait says who is working", () => {
+    for (const [call, t] of Object.entries(THINKING)) expect(t.steps.slice(0, 2).join(" "), call).toContain("Gemini");
+  });
+
+  it("states usual times the way the panel prints them", () => {
+    expect(THINKING.scenarioMap.usually).toBe("about 17 s");
+    expect(THINKING.fundFit.usually).toBe("about 5 s");
+    expect("usually" in THINKING.profileChat).toBe(false);  // not measured, so not claimed
+    for (const t of Object.values(THINKING) as Thinking[]) if (t.usually) expect(t.usually).toMatch(/^(about \d+ s|a few seconds)$/);
+  });
+
+  it("searches before it proposes when mapping a scenario", () => {
+    const steps = THINKING.scenarioMap.steps.join(" | ");
+    expect(steps.indexOf("Google")).toBeLessThan(steps.indexOf("Proposing"));
+    expect(steps.indexOf("limits")).toBeLessThan(steps.indexOf("Applying"));
+  });
+});
+
+describe("splitSign", () => {
+  it("takes a leading plus off so the figure can count", () => {
+    expect(splitSign("+$1,240")).toEqual({ sign: "+", figure: "$1,240" });
+    expect(splitSign("−$1,240")).toEqual({ sign: "", figure: "−$1,240" });
+    expect(splitSign("$0")).toEqual({ sign: "", figure: "$0" });
+    expect(splitSign("+2.5%")).toEqual({ sign: "+", figure: "2.5%" });
   });
 });
