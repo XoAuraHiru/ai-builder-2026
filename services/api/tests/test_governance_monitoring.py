@@ -76,6 +76,28 @@ def test_people_rejecting_most_agent_proposals_trips_the_agent(db):
     assert "agreement" in monitoring(db, now=NOW) and monitoring(db, now=NOW)["window_days"] == 30
 
 
+def test_after_a_reset_only_new_decisions_count(db, staff):
+    import pyotp
+
+    from app.governance.breakers import reset
+
+    for i in range(12):
+        _match(db, "agent", "rejected" if i < 8 else "accepted", NOW - timedelta(days=2))
+    db.flush()
+    assert apply_monitoring_breakers(db, now=NOW) == ["reconciler_agent"]
+    omar = staff["omar"]
+    reset(db, "reconciler_agent", reason="The prompt was fixed and revalidated.", person=omar,
+          code=pyotp.TOTP(omar.totp_secret).at(NOW), now=NOW)
+    db.flush()
+    tomorrow = NOW + timedelta(days=1)
+    assert apply_monitoring_breakers(db, now=tomorrow) == [] and not breaker_open(db, "reconciler_agent")
+    assert "not enough" in agreement(db, now=tomorrow, since_reset=True)["reconciler_agent"]["note"].lower()
+    for _ in range(10):
+        _match(db, "agent", "rejected", NOW + timedelta(hours=6))
+    db.flush()
+    assert apply_monitoring_breakers(db, now=tomorrow) == ["reconciler_agent"]
+
+
 def test_the_stored_evals_run_applies_the_monitoring_breakers(db, monkeypatch):
     import app.governance.monitoring as monitoring_module
     from app.governance.evals.__main__ import main

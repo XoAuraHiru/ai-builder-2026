@@ -92,6 +92,33 @@ def test_a_paused_narration_reader_reads_by_rule_and_notes_why(db):
     assert read_by.startswith("paused") and "Narration reading is paused" in read_by
 
 
+def test_a_paused_statement_reader_takes_csv_only(db, staff):
+    from app.services.statements import StatementError, ingest_statement
+
+    class Reader:
+        def read(self, data, mime_type):  # would be Document AI
+            raise AssertionError("the paused reader must not be called")
+
+    trip(db, "statement_reader", reason="Kill switch.", by="Omar Haddad", now=NOW)
+    with pytest.raises(StatementError, match="Statement reading is paused"):
+        ingest_statement(db, data=b"%PDF-1.4", filename="oct.pdf", mime_type="application/pdf",
+                         uploaded_by=staff["mei"], llm=FakeLLM({}), reader=Reader())
+    csv = b"Date,Description,Amount\n2026-10-12,ACH CREDIT PRIYA RAMAN REF ATR-1A2B3C4D,1500.00\n"
+    statement = ingest_statement(db, data=csv, filename="oct.csv", mime_type="text/csv", uploaded_by=staff["mei"],
+                                 llm=FakeLLM({}), reader=Reader())
+    assert statement.source == "csv"
+
+
+def test_a_paused_anomaly_model_leaves_the_scenarios_to_raise_alerts(db, account):
+    from app.ml.aml_model import FEATURES, AmlModel
+    from app.services.aml import run_monitoring
+
+    flags_everyone = AmlModel(centroids=[[0.0] * 6], means={f: 0.0 for f in FEATURES}, stds={f: 1.0 for f in FEATURES},
+                              threshold=-1.0, source="test", model_name="test", trained_at="2026-10-12")
+    trip(db, "aml_anomaly", reason="Kill switch.", by="Omar Haddad", now=NOW)
+    assert [a.scenario for a in run_monitoring(db, date(2026, 10, 12), flags_everyone)] == []  # scenarios alone ran
+
+
 def test_a_paused_order_explainer_keeps_the_guardians_report(db, account):
     from app.services.order_ai import explain_order
 

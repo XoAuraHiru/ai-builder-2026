@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import {
-  agreementLine, caseValue, driftLine, GENERATIVE, MONITORED, STATUS_LABEL, STATUS_TONE, suiteTitle,
+  agreementLine, canPause, caseValue, driftLine, GENERATIVE, MONITORED, STATUS_LABEL, STATUS_TONE, suiteTitle,
   type Breaker, type CaseRow, type ModelCard, type Monitoring, type Suite,
 } from "@/lib/governance";
 import { CodeField, DemoAuthenticator } from "@/components/step-up";
@@ -152,7 +152,8 @@ function SuiteSection({ suite, all }: { suite: Suite; all: Suite[] }) {
   );
 }
 
-function BreakerPanel({ modelKey, breaker, onChange }: { modelKey: string; breaker: Breaker; onChange: () => Promise<void> }) {
+function BreakerPanel({ modelKey, breaker, pausable, onChange }:
+  { modelKey: string; breaker: Breaker; pausable: boolean; onChange: () => Promise<void> }) {
   const [reason, setReason] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -183,12 +184,16 @@ function BreakerPanel({ modelKey, breaker, onChange }: { modelKey: string; break
         <Badge tone={open ? "loss" : "gain"}>{open ? "Open: the model is paused" : "Closed: the model is running"}</Badge>
       </div>
       {breaker.message && <Notice tone="caution">{breaker.message}</Notice>}
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-        <Field label={open ? "Why it can run again" : "Why pause it"} hint="Kept in the model's history and the decision log.">
-          <input className={inputClass} value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
-        </Field>
-        {!open && <Button variant="danger" busy={busy} disabled={!reason.trim()} onClick={change}>Pause this model</Button>}
-      </div>
+      {!open && !pausable ? (
+        <p className="text-sm text-ink-2">Nothing can stand in for this model, so pausing it would change nothing. When a check fails, it shows Failing instead.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <Field label={open ? "Why it can run again" : "Why pause it"} hint="Kept in the model's history and the decision log.">
+            <input className={inputClass} value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} />
+          </Field>
+          {!open && <Button variant="danger" busy={busy} disabled={!reason.trim()} onClick={change}>Pause this model</Button>}
+        </div>
+      )}
       {open && (
         <div className="space-y-3">
           <Field label="Code from your authenticator" hint="A reset needs a one-time code, as four-eyes approvals do.">
@@ -305,7 +310,7 @@ export default function ModelCardPage() {
           </Section>
         )}
 
-        <BreakerPanel modelKey={card.key} breaker={card.breaker} onChange={load} />
+        <BreakerPanel modelKey={card.key} breaker={card.breaker} pausable={canPause(card)} onChange={load} />
       </div>
     </>
   );

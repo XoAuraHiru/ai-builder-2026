@@ -83,11 +83,27 @@ def _held_orders(db: Session, since: datetime, now: datetime) -> dict:
     return _rate(agreed, decided)
 
 
-def agreement(db: Session, now: datetime | None = None) -> dict[str, dict]:
-    """Per model, how often people's decisions matched its suggestion over the window."""
+def _last_reset(db: Session, key: str) -> datetime | None:
+    from app.models import ModelBreaker
+
+    row = db.get(ModelBreaker, key)
+    resets = [h["at"] for h in (row.history if row else []) if h.get("state") == "closed"]
+    return _aware(datetime.fromisoformat(resets[-1])) if resets else None
+
+
+def agreement(db: Session, now: datetime | None = None, since_reset: bool = False) -> dict[str, dict]:
+    """Per model, how often people's decisions matched its suggestion over the window. With since_reset, a model
+    whose breaker was reset counts only the decisions made after the reset: the ones before it are why it was
+    paused, and a person has since judged it fit to run."""
     since, now = _window(now)
-    return {"reconciler_agent": _reconciliation(db, since, now), "case_reviewer": _case_reviews(db, since, now),
-            "held_order_reviewer": _held_orders(db, since, now)}
+
+    def start(key: str) -> datetime:
+        reset_at = _last_reset(db, key) if since_reset else None
+        return max(since, reset_at) if reset_at else since
+
+    return {"reconciler_agent": _reconciliation(db, start("reconciler_agent"), now),
+            "case_reviewer": _case_reviews(db, start("case_reviewer"), now),
+            "held_order_reviewer": _held_orders(db, start("held_order_reviewer"), now)}
 
 
 _training_scores: list[int] | None = None
@@ -153,7 +169,7 @@ def apply_monitoring_breakers(db: Session, now: datetime | None = None) -> list[
     from app.governance.breakers import breaker_open, trip
 
     tripped = []
-    for key, found in agreement(db, now).items():
+    for key, found in agreement(db, now, since_reset=True).items():
         spec = MODELS[key]
         if spec.tier != "high" or not spec.fallback or found["rate"] is None or found["rate"] >= AGREEMENT_FLOOR:
             continue

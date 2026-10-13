@@ -322,6 +322,11 @@ def ingest_statement(db: Session, *, data: bytes, filename: str, mime_type: str,
     if kind in ("text/csv", "application/vnd.ms-excel") or name.endswith(".csv"):
         extraction = parse_csv(data)
     elif kind == "application/pdf" or name.endswith(".pdf"):
+        from app.governance.breakers import breaker_message
+
+        paused = breaker_message(db, "statement_reader")
+        if paused:  # switched off: statements are read as CSV only
+            raise StatementError(f"{paused} Upload the CSV version of the statement.")
         if reader is None:
             raise StatementError("Document AI is not configured here, so PDF statements cannot be read. Upload the CSV "
                                  "version of the statement.")

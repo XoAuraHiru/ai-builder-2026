@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  agreementLine, caseValue, driftLine, headline, runLine, STATUS_LABEL, STATUS_TONE, suiteTitle, type ModelRow, type RunRow,
+  agreementLine, canPause, caseValue, driftLine, headline, runLine, STATUS_LABEL, STATUS_TONE, suiteTitle, type ModelRow, type RunRow,
 } from "./governance";
 
 const row = (status: ModelRow["status"], over: Partial<ModelRow> = {}): ModelRow => ({
@@ -47,6 +47,10 @@ describe("governance copy", () => {
       .toBe("Live checks started from this page, running since 09:14 UTC");
     expect(runLine({ status: "failed", trigger: "button", tier: "live", started_at: "2026-10-14T09:14:00Z", cost_usd: "0" } as never))
       .toMatch(/could not start/);
+  });
+  it("offers a pause only where a fallback can stand in", () => {
+    expect(canPause(row("validated", { fallback: "The scorer proposes the strongest matches." }))).toBe(true);
+    expect(canPause(row("validated", { fallback: null }))).toBe(false);
   });
   it("reads monitoring as sentences, and too few decisions as a note", () => {
     expect(agreementLine("reconciler_agent", { agreed: 28, decided: 34, rate: 28 / 34, note: "" }))

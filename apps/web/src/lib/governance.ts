@@ -136,5 +136,10 @@ export function driftLine(d: LeadDrift): string {
   return `Lead scores this month compared with training: ${d.note}.`;
 }
 
+/** A breaker switches a model to its fallback; with none, pausing would change nothing, so it is not offered. */
+export function canPause(model: Pick<ModelRow, "fallback">): boolean {
+  return Boolean(model.fallback);
+}
+
 /** The monitored models a card can show, by key. */
 export const MONITORED: ReadonlySet<string> = new Set(Object.keys(AGREEMENT_COPY));
