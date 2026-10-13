@@ -69,11 +69,19 @@ export function ChipsSkeleton({ count = 3 }: { count?: number }) {
   );
 }
 
-/** A table card: its title and description, header cells and rows on hairlines. `widths` sets each column's share
- *  (the first is the widest); on a phone the rows become the stacked list the desks show there. */
+/** A table card: its title and description, header cells and rows on hairlines. `widths` sets each column's share;
+ *  `tile` puts a fund tile in the first column (or the column it names), and `chip` a status chip in the last. On a
+ *  phone the rows become the stacked list the desks show there. */
 export function TableCardSkeleton({ rows = 6, widths = [2, 1, 1, 1], tile = false, title = true, chip = false }:
-  { rows?: number; widths?: number[]; tile?: boolean; title?: boolean; chip?: boolean }) {
+  { rows?: number; widths?: number[]; tile?: boolean | number; title?: boolean; chip?: boolean }) {
   const columns = { gridTemplateColumns: widths.map((w) => `${w}fr`).join(" ") };
+  const tileCol = tile === true ? 0 : tile === false ? -1 : tile;
+  const lead = (withTile: boolean) => (
+    <span className="flex items-center gap-2.5">
+      {withTile && <Skeleton className="h-7 w-11 shrink-0 rounded-tile" />}
+      <span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-3.5 w-4/5" /><Skeleton className="h-2.5 w-2/5" /></span>
+    </span>
+  );
   return (
     <div className={`p-5 sm:p-6 ${CARD}`}>
       {title && (
@@ -88,14 +96,10 @@ export function TableCardSkeleton({ rows = 6, widths = [2, 1, 1, 1], tile = fals
         </div>
         {Array.from({ length: rows }, (_, r) => (
           <div key={r} className="grid items-center gap-4 border-b border-sand-100 py-3.5 last:border-b-0" style={columns}>
-            <span className="flex items-center gap-2.5">
-              {tile && <Skeleton className="h-7 w-11 shrink-0 rounded-tile" />}
-              <span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-3.5 w-4/5" /><Skeleton className="h-2.5 w-2/5" /></span>
-            </span>
-            {widths.slice(1).map((_, c) => (
-              c === widths.length - 2 && chip
-                ? <Skeleton key={c} className="h-[26px] w-24 rounded-full" />
-                : <Skeleton key={c} className={`h-3.5 ${c % 2 ? "w-1/2" : "w-3/4"}`} />
+            {widths.map((_, c) => (
+              c === 0 || c === tileCol ? <span key={c}>{lead(c === tileCol)}</span>
+                : c === widths.length - 1 && chip ? <Skeleton key={c} className="h-[26px] w-24 rounded-full" />
+                  : <Skeleton key={c} className={`h-3.5 ${c % 2 ? "w-3/4" : "w-1/2"}`} />
             ))}
           </div>
         ))}
@@ -103,7 +107,7 @@ export function TableCardSkeleton({ rows = 6, widths = [2, 1, 1, 1], tile = fals
       <div className="divide-y divide-sand-100 md:hidden">
         {Array.from({ length: Math.min(rows, 5) }, (_, r) => (
           <div key={r} className="flex items-start gap-3 py-3.5">
-            {tile && <Skeleton className="h-7 w-11 shrink-0 rounded-tile" />}
+            {tileCol >= 0 && <Skeleton className="h-7 w-11 shrink-0 rounded-tile" />}
             <span className="flex min-w-0 flex-1 flex-col gap-2">
               <span className="flex justify-between gap-3"><Skeleton className="h-3.5 w-2/5" /><Skeleton className="h-3.5 w-16" /></span>
               <Skeleton className="h-3 w-4/5" />
