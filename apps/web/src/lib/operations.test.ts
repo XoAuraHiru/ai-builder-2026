@@ -147,6 +147,8 @@ describe("confirmPause", () => {
     expect(confirmPause(false)).toBeGreaterThan(400);
     expect(confirmPause(null)).toBeGreaterThan(400);
     expect(confirmPause(true)).toBe(0);
+    expect(confirmPause(false, true)).toBeLessThan(confirmPause(false));
+    expect(confirmPause(true, true)).toBe(0);
   });
 });
 

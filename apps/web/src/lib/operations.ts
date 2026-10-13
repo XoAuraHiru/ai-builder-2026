@@ -251,9 +251,10 @@ export function codeArrival(before: string, after: string): number {
   return i;
 }
 
-/** The pause between a decision going through and its card leaving the queue, long enough for the check to draw. */
-export function confirmPause(reduced: boolean | null): number {
-  return reduced ? 0 : 520;
+/** The pause between a decision going through and its card leaving the queue, long enough for the check to draw;
+ *  shorter while "Accept all" walks the cards, so the walk keeps moving. */
+export function confirmPause(reduced: boolean | null, walk = false): number {
+  return reduced ? 0 : walk ? 360 : 520;
 }
 
 /** Accept each proposal in turn; one failure does not stop the rest, and the result says what happened. */
