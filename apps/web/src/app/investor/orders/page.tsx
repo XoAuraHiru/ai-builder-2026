@@ -7,7 +7,56 @@ import { formatDate, formatSignedUsd, formatUsd } from "@/lib/format";
 import type { Fund } from "@/lib/invest";
 import { describe, nextTarget, stepStatus, type Instruction } from "@/lib/orders";
 import { useMe } from "@/lib/session-context";
-import { Badge, Button, EmptyState, Field, inputClass, Loading, MoneyInput, Notice, PageHeader, Panel, RiskBand, Section, Segmented } from "@/components/ui";
+import { AnimatePresence, motion } from "motion/react";
+import { EASE, Reveal, Stagger, StaggerItem } from "@/components/motion";
+import { Skeleton } from "@/components/skeleton";
+import { Badge, Button, EmptyState, Field, inputClass, MoneyInput, Notice, PageHeader, Panel, RiskBand, Section, Segmented } from "@/components/ui";
+import { Confirmed } from "../_parts/confirmed";
+import { LoadingRegion, SectionTitleSkeleton } from "../_parts/shapes";
+
+const DESCRIPTION = "Invest, withdraw or switch between funds. Atrium checks every instruction against your holdings and your risk profile before it is accepted, and shows you the checks first.";
+// A new instruction or monthly plan unfolds into its list; the rows already there stay still.
+const ROW = {
+  initial: { opacity: 0, height: 0 }, animate: { opacity: 1, height: "auto" }, exit: { opacity: 0, height: 0 },
+  transition: { duration: 0.28, ease: EASE },
+} as const;
+
+/** Fund orders while they load: the instruction form beside its review area, the monthly plans and the instructions. */
+function OrdersSkeleton() {
+  return (
+    <LoadingRegion label="Loading your instructions" className="space-y-12">
+      <div className="grid gap-8 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <div className="flex h-fit flex-col gap-5 rounded-panel border border-sand-200 bg-white p-6">
+          <Skeleton className="h-11 w-[min(280px,100%)] rounded-full" />
+          {[0, 1].map((i) => <span key={i} className="flex flex-col gap-2"><Skeleton className="h-3.5 w-16" /><Skeleton className="h-11 rounded-control" /></span>)}
+          <Skeleton className="h-11 w-44 rounded-full" />
+          <span className="border-t border-sand-100 pt-4"><Skeleton className="h-3 w-48" /></span>
+        </div>
+        <div className="self-start rounded-panel border border-dashed border-sand-300 bg-white px-6 py-12">
+          <span className="mx-auto flex max-w-[52ch] flex-col items-center gap-2.5"><Skeleton className="h-4 w-48" /><Skeleton className="h-3.5 w-full" /><Skeleton className="h-3.5 w-3/5" /></span>
+        </div>
+      </div>
+      <div>
+        <SectionTitleSkeleton />
+        <div className="flex flex-wrap items-end gap-3 rounded-panel border border-sand-200 bg-white p-6">
+          {["w-56", "w-36", "w-28"].map((w) => <span key={w} className={`flex flex-col gap-2 ${w}`}><Skeleton className="h-3.5 w-16" /><Skeleton className="h-11 rounded-control" /></span>)}
+          <Skeleton className="h-11 w-40 rounded-full" />
+        </div>
+      </div>
+      <div>
+        <SectionTitleSkeleton description={false} />
+        <div className="rounded-panel border border-sand-200 bg-white px-6 py-2">
+          {[0, 1, 2].map((i) => (
+            <span key={i} className="grid gap-2 border-b border-sand-100 py-3.5 last:border-b-0 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+              <span className="flex flex-col gap-2"><Skeleton className="h-3.5 w-[min(320px,80%)]" /><Skeleton className="h-3 w-24" /></span>
+              <span className="flex items-center gap-2">{[0, 1, 2, 3].map((j) => <Skeleton key={j} className="h-2 w-16" />)}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </LoadingRegion>
+  );
+}
 
 type Kind = "subscribe" | "redeem" | "switch";
 type Check = { code: string; ok: boolean; message: string };
@@ -38,17 +87,17 @@ function Stepper({ instruction }: { instruction: Instruction }) {
 
 function CheckList({ checks }: { checks: Check[] }) {
   return (
-    <ul className="space-y-1.5 text-sm">
+    <Stagger as="ul" className="space-y-1.5 text-sm">
       {checks.map((c) => (
-        <li key={c.code + c.message} className="flex items-start gap-2">
+        <StaggerItem as="li" key={c.code + c.message} className="flex items-start gap-2">
           <svg viewBox="0 0 16 16" className={`mt-0.5 h-4 w-4 shrink-0 ${c.ok ? "text-green-700" : "text-coral-700"}`} aria-hidden="true">
             {c.ok ? <path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.75" />
               : <path d="M4.5 4.5l7 7m0-7-7 7" fill="none" stroke="currentColor" strokeWidth="1.75" />}
           </svg>
           <span><span className="sr-only">{c.ok ? "Passed: " : "Failed: "}</span>{c.message}</span>
-        </li>
+        </StaggerItem>
       ))}
-    </ul>
+    </Stagger>
   );
 }
 
@@ -124,8 +173,9 @@ export default function OrdersPage() {
     if (target !== toFund) setToFund(target);
   }, [funds, fund, toFund]);
 
+  const header = <PageHeader title="Fund orders" description={DESCRIPTION} />;
   if (!account) return <EmptyState title="No investment account yet">Choose an investor persona to place instructions.</EmptyState>;
-  if (!history) return error ? <Notice tone="error">{error}</Notice> : <Loading label="Loading your instructions" />;
+  if (!history) return <>{header}{error ? <Notice tone="error">{error}</Notice> : <OrdersSkeleton />}</>;
 
   const byCode = Object.fromEntries(funds.map((f) => [f.code, f]));
   const sourceFunds = kind === "subscribe" ? funds : funds.filter((f) => f.code in held);
@@ -187,7 +237,7 @@ export default function OrdersPage() {
   const monthlyAbove = band !== null && (byCode[monthly.fund]?.risk_band ?? 0) > band;
   return (
     <>
-      <PageHeader title="Fund orders" description="Invest, withdraw or switch between funds. Atrium checks every instruction against your holdings and your risk profile before it is accepted, and shows you the checks first." />
+      {header}
       {analysis && (orderLinked || monthlyLinked) && (
         <div className="mb-8">
           <Notice tone="info" title="Filled in from your analysis">
@@ -226,12 +276,13 @@ export default function OrdersPage() {
           <div className="min-w-0 space-y-5">
             {error && <Notice tone="error">{error}</Notice>}
             {placed && (
-              <Notice tone="success" title="Instruction accepted">
+              <Confirmed title="Instruction accepted">
                 <p>{describe(placed)}. It will be dealt at the next published price.</p>
                 <div className="mt-2"><Stepper instruction={placed} /></div>
-              </Notice>
+              </Confirmed>
             )}
             {plan ? (
+              <Reveal>
               <Panel className="space-y-5 p-6">
                 <div>
                   <p className="text-base font-semibold">Checks</p>
@@ -257,6 +308,7 @@ export default function OrdersPage() {
                 )}
                 <Button busy={busy === "place"} disabled={!plan.ok || (plan.needs_acknowledgement && !ack)} onClick={place}>Place instruction</Button>
               </Panel>
+              </Reveal>
             ) : !placed && (
               <EmptyState title="Review before you place">Choose a fund and an amount, then review. You will see every check before anything is placed.</EmptyState>
             )}
@@ -285,15 +337,19 @@ export default function OrdersPage() {
           {monthlyError && <div className="mt-3"><Notice tone="caution">{monthlyError}</Notice></div>}
           {plans.length > 0 && (
             <ul className="mt-5 divide-y divide-sand-100 border-t border-sand-100 text-sm">
+              <AnimatePresence initial={false}>
               {plans.map((p) => (
-                <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <motion.li key={p.id} {...ROW} className="overflow-hidden">
+                <div className="flex flex-wrap items-center justify-between gap-3 py-3">
                   <span className="flex flex-wrap items-center gap-2">
                     <span><span className="num font-medium">{formatUsd(p.amount)}</span> into {p.fund_name} on day {p.day_of_month}</span>
                     {p.acknowledged_risk && <Badge tone="caution">Risk acknowledged</Badge>}
                   </span>
                   {p.status === "active" ? <Button variant="quiet" onClick={() => cancelMonthly(p.id)}>Cancel plan</Button> : <Badge>Cancelled</Badge>}
-                </li>
+                </div>
+                </motion.li>
               ))}
+              </AnimatePresence>
             </ul>
           )}
           </Panel>
@@ -302,15 +358,19 @@ export default function OrdersPage() {
           {history.length === 0 ? <EmptyState title="No instructions yet">Review an instruction above; every check shows before anything is placed.</EmptyState> : (
             <Panel className="px-6 py-2">
             <ul className="divide-y divide-sand-100">
+              <AnimatePresence initial={false}>
               {history.map((i) => (
-                <li key={i.id} className="grid gap-2 py-3.5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                <motion.li key={i.id} {...ROW} className="overflow-hidden">
+                <div className="grid gap-2 py-3.5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <span className="min-w-0">
                     <span className="text-sm font-medium">{describe(i)}</span>
                     <span className="block text-xs text-ink-500">{formatDate(i.requested_at)}{i.acknowledged_risk ? ". Risk acknowledged by you." : ""}</span>
                   </span>
                   <Stepper instruction={i} />
-                </li>
+                </div>
+                </motion.li>
               ))}
+              </AnimatePresence>
             </ul>
             </Panel>
           )}
