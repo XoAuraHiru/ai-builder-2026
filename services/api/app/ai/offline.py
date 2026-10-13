@@ -167,6 +167,14 @@ def _scenario_proposal(prompt: str) -> dict:
                             "today's news."]}
 
 
+def _ring(prompt: str) -> dict:
+    ids = re.findall(r'"id": "(L\d+)"', prompt.split("<links>")[-1].split("</links>")[0])
+    return {"pattern": "unclear", "summary": "Offline mode: connect Gemini for a written reading of this ring.",
+            "parts": [{"text": "Offline mode: the ring's members and links are listed on this page; Gemini explains "
+                               "how they connect when it is connected.", "links": ids[:2]}],
+            "next_checks": ["Compare the members' identity documents and contact details."]}
+
+
 def offline_llm() -> FakeLLM:
     return FakeLLM({
         "lead_enrichment": _enrich,
@@ -182,4 +190,5 @@ def offline_llm() -> FakeLLM:
         "ops_brief": _brief,
         "scenario_context": _scenario_context, "scenario_proposal": _scenario_proposal,
         "scenario_narrative": _narrative,
+        "ring_narrative": _ring,
     }, model="offline")

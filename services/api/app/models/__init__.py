@@ -15,6 +15,7 @@ from app.models.ledger import INSTRUMENT_TYPES, POSTING_TYPES, Lot, Posting
 from app.models.person import PERSON_KINDS, Person
 from app.models.price import PRICE_STATUSES, Price
 from app.models.proposal import Proposal
+from app.models.rings import RingFlag
 from app.models.risk_profile import RiskProfile
 from app.models.trading import ORDER_SIDES, ORDER_STATES, ORDER_TYPES, VERDICTS, AccountDevice, TradeOrder, WatchItem
 
@@ -26,5 +27,5 @@ __all__ = [
     "ALERT_SEVERITIES", "ALERT_STATES", "APPROVAL_ACTIONS", "APPROVAL_STATES", "AmlAlert", "Approval", "BankStatement",
     "LINE_STATES", "MATCH_STATES", "MATCH_TIERS", "OpsRun", "ReconMatch", "StatementLine",
     "BREAKER_STATES", "CASE_OUTCOMES", "EVAL_TIERS", "EVAL_TRIGGERS", "RUN_STATES", "SUITE_KINDS", "EvalCase",
-    "EvalRun", "ModelBreaker",
+    "EvalRun", "ModelBreaker", "RingFlag",
 ]
