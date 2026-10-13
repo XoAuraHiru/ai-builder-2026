@@ -43,35 +43,35 @@ export function GrowthChart({ points, shade }:
         aria-label={`$10,000 invested in ${formatMonth(first.month)} grew to ${formatUsd(last.value, 0)} by ${formatMonth(last.month)}.`}>
         {from >= 0 && to >= from && (
           <g>
-            <rect x={x(from)} y={M.top} width={Math.max(2, x(to) - x(from))} height={H - M.top - M.bottom} fill="var(--color-caution-wash)" />
-            <text x={x(from) + 4} y={M.top + 12} className="fill-caution text-[11px] font-medium">{shade?.label}</text>
+            <rect x={x(from)} y={M.top} width={Math.max(2, x(to) - x(from))} height={H - M.top - M.bottom} fill="var(--color-coral-50)" />
+            <text x={x(from) + 4} y={M.top + 12} className="fill-coral-700 text-[11px] font-medium">{shade?.label}</text>
           </g>
         )}
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={M.left} x2={W - M.right} y1={y(t)} y2={y(t)} stroke="var(--color-line)" />
-            <text x={M.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="num fill-muted text-[11px]">{compactUsd(t)}</text>
+            <line x1={M.left} x2={W - M.right} y1={y(t)} y2={y(t)} stroke="var(--color-sand-200)" />
+            <text x={M.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="num fill-ink-500 text-[11px]">{compactUsd(t)}</text>
           </g>
         ))}
         {yearMarks.map(({ i, month }) => (
-          <text key={month} x={x(i)} y={H - 8} textAnchor="middle" className="num fill-muted text-[11px]">{month.slice(0, 4)}</text>
+          <text key={month} x={x(i)} y={H - 8} textAnchor="middle" className="num fill-ink-500 text-[11px]">{month.slice(0, 4)}</text>
         ))}
-        <path d={areaPath(line, floor)} fill="var(--color-ink)" fillOpacity={0.05} />
-        <path d={linePath(line)} fill="none" stroke="var(--color-ink)" strokeWidth={1.75} strokeLinejoin="round" />
+        <path d={areaPath(line, floor)} fill="var(--color-green-500)" fillOpacity={0.08} />
+        <path d={linePath(line)} fill="none" stroke="var(--color-green-500)" strokeWidth={2} strokeLinejoin="round" />
         {point && hover !== null && (
           <g>
-            <line x1={x(hover)} x2={x(hover)} y1={M.top} y2={H - M.bottom} stroke="var(--color-ink)" strokeOpacity={0.3} />
-            <circle cx={x(hover)} cy={y(point.value)} r={3.5} fill="var(--color-ink)" />
+            <line x1={x(hover)} x2={x(hover)} y1={M.top} y2={H - M.bottom} stroke="var(--color-sand-300)" />
+            <circle cx={x(hover)} cy={y(point.value)} r={4} fill="var(--color-green-500)" stroke="var(--color-canvas)" strokeWidth={2} />
           </g>
         )}
         <rect x={M.left} y={M.top} width={W - M.left - M.right} height={H - M.top - M.bottom} fill="transparent"
           onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={() => setHover(null)} />
       </svg>
       {point && hover !== null && (
-        <div className="pointer-events-none absolute top-2 rounded-control border border-line bg-surface px-3 py-2 text-xs shadow-[0_8px_24px_-12px_rgba(23,32,42,0.35)]"
+        <div className="pointer-events-none absolute top-2 rounded-control border border-sand-200 bg-white px-3 py-2 text-xs shadow-float"
           style={{ left: `${(x(hover) / W) * 100}%`, transform: x(hover) > W * 0.6 ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
           <p className="font-medium">{formatMonth(point.month)}</p>
-          <p className="num text-ink-2">{formatUsd(point.value, 0)}</p>
+          <p className="num text-ink-700">{formatUsd(point.value, 0)}</p>
         </div>
       )}
     </div>

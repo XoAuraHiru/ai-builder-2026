@@ -54,10 +54,153 @@ export const BAND_COLOR: Record<number, string> = { 1: "#95c0a5", 2: "#649e7d", 
 // Chart series, in order; highlight one series at a time, the rest stay quiet.
 export const SERIES = ["#3f8160", "#e2b23e", "#e8705f"];
 export const CATEGORY = ["#3f8160", "#f4d27c", "#e8705f", "#95c0a5", "#dcdad1", "#255740", "#e2b23e", "#649e7d"];
+// Asset classes keep one colour wherever they appear, all in the calm family: stocks green-500, bonds green-300,
+// cash and T-bills sand-300. Coral and amber stay free for risk and caution.
+export const ASSET_COLOR: Record<string, string> = {
+  equity: "#3f8160", bond: "#95c0a5", cash: "#dcdad1", Stocks: "#3f8160", Bonds: "#95c0a5", "Cash and T-bills": "#dcdad1",
+};
 
-/** Correlation cell shading: graphite at a strength that follows |value|. */
+/** Correlation cell shading: forest green-500 at a strength that follows |value|. */
 export function heat(value: number): string {
-  return `rgba(23, 32, 42, ${(Math.min(1, Math.abs(value)) * 0.28).toFixed(3)})`;
+  return `rgba(63, 129, 96, ${(Math.min(1, Math.abs(value)) * 0.32).toFixed(3)})`;
+}
+
+const BANDS = [1, 2, 3, 4, 5] as const;
+const BAND_NAME: Record<number, string> = { 1: "Preserve", 2: "Cautious", 3: "Balanced", 4: "Growth", 5: "Adventurous" };
+
+/** One step of the home risk scale: green fills the profile's band, amber the portfolio's when it sits above it,
+ *  pale green when it sits below it (or there is no profile to compare with). Each marked band has a chip above it. */
+export type ScaleMark = {
+  band: number; label: string; fill: "profile" | "above" | "calm" | "none";
+  chip: { text: string; tone: "gain" | "caution" | "neutral" } | null;
+};
+
+export function scaleMarks(profile: number | null, portfolio: number): ScaleMark[] {
+  return BANDS.map((band) => {
+    const label = `${band} ${BAND_NAME[band]}`;
+    if (band === profile && band === portfolio) return { band, label, fill: "profile", chip: { text: "Your profile and portfolio", tone: "gain" } };
+    if (band === profile) return { band, label, fill: "profile", chip: { text: "Your profile", tone: "gain" } };
+    if (band === portfolio) {
+      const above = profile !== null && portfolio > profile;
+      return { band, label, fill: above ? "above" : "calm", chip: { text: "Your portfolio now", tone: above ? "caution" : "neutral" } };
+    }
+    return { band, label, fill: "none", chip: null };
+  });
+}
+
+/** A bar row: a name, its share, and the bar's width as a percentage of the widest row shown. */
+export type ExposureRow = { name: string; pct: number; width: number; other: boolean };
+
+function withWidths(rows: { name: string; pct: number; other: boolean }[]): ExposureRow[] {
+  const widest = Math.max(0, ...rows.map((r) => r.pct));
+  return rows.map((r) => ({ ...r, width: widest > 0 ? Math.round((r.pct / widest) * 1000) / 10 : 0 }));
+}
+
+/** "Where your money sits" on Home: the largest exposures from the X-ray. */
+export function topExposures(rows: Exposure[], n = 4): ExposureRow[] {
+  return withWidths([...rows].sort((a, b) => b.pct - a.pct).slice(0, n).map((r) => ({ name: r.name, pct: r.pct, other: false })));
+}
+
+/** The X-ray's sector card: the largest n sectors, then everything else summed as "Other sectors". */
+export function sectorRows(rows: Exposure[], n = 4): ExposureRow[] {
+  const sorted = [...rows].sort((a, b) => b.value_usd - a.value_usd);
+  const total = sorted.reduce((s, r) => s + r.value_usd, 0);
+  const top = sorted.slice(0, n).map((r) => ({ name: r.name, pct: r.pct, other: false }));
+  const rest = sorted.slice(n);
+  if (rest.length === 0 || total <= 0) return withWidths(top);
+  const otherPct = Math.round((rest.reduce((s, r) => s + r.value_usd, 0) / total) * 1000) / 10;
+  return withWidths([...top, { name: rest.length === 1 ? rest[0].name : "Other sectors", pct: otherPct, other: rest.length > 1 }]);
+}
+
+/** The largest overlap between two funds, said in one line, or null when the funds share nothing worth saying. */
+export function overlapLine(overlaps: XRay["overlaps"]): string | null {
+  const ranked = [...overlaps].sort((a, b) => Math.max(b.shared_etfs_pct, b.shared_companies_pct) - Math.max(a.shared_etfs_pct, a.shared_companies_pct));
+  const o = ranked[0];
+  if (!o) return null;
+  const pct = Math.max(o.shared_etfs_pct, o.shared_companies_pct);
+  return `${o.names[0]} and ${o.names[1]} overlap by ${pct.toFixed(1)}%.`;
+}
+
+/** "NVIDIA Corp" → "NVIDIA", "Alphabet Inc Class A" → "Alphabet": a company as people say it, for chips. */
+export function shortName(name: string): string {
+  const short = name.replace(/\s+Class\s+[A-Z]$/i, "")
+    .replace(/,?\s+(Corp\.?|Corporation|Inc\.?|Incorporated|Co\.?|Company|Ltd\.?|plc|PLC|Holdings?)$/i, "")
+    .trim();
+  return short || name;
+}
+
+/** An X-ray warning as a finding card: the figure set large, the rest as a sentence, and chips for what it names. */
+export type Finding = {
+  key: string; title: string; tone: "note" | "look"; figure: string | null; sentence: string;
+  chips: { text: string; mono: boolean }[];
+};
+
+const PCT = "(\\d+(?:\\.\\d+)?%)";
+
+export function findingCard(w: XRay["warnings"][number], x: Pick<XRay, "overlaps" | "companies">): Finding {
+  const base = { key: `${w.code}-${w.message}`, title: w.title, tone: w.severity === "caution" ? "look" as const : "note" as const };
+  let m: RegExpMatchArray | null;
+  if (w.code === "HOME_BIAS" && (m = w.message.match(new RegExp(`^${PCT}\\s+(.*)$`)))) {
+    return { ...base, figure: m[1], sentence: m[2], chips: [] };
+  }
+  if (w.code === "CONC_COMPANY" && (m = w.message.match(new RegExp(`^(.*) is ${PCT} of your portfolio`)))) {
+    const company = x.companies.find((c) => c.name === m![1]);
+    return { ...base, figure: m[2], sentence: `of your portfolio is ${m[1]}${company ? ", held through" : "."}`,
+      chips: (company?.via ?? []).map((v) => ({ text: v, mono: true })) };
+  }
+  if ((w.code === "CONC_SECTOR" || w.code === "CONC_FUND") && (m = w.message.match(new RegExp(`^(.*) is ${PCT} of your portfolio\\.?$`)))) {
+    return { ...base, figure: m[2], sentence: `of your portfolio is in ${m[1]}.`, chips: [] };
+  }
+  if (w.code === "ONE_FUND" && (m = w.message.match(/^Everything is in (.*?)\.\s*(.*)$/))) {
+    return { ...base, figure: "100%", sentence: `of your money is in ${m[1]}.${m[2] ? ` ${m[2]}` : ""}`, chips: [] };
+  }
+  if (w.code === "OVERLAP") {
+    const o = x.overlaps.find((v) => w.message.startsWith(`${v.names[0]} and ${v.names[1]}`));
+    if (o) {
+      const both = o.shared_etfs_pct > 0 && o.shared_companies_pct > 0;
+      const etfLed = o.shared_etfs_pct >= o.shared_companies_pct;
+      const pct = Math.max(o.shared_etfs_pct, o.shared_companies_pct);
+      const detail = both ? `: ${o.shared_etfs_pct.toFixed(1)}% in the same ETFs and ${o.shared_companies_pct.toFixed(1)}% in the same companies`
+        : etfLed ? ", in the same ETFs" : "";
+      return { ...base, figure: `${pct.toFixed(1)}%`, sentence: `overlap between ${o.names[0]} and ${o.names[1]}${detail}`,
+        chips: o.top_shared.map((n) => ({ text: shortName(n), mono: false })) };
+    }
+  }
+  return { ...base, figure: null, sentence: w.message, chips: [] };
+}
+
+const COUNT_WORD = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
+
+/** The X-ray's findings as cards. Several "one company is a large share" warnings become one card naming the
+ *  companies, so the findings stay one row and the companies and sectors stay above the fold. */
+export function findingCards(x: Pick<XRay, "warnings" | "overlaps" | "companies">): Finding[] {
+  const big = x.warnings.filter((w) => w.code === "CONC_COMPANY");
+  if (big.length < 2) return x.warnings.map((w) => findingCard(w, x));
+  const cards = big.map((w) => ({ w, card: findingCard(w, x) }));
+  const pcts = cards.map(({ card }) => Number.parseFloat(card.figure ?? "0"));
+  const top = cards[pcts.indexOf(Math.max(...pcts))];
+  const name = (w: XRay["warnings"][number]) => w.message.split(" is ")[0];
+  const merged: Finding = {
+    key: "CONC_COMPANY-merged", title: `${COUNT_WORD[big.length] ?? big.length} companies are each a large share`, tone: "look",
+    figure: top.card.figure, sentence: `of your portfolio is ${name(top.w)}, the largest of them`,
+    chips: big.map((w) => ({ text: shortName(name(w)), mono: false })),
+  };
+  const out: Finding[] = [];
+  for (const w of x.warnings) {
+    if (w.code !== "CONC_COMPANY") out.push(findingCard(w, x));
+    else if (w === big[0]) out.push(merged);
+  }
+  return out;
+}
+
+/** The copilot link with a question waiting in the box, and the question read back from the page's address. */
+export function copilotHref(question: string): string {
+  return `/investor/copilot?q=${encodeURIComponent(question)}`;
+}
+
+export function questionFrom(search: string): string {
+  const q = new URLSearchParams(search).get("q") ?? "";
+  return q.trim().slice(0, 500);
 }
 
 export function currentMix(byFund: Record<string, string | number>): Record<string, number> | null {

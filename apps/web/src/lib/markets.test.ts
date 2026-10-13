@@ -1,5 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { compactCount, filterRows, priceSource, type MarketRow } from "./markets";
+import { changeText, compactCount, filterRows, priceSource, profileLegend, sessionChip, type MarketRow } from "./markets";
+
+describe("sessionChip", () => {
+  const now = new Date("2026-10-13T11:00:00Z");
+  it("says when a closed market opens, in New York time", () => {
+    expect(sessionChip({ is_open: false, label: "", next_open: "2026-10-13T13:30:00Z" }, now))
+      .toEqual({ text: "US market closed · opens 9:30 am ET", open: false });
+    expect(sessionChip({ is_open: false, label: "", next_open: "2026-10-14T13:30:00Z" }, now).text)
+      .toBe("US market closed · opens tomorrow 9:30 am ET");
+    expect(sessionChip({ is_open: false, label: "", next_open: "2026-10-19T13:30:00Z" }, now).text)
+      .toBe("US market closed · opens Mon 9:30 am ET");
+  });
+  it("says when an open market closes", () => {
+    expect(sessionChip({ is_open: true, label: "", next_open: "2026-10-13T13:30:00Z" }, now))
+      .toEqual({ text: "US market open · closes 4:00 pm ET", open: true });
+  });
+});
+
+describe("changeText", () => {
+  it("puts an arrow on every change", () => {
+    expect(changeText(1.29)).toBe("↑ 1.29%");
+    expect(changeText(-0.5)).toBe("↓ 0.50%");
+    expect(changeText(0)).toBe("0.00%");
+    expect(changeText(-0.001)).toBe("0.00%");
+  });
+});
+
+describe("profileLegend", () => {
+  it("measures the bands against the investor's profile", () => {
+    expect(profileLegend(3)).toEqual({ within: "Within your profile (band 3)", above: "Above it" });
+    expect(profileLegend(null)).toBeNull();
+  });
+});
 
 const row = (symbol: string, name: string, kind: "stock" | "etf", watched = false): MarketRow => ({
   symbol, name, kind, sector: null, risk_band: 4, price: "100", change_pct: 0, source: "live", watched });
