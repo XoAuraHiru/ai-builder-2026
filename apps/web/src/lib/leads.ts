@@ -133,6 +133,21 @@ export function sourceLabel(source: string): string {
   return SOURCE_LABEL[source] ?? (source ? source[0].toUpperCase() + source.slice(1).replaceAll("_", " ") : "Unknown source");
 }
 
+export type ApplicationField = "full_name" | "email" | "goals" | "horizon_years" | "investable_usd";
+
+/** The prospect form's checks, one sentence per field to fix; empty when it can be sent. Phone stays optional and
+ *  unchecked here: its format is a trust signal for the advisor, not a reason to turn a prospect away. */
+export function applicationErrors(form: Record<ApplicationField, string>): Partial<Record<ApplicationField, string>> {
+  const out: Partial<Record<ApplicationField, string>> = {};
+  if (form.full_name.trim().length < 2) out.full_name = "Enter your full name.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) out.email = "Enter an email address, like name@example.com.";
+  if (form.goals.trim().length < 3) out.goals = "Tell us what you are investing for, in a few words.";
+  const years = Number(form.horizon_years);
+  if (form.horizon_years.trim() === "" || !Number.isInteger(years) || years < 0 || years > 50) out.horizon_years = "Choose between 0 and 50 years.";
+  if (!(Number(form.investable_usd) > 0)) out.investable_usd = "Enter how much you would invest now.";
+  return out;
+}
+
 /** How long ago, in words; past a week, the date. The API's times carry no zone and are UTC. */
 export function timeAgo(iso: string, now: Date = new Date()): string {
   const utc = /(?:[zZ]|[+-]\d\d:?\d\d)$/.test(iso) ? iso : `${iso}Z`;

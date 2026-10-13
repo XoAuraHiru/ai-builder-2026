@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  attentionHeadline, deviceId, groupByStage, scoreTone, signedWeight, sourceLabel, STAGES, strongestSignal, timeAgo, topSignals, triage,
+  applicationErrors, attentionHeadline, deviceId, groupByStage, scoreTone, signedWeight, sourceLabel, STAGES, strongestSignal, timeAgo, topSignals, triage,
   TRUST_SEGMENTS, trustMeter, trustTone, type Lead,
 } from "./leads";
 
@@ -83,6 +83,24 @@ describe("trust meter", () => {
     expect(trustMeter(0, "blocked")).toEqual({ filled: 0, tone: "coral" });
     expect(trustMeter(null, null)).toEqual({ filled: 0, tone: "none" });
     expect(trustMeter(140, "clear").filled).toBe(20);
+  });
+});
+
+describe("applicationErrors", () => {
+  const ok = { full_name: "Avery Quinn", email: "avery@example.com", goals: "Retire early", horizon_years: "10", investable_usd: "25000" };
+  it("passes a complete application", () => {
+    expect(applicationErrors(ok)).toEqual({});
+  });
+  it("says what to fix, one sentence per field", () => {
+    expect(applicationErrors({ full_name: " A ", email: "avery@", goals: "", horizon_years: "51", investable_usd: "" })).toEqual({
+      full_name: "Enter your full name.",
+      email: "Enter an email address, like name@example.com.",
+      goals: "Tell us what you are investing for, in a few words.",
+      horizon_years: "Choose between 0 and 50 years.",
+      investable_usd: "Enter how much you would invest now.",
+    });
+    expect(applicationErrors({ ...ok, horizon_years: "2.5", investable_usd: "0" })).toEqual({
+      horizon_years: "Choose between 0 and 50 years.", investable_usd: "Enter how much you would invest now." });
   });
 });
 
