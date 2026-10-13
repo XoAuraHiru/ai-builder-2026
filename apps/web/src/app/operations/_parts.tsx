@@ -177,18 +177,49 @@ export function CheckDot({ tone = "gain", size = 24 }: { tone?: "gain" | "neutra
   );
 }
 
+/** The 24px coral circle with a cross that draws itself: a request that was turned down. */
+export function CrossDot({ size = 24 }: { size?: number }) {
+  const s = Math.round(size * 0.5);
+  return (
+    <motion.span aria-hidden="true" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.22, ease: EASE }} style={{ width: size, height: size }}
+      className="flex shrink-0 items-center justify-center rounded-full bg-coral-500 text-white">
+      <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+        <motion.path d="M18 6 6 18M6 6l12 12" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.4, ease: EASE }} />
+      </svg>
+    </motion.span>
+  );
+}
+
+/** The notice after a decision went through: the success notice's place and voice, with the check drawing itself
+ *  where its dot would be. */
+export function ConfirmedNotice({ tone = "gain", title, children }: { tone?: "gain" | "neutral"; title: string; children?: ReactNode }) {
+  return (
+    <motion.div role="status" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: EASE }}
+      className={`flex gap-3 rounded-panel px-5 py-4 text-sm ${tone === "gain" ? "bg-green-50" : "bg-fill"}`}>
+      <CheckDot tone={tone} size={22} />
+      <div className="min-w-0 pt-px">
+        <p className="font-semibold text-ink-900">{title}</p>
+        {children && <div className="text-ink-700">{children}</div>}
+      </div>
+    </motion.div>
+  );
+}
+
 /** A card in a queue: it arrives in order with the cards around it, and once it is decided it fades and its height
  *  closes, so the cards below move up smoothly. Put each one directly in an AnimatePresence, in a list with "-mb-4"
  *  (or its own gap's negative): the gap below a card is its own padding, so the gap closes with it. Four pixels of
  *  room on every other side keep a focus ring from being clipped while the card closes. */
-export function QueueItem({ index, children, gap = "pb-4" }: { index: number; children: ReactNode; gap?: string }) {
+export function QueueItem({ index, children, gap = "pb-4", as = "div" }:
+  { index: number; children: ReactNode; gap?: string; as?: "div" | "li" }) {
   const close = { duration: 0.3, delay: 0.08, ease: EASE };
+  const Tag = as === "li" ? motion.li : motion.div;
   return (
-    <motion.div className="-mx-1 -mt-1 overflow-hidden px-1 pt-1" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+    <Tag className="-mx-1 -mt-1 overflow-hidden px-1 pt-1" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, delay: arriveDelay(index), ease: EASE }}
       exit={{ opacity: 0, height: 0, paddingTop: 0, marginTop: 0,
         transition: { opacity: { duration: 0.16 }, height: close, paddingTop: close, marginTop: close } }}>
       <div className={gap}>{children}</div>
-    </motion.div>
+    </Tag>
   );
 }
