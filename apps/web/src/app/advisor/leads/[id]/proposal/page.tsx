@@ -6,10 +6,11 @@ import { api, ApiError } from "@/lib/api";
 import { formatDate, formatMonth, formatPct, formatUsd } from "@/lib/format";
 import { SERIES, type ScenarioOut } from "@/lib/invest";
 import type { Lead } from "@/lib/leads";
+import { ProposalSkeleton } from "@/components/advisor-skeletons";
 import { FanChart } from "@/components/fan-chart";
 import { ProposalBadges, ProposalSections, type Proposal } from "@/components/proposal-view";
 import { AtriumMark } from "@/components/shell";
-import { Button, ButtonLink, EmptyState, Loading, Notice } from "@/components/ui";
+import { Button, ButtonLink, EmptyState, Notice } from "@/components/ui";
 
 type ProjectionScenario = NonNullable<Proposal["content"]["projection"]>["scenarios"][number];
 
@@ -26,7 +27,8 @@ export default function PrintableProposal() {
   }, [id]);
 
   if (error) return <Notice tone="error">{error}</Notice>;
-  if (!lead || proposal === undefined) return <Loading label="Loading the proposal" />;
+  // The document prints: it arrives with the page (no counting figures, nothing staged), and its fan chart draws once.
+  if (!lead || proposal === undefined) return <ProposalSkeleton />;
   if (!proposal) return <EmptyState title="No proposal yet">Write one from the lead page first.</EmptyState>;
   const projection = proposal.content.projection;
   const used = new Set(proposal.content.sections.flatMap((s) => s.citations));
