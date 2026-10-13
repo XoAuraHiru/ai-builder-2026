@@ -149,6 +149,61 @@ export function meterCells(confidence: number): number {
   return Math.max(0, Math.min(5, Math.round(confidence * 5)));
 }
 
+export type ChipTone = "gain" | "caution" | "loss" | "neutral";
+export type Status = { label: string; tone: ChipTone };
+
+/** Status chips: matched green, waiting for a second person amber, held or rejected coral, a draft neutral. */
+export function matchStatus(state: Match["state"]): Status {
+  if (state === "accepted") return { label: "Matched", tone: "gain" };
+  if (state === "rejected") return { label: "Rejected", tone: "loss" };
+  if (state === "awaiting_approval") return { label: "Awaiting second approver", tone: "caution" };
+  return { label: "Proposed", tone: "neutral" };
+}
+
+export function approvalStatus(state: Approval["state"]): Status {
+  if (state === "approved") return { label: "Approved", tone: "gain" };
+  if (state === "rejected") return { label: "Rejected", tone: "loss" };
+  return { label: "Awaiting second approver", tone: "caution" };
+}
+
+export function priceStatus(status: DraftPrice["status"]): Status {
+  return status === "checked" ? { label: "Awaiting second approver", tone: "caution" } : { label: "Draft", tone: "neutral" };
+}
+
+/** The queue counts the day-end recorded in its Exceptions step, to compare with the counts now. */
+export function runCounts(run: Pick<OpsRun, "steps"> | null): { waiting?: number; unmatched?: number; approvals?: number } {
+  const facts = run?.steps.find((s) => s.step === "Exceptions")?.facts ?? {};
+  const n = (v: unknown) => (typeof v === "number" ? v : undefined);
+  return { waiting: n(facts.waiting), unmatched: n(facts.unmatched_lines), approvals: n(facts.approvals) };
+}
+
+/** A queue's change since the day-end ran: fewer waiting is good (green), more is a caution (amber). No change, or
+ *  nothing to compare with, gives no chip. */
+export function sinceRun(now: number, then: number | undefined): { text: string; tone: "gain" | "caution" } | null {
+  if (then === undefined || now === then) return null;
+  return now > then ? { text: `↑ ${now - then}`, tone: "caution" } : { text: `↓ ${then - now}`, tone: "gain" };
+}
+
+/** The first dollar amount in a request's summary, for the request card's right-hand figure. */
+export function approvalAmount(summary: string): string | null {
+  return summary.match(/\$[\d,]+(?:\.\d{2})?/)?.[0] ?? null;
+}
+
+/** A record's id as people read it: the first eight characters, in capitals. */
+export function shortId(id: string): string {
+  return id.replace(/-/g, "").slice(0, 8).toUpperCase();
+}
+
+const WHEN = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+export function shortWhen(iso: string): string {
+  return WHEN.format(new Date(iso));
+}
+
+/** A brief or summary from the rules is not Gemini's writing, so it is not shown in the violet block. */
+export function writtenByModel(model: string): boolean {
+  return model !== "rules";
+}
+
 /** Accept each proposal in turn; one failure does not stop the rest, and the result says what happened. */
 export async function acceptMany(ids: string[], accept: (id: string) => Promise<unknown>):
   Promise<{ accepted: string[]; failed: { id: string; message: string }[] }> {
