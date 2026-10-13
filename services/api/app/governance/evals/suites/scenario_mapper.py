@@ -4,27 +4,20 @@ attacks (live).
 The live checks call the proposal step directly, without the grounded search: they judge the mapping itself, and a
 search for each case would add its query charge to every run.
 """
-import json
-from pathlib import Path
-
+from app.governance import golden as golden_data
 from app.governance.evals.framework import (CaseResult, EvalContext, SuiteResult, every_case, rate, run_case,
                                             share_passing, suite)
 from app.services.scenarios import (BOUNDS, SECTORS, ScenarioProposal, Validated, propose, proposes_trade,
                                     validate_proposal)
 
-GOLDEN = Path(__file__).resolve().parents[2] / "golden" / "scenario_mapper"
 PURPOSE = "eval:scenario_proposal"
 NO_CONTEXT = ""
 SIGNS_BAR = 0.9
 
 
 def golden(name: str) -> list[dict]:
-    """The cases of golden/scenario_mapper/<name>.json; every case says why its answer is right."""
-    data = json.loads((GOLDEN / f"{name}.json").read_text(encoding="utf-8"))
-    missing = [c.get("id", "?") for c in data["cases"] if not c.get("why")]
-    if missing:
-        raise ValueError(f"golden/scenario_mapper/{name}.json: cases without a why: {missing}")
-    return data["cases"]
+    """The cases of golden/scenario_mapper/<name>.json; the shared loader checks every case says why."""
+    return golden_data.load(f"scenario_mapper/{name}")["cases"]
 
 
 def effective(shocks: dict[str, float], factor: str) -> float:

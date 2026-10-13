@@ -81,7 +81,17 @@ def test_golden_copy_uses_no_gendered_pronouns():
             continue  # saved Document AI responses, not copy
         if path.name == "docai_sample.json":
             continue
-        found += [f"{path.name}: {m.group(0)}" for m in pronoun.finditer(path.read_text(encoding="utf-8"))]
+        text = path.read_text(encoding="utf-8")
+        if path.parent.name == "call_analyst":  # what fictional speakers say on a call is dialogue, not copy
+            import json
+
+            data = json.loads(text)
+            for case in data.get("cases", [data]) if isinstance(data, dict) else []:
+                for reading in (case, case.get("reading", {})):
+                    if isinstance(reading, dict):
+                        reading.pop("transcript", None)
+            text = json.dumps(data)
+        found += [f"{path.name}: {m.group(0)}" for m in pronoun.finditer(text)]
     assert found == []
 
 

@@ -18,7 +18,7 @@ from app.governance.evals.runner import (COOLDOWN, RUN_TIMEOUT, adopt_or_start, 
 from app.models import EvalCase, EvalRun
 
 PERSONA_EMAILS = {f"{p}@atrium.demo" for p in ("daniel", "priya", "lucas", "tom", "hana", "mei", "sam", "omar")}
-NOT_YET_BUILT = {"scenario_mapper", "call_analyst", "ring_narrator"}  # their modules arrive with the feature plans
+NOT_YET_BUILT: set[str] = set()  # every model's module exists now
 
 
 def test_the_inventory_lists_every_model_once_with_what_governs_it():
