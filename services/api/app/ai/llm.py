@@ -29,6 +29,22 @@ class LLMResult:
     cost_usd: float
 
 
+@dataclass(frozen=True)
+class GroundedResult:
+    """Prose grounded with Google Search, the web pages it rests on, and what the call cost."""
+    text: str
+    sources: list[dict]  # [{"title": str, "uri": str}]
+    queries: int         # web searches Gemini ran; each is charged
+    model: str
+    tokens_in: int
+    tokens_out: int
+    latency_ms: int
+    cost_usd: float
+
+
+MAX_SOURCES = 6
+
+
 class LLMError(Exception):
     pass
 
@@ -36,6 +52,8 @@ class LLMError(Exception):
 class LLM(Protocol):
     def generate_json(self, *, purpose: str, prompt: str, schema: type[T],
                       attachments: list[Attachment] | None = None, pro: bool = False) -> LLMResult: ...
+
+    def generate_grounded(self, *, purpose: str, prompt: str) -> GroundedResult: ...
 
 
 def price_usd(settings: Settings, model: str, tokens_in: int, tokens_out: int) -> float:
@@ -70,6 +88,17 @@ class FakeLLM:
         data = raw(prompt) if callable(raw) else raw
         return LLMResult(parsed=schema.model_validate(data), model=self.model, tokens_in=len(prompt) // 4,
                          tokens_out=50, latency_ms=1, cost_usd=0.0)
+
+    def generate_grounded(self, *, purpose, prompt) -> GroundedResult:
+        """responses[purpose] is {"text", "sources"}, or a callable of the prompt that returns one."""
+        self.calls.append({"purpose": purpose, "prompt": prompt, "attachments": [], "pro": False, "grounded": True})
+        if purpose not in self.responses:
+            raise LLMError(f"FakeLLM has no response for purpose {purpose!r}")
+        raw = self.responses[purpose]
+        data = raw(prompt) if callable(raw) else raw
+        sources = [dict(s) for s in data.get("sources", [])][:MAX_SOURCES]
+        return GroundedResult(text=data["text"], sources=sources, queries=len(sources), model=self.model,
+                              tokens_in=len(prompt) // 4, tokens_out=50, latency_ms=1, cost_usd=0.0)
 
 
 class GeminiLLM:
@@ -111,6 +140,40 @@ class GeminiLLM:
         tokens_out = ((usage.candidates_token_count or 0) + (usage.thoughts_token_count or 0)) if usage else 0
         return LLMResult(parsed=parsed, model=model, tokens_in=tokens_in, tokens_out=tokens_out,
                          latency_ms=latency_ms, cost_usd=price_usd(self.settings, model, tokens_in, tokens_out))
+
+    def generate_grounded(self, *, purpose, prompt) -> GroundedResult:
+        """Flash with the Google Search tool: prose about the present, with the pages it rests on."""
+        from google.genai import types
+
+        model = self.settings.gemini_flash_model
+        config = types.GenerateContentConfig(tools=[types.Tool(google_search=types.GoogleSearch())],
+                                             thinking_config=types.ThinkingConfig(thinking_level="LOW"))
+        started = time.perf_counter()
+        try:
+            resp = self._client.models.generate_content(model=model, contents=[prompt], config=config)
+            text = resp.text
+        except Exception as e:  # the SDK raises several error types; callers handle one
+            raise LLMError(f"{purpose}: Gemini grounded call failed: {e}") from e
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        if not (text or "").strip():
+            raise LLMError(f"{purpose}: Gemini returned no text")
+        candidates = getattr(resp, "candidates", None) or []
+        metadata = getattr(candidates[0], "grounding_metadata", None) if candidates else None
+        sources: list[dict] = []
+        for chunk in getattr(metadata, "grounding_chunks", None) or []:
+            web = getattr(chunk, "web", None)
+            uri = getattr(web, "uri", None) if web is not None else None
+            if uri and all(s["uri"] != uri for s in sources):
+                sources.append({"title": getattr(web, "title", None) or uri, "uri": uri})
+            if len(sources) == MAX_SOURCES:
+                break
+        queries = len(getattr(metadata, "web_search_queries", None) or [])
+        usage = resp.usage_metadata
+        tokens_in = (usage.prompt_token_count or 0) if usage else 0
+        tokens_out = ((usage.candidates_token_count or 0) + (usage.thoughts_token_count or 0)) if usage else 0
+        cost = price_usd(self.settings, model, tokens_in, tokens_out) + queries * self.settings.search_usd_per_query
+        return GroundedResult(text=text.strip(), sources=sources, queries=queries, model=model, tokens_in=tokens_in,
+                              tokens_out=tokens_out, latency_ms=latency_ms, cost_usd=round(cost, 6))
 
 
 _gemini: GeminiLLM | None = None

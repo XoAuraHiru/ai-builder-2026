@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     gemini_flash_output_usd_per_m: float = 3.75
     gemini_pro_input_usd_per_m: float = 2.0
     gemini_pro_output_usd_per_m: float = 12.0
+    search_usd_per_query: float = 0.014     # Grounding with Google Search, list price beyond the free 5,000 a month
     docai_location: str = "us"
     docai_proofing_processor: str = ""      # Document AI ID Proofing processor id; empty disables fraud signals
     docai_statement_processor: str = ""     # Document AI Bank Statement Parser id; empty means CSV statements only
