@@ -5,24 +5,26 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import {
-  agreementLine, clockUtc, driftLine, GENERATIVE, headline, MONITORED, runLine, runNotice, STATUS_LABEL, STATUS_TONE,
-  type ModelRow, type ModelsOut, type Monitoring, type RunRow,
+  agreementLine, clockUtc, driftLine, GENERATIVE, headline, MONITORED, runLine, runMeta, runNotice, STATUS_LABEL, STATUS_TONE,
+  type ModelRow, type ModelStatus, type ModelsOut, type Monitoring, type RunRow,
 } from "@/lib/governance";
-import { Badge, Button, KeyMoment, Loading, Notice, PageHeader, Panel, Section, tableStyles as t } from "@/components/ui";
+import { Button, KeyMoment, Loading, Notice, PageHeader, Section } from "@/components/ui";
+import { StatusChip, TableCard, tbl } from "../../operations/_parts";
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 const POLL_MS = 10_000;
 const TIER_LABEL = { high: "High", medium: "Medium" } as const;
+const ORDER: ModelStatus[] = ["breaker_open", "failing", "no_result", "not_validated", "monitored_only", "validated"];
 
-function KindBadge({ model }: { model: ModelRow }) {
-  return <Badge tone={GENERATIVE.has(model.kind) ? "ai" : "neutral"}>{model.kind_label}</Badge>;
+function KindChip({ model }: { model: Pick<ModelRow, "kind" | "kind_label"> }) {
+  return <StatusChip tone={GENERATIVE.has(model.kind) ? "ai" : "neutral"}>{model.kind_label}</StatusChip>;
 }
 
 function StatusCell({ model }: { model: ModelRow }) {
   return (
     <span className="flex flex-wrap items-center gap-1.5">
-      <Badge tone={STATUS_TONE[model.status]}>{STATUS_LABEL[model.status]}</Badge>
-      {model.changed_since_validation && <Badge tone="caution">Changed since validation</Badge>}
+      <StatusChip tone={STATUS_TONE[model.status]}>{STATUS_LABEL[model.status]}</StatusChip>
+      {model.changed_since_validation && <StatusChip tone="caution">Changed since validation</StatusChip>}
     </span>
   );
 }
@@ -33,46 +35,49 @@ function validatedOn(model: ModelRow) {
 
 function Inventory({ models }: { models: ModelRow[] }) {
   return (
-    <>
-      <div className={`${t.wrap} hidden md:block`}>
-        <table className={t.table}>
-          <thead className={t.head}>
+    <TableCard title="Inventory" description="Each model once, with its risk tier, its owner and what its latest evidence says. A model without checks is monitored only, never shown as validated.">
+      <div className={`${tbl.wrap} hidden md:block`}>
+        <table className={`${tbl.table} min-w-[760px]`}>
+          <thead className={tbl.head}>
             <tr>
-              <th className={t.th}>Model</th><th className={t.th}>Kind</th><th className={t.th}>Risk tier</th>
-              <th className={t.th}>Owner</th><th className={t.th}>Status</th><th className={`${t.th} text-right`}>Last validated</th>
+              <th className={tbl.th}>Model</th><th className={tbl.th}>Kind</th><th className={tbl.th}>Risk tier</th>
+              <th className={tbl.th}>Owner</th><th className={tbl.th}>Status</th><th className={`${tbl.th} text-right`}>Last validated</th>
             </tr>
           </thead>
           <tbody>
             {models.map((m) => (
-              <tr key={m.key} className={t.row}>
-                <td className={t.td}><Link href={`/compliance/models/${m.key}`} className="font-medium hover:underline">{m.name}</Link></td>
-                <td className={t.td}><KindBadge model={m} /></td>
-                <td className={t.td}>{TIER_LABEL[m.tier]}</td>
-                <td className={`${t.td} text-ink-2`}>{m.owner}</td>
-                <td className={t.td}><StatusCell model={m} /></td>
-                <td className={`${t.td} num whitespace-nowrap text-right text-ink-2`}>{validatedOn(m)}</td>
+              <tr key={m.key} className={`${tbl.row} transition-colors hover:bg-fill`}>
+                <td className={tbl.td}>
+                  <Link href={`/compliance/models/${m.key}`} className="font-medium hover:text-green-700 hover:underline">{m.name}</Link>
+                  <span className={`block ${tbl.id} text-[11px]! text-ink-500`}>{m.key}</span>
+                </td>
+                <td className={tbl.td}><KindChip model={m} /></td>
+                <td className={`${tbl.td} text-ink-700`}>{TIER_LABEL[m.tier]}</td>
+                <td className={`${tbl.td} whitespace-nowrap text-ink-700`}>{m.owner}</td>
+                <td className={tbl.td}><StatusCell model={m} /></td>
+                <td className={`${tbl.td} whitespace-nowrap text-right text-ink-700`}>{validatedOn(m)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <ul className="divide-y divide-line border-y border-line md:hidden">
+      <ul className="divide-y divide-sand-100 md:hidden">
         {models.map((m) => (
           <li key={m.key}>
-            <Link href={`/compliance/models/${m.key}`} className="group block py-4">
+            <Link href={`/compliance/models/${m.key}`} className="block py-3.5">
               <span className="flex items-baseline justify-between gap-3">
-                <span className="font-medium group-hover:underline">{m.name}</span>
-                <span className="text-xs text-muted">{TIER_LABEL[m.tier]} tier</span>
+                <span className="font-medium">{m.name}</span>
+                <span className="shrink-0 text-xs text-ink-500">{TIER_LABEL[m.tier]} tier</span>
               </span>
-              <span className="mt-2 flex flex-wrap items-center gap-1.5"><KindBadge model={m} /><StatusCell model={m} /></span>
-              <span className="mt-1.5 block text-sm text-ink-2">
-                {m.owner} · {m.last_validated_at ? `checked ${formatDate(m.last_validated_at)}` : "not checked yet"}
+              <span className="mt-2 flex flex-wrap items-center gap-1.5"><KindChip model={m} /><StatusCell model={m} /></span>
+              <span className="mt-1.5 block text-[13px] text-ink-700">
+                {m.owner} · {m.last_validated_at ? `validated ${formatDate(m.last_validated_at)}` : "not validated yet"}
               </span>
             </Link>
           </li>
         ))}
       </ul>
-    </>
+    </TableCard>
   );
 }
 
@@ -84,24 +89,29 @@ function Watching({ monitoring }: { monitoring: Monitoring }) {
     { key: "aml_anomaly", text: `AML anomaly model: ${monitoring.drift.aml_anomaly.note}.`, href: "/compliance/models/aml_anomaly" },
   ];
   return (
-    <Panel className="divide-y divide-line">
+    <div className="rounded-panel border border-sand-200 bg-white">
       {monitoring.trips === false && (
-        <p className="px-5 py-3.5 text-sm text-ink-2">
+        <p className="border-b border-sand-100 px-5 py-3.5 text-[13px] text-ink-500 sm:px-6">
           Report-only for the judging window: visitors&apos; exploratory decisions are shown here, but a low rate does not
           pause a model. The live checks still pause a model that misses its bar.
         </p>
       )}
-      {lines.map((l) => (
-        <Link key={l.key} href={l.href} className="flex items-start gap-3 px-5 py-3.5 text-sm text-ink-2 hover:text-ink">
-          <span aria-hidden="true" className="mt-1.75 h-1.5 w-1.5 shrink-0 rounded-xs bg-ink-2" />{l.text}
-        </Link>
-      ))}
-    </Panel>
+      <ul className="divide-y divide-sand-100">
+        {lines.map((l) => (
+          <li key={l.key}>
+            <Link href={l.href} className="flex items-start gap-3 px-5 py-3.5 text-sm text-ink-700 transition-colors hover:bg-fill hover:text-ink-900 sm:px-6">
+              <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />{l.text}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
 export default function ModelsPage() {
   const [data, setData] = useState<ModelsOut | null>(null);
+  const [latest, setLatest] = useState<RunRow | null>(null);
   const [monitoring, setMonitoring] = useState<Monitoring | null>(null);
   const [running, setRunning] = useState<RunRow | null>(null);
   const [refused, setRefused] = useState("");
@@ -110,9 +120,12 @@ export default function ModelsPage() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const [models, watched] = await Promise.all([api<ModelsOut>("/governance/models"), api<Monitoring>("/governance/monitoring")]);
+    const [models, watched, runs] = await Promise.all([
+      api<ModelsOut>("/governance/models"), api<Monitoring>("/governance/monitoring"), api<RunRow[]>("/governance/runs?limit=1"),
+    ]);
     setData(models);
     setMonitoring(watched);
+    setLatest(runs[0] ?? null);
     setRunning(models.last_run?.status === "running" ? models.last_run : null);
   }, []);
   useEffect(() => {
@@ -124,11 +137,11 @@ export default function ModelsPage() {
     if (!running) return;
     const timer = setInterval(async () => {
       try {
-        const [latest] = await api<RunRow[]>("/governance/runs?limit=1");
-        if (!latest || latest.status !== "running") {
+        const [last] = await api<RunRow[]>("/governance/runs?limit=1");
+        if (!last || last.status !== "running") {
           clearInterval(timer);
           await load();
-          if (latest) setDone(latest);
+          if (last) setDone(last);
         }
       } catch {
         // a missed poll is retried on the next tick
@@ -159,7 +172,7 @@ export default function ModelsPage() {
   }
 
   const action = (
-    <Button variant="secondary" busy={busy} disabled={Boolean(running) || Boolean(refused)} onClick={start}>
+    <Button variant="tonal" busy={busy} disabled={Boolean(running) || Boolean(refused)} onClick={start}>
       {running ? `Live checks running since ${clockUtc(running.started_at)}` : "Run the live checks"}
     </Button>
   );
@@ -172,10 +185,12 @@ export default function ModelsPage() {
   const top = headline(data.models, data.last_run);
   const open = data.models.some((m) => m.status === "breaker_open");
   const tone = top.title === "Every model is validated." ? "good" : open ? "alert" : "attention";
+  const counts = ORDER.map((s) => ({ s, n: data.models.filter((m) => m.status === s).length })).filter((c) => c.n > 0);
+  const run = running ?? latest;
   return (
     <>
       {head}
-      <div className="space-y-10">
+      <div className="space-y-12">
         {(refused || error || done) && (
           <div className="space-y-3">
             {refused && <Notice tone="caution" title="The live checks cannot start yet">{refused}</Notice>}
@@ -184,12 +199,19 @@ export default function ModelsPage() {
           </div>
         )}
         <KeyMoment tone={tone} label="Model risk" title={top.title}>
-          <p className="max-w-[72ch] text-sm text-ink-2">{top.detail} The free checks run before every deploy and stop it on any failure; the live checks then measure Gemini, the reconciliation agent and the red team against the same golden cases.</p>
+          <div className="flex flex-wrap gap-2">
+            {counts.map(({ s, n }) => <StatusChip key={s} tone={STATUS_TONE[s]}>{n} {STATUS_LABEL[s].toLowerCase()}</StatusChip>)}
+          </div>
+          <p className="max-w-[72ch] text-sm text-ink-700">{top.detail} The free checks run before every deploy and stop it on any failure; the live checks then measure Gemini, the reconciliation agent and the red team against the same golden cases.</p>
+          {run && (
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-sand-100 pt-4">
+              <span className="text-xs font-medium text-ink-500">Latest run</span>
+              <span className="code text-ink-700">{runMeta(run)}</span>
+            </p>
+          )}
         </KeyMoment>
 
-        <Section title="Inventory" description="Each model once, with its risk tier, its owner and what its latest evidence says. A model without checks is monitored only, never shown as validated.">
-          <Inventory models={data.models} />
-        </Section>
+        <Inventory models={data.models} />
 
         <Section title="Watched against people's decisions" description={`Over the last ${monitoring?.window_days ?? 30} days. A rate needs at least ten decisions; a High-tier model people agree with less than 60% of the time is paused.`}>
           {monitoring ? <Watching monitoring={monitoring} /> : <Loading label="Loading monitoring" />}
