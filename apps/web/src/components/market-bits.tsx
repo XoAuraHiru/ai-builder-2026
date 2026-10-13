@@ -10,11 +10,13 @@ export function SessionChip({ session }: { session: Session }) {
   return <Badge tone={chip.open ? "gain" : "neutral"}>{chip.text}</Badge>;
 }
 
-/** A ticker as a small tile in Geist Mono: sand for shares and cash, tonal green for ETFs and funds. */
-export function TickerTile({ symbol, tone = "stock", size = "md", raised = false }:
-  { symbol: string; tone?: "stock" | "etf" | "fund" | "cash"; size?: "md" | "sm"; raised?: boolean }) {
+/** A ticker as a small tile in Geist Mono: sand for shares and cash, tonal green for ETFs and funds. Inside a row that
+ *  highlights in fill (`group`), a sand tile turns white so it stays visible. */
+export function TickerTile({ symbol, tone = "stock", size = "md" }:
+  { symbol: string; tone?: "stock" | "etf" | "fund" | "cash"; size?: "md" | "sm" }) {
   const box = size === "md" ? "h-8 w-11 text-[11px]" : "h-7 w-10 text-[10px]";
-  const color = tone === "etf" || tone === "fund" ? "bg-green-50 text-green-700" : raised ? "bg-white text-ink-900" : "bg-fill text-ink-900";
+  const color = tone === "etf" || tone === "fund" ? "bg-green-50 text-green-700"
+    : "bg-fill text-ink-900 group-hover:bg-white group-focus-within:bg-white";
   return (
     <span aria-hidden="true" className={`code flex shrink-0 items-center justify-center rounded-tile font-medium tracking-normal ${box} ${color}`}>
       {symbol}
