@@ -7,10 +7,12 @@ export type GraphNodeKind =
 export type GraphNode = { id: string; kind: GraphNodeKind; label: string; flagged: boolean };
 /** `strong` and `id` come with ring links only: a weak link is drawn dashed, and the id is what Gemini cites. */
 export type GraphEdge = { source: string; target: string; label: string; strong?: boolean; id?: string };
+export type CaseReviewTriage = "escalate" | "close" | "request_information";
 export type CaseReview = {
-  triage: "escalate" | "close" | "request_information"; triage_reason: string;
+  triage: CaseReviewTriage; triage_reason: string;
   narrative: { text: string; evidence: string[] }[]; questions: string[]; unsupported_figures: string[];
   dropped_citations: string[]; unknown_names?: string[]; verified: boolean; model: string; written_at: string;
+  steering?: string[]; model_triage?: CaseReviewTriage;  // outsiders' text that tried to steer, and what the model said
 };
 export type Alert = {
   id: string; scenario: string; title: string; severity: "high" | "medium" | "low"; score: number;

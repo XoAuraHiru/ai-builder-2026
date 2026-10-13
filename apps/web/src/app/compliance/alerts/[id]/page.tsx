@@ -49,7 +49,19 @@ function Review({ review, labels }: { review: CaseReview; labels: Record<string,
     review.dropped_citations.length ? `${review.dropped_citations.length} citation${review.dropped_citations.length === 1 ? "" : "s"} to rows that are not in the evidence were removed` : "",
     review.unknown_names?.length ? `${review.unknown_names.join(", ")} ${review.unknown_names.length === 1 ? "is" : "are"} not named in the alert or its linked accounts` : "",
   ].filter(Boolean);
+  const steered = review.steering?.length ? review.steering : null;
   return (
+    <>
+    {steered && (
+      <div className="mb-4">
+        <Notice tone="caution" title="Payment text tried to steer this review">
+          Text written outside Atrium gives the reviewer instructions: {steered.map((t) => `“${t}”`).join("; ")}.
+          {review.model_triage === "close" && review.triage !== "close"
+            ? " Gemini suggested closing the alert; Atrium's tripwire changed that to escalate, because a steered case is never suggested for closing."
+            : " Atrium's tripwire holds: a steered case is never suggested for closing."}
+        </Notice>
+      </div>
+    )}
     <AiProse caption={`Written by ${review.model} from the alert, its evidence and the linked accounts. A suggestion only: you decide.`}
       warning={review.verified ? undefined : `Check before relying on this: ${problems.join("; ")}.`}>
       <p><span className="font-semibold">Suggestion: {TRIAGE_COPY[review.triage]}.</span> {review.triage_reason}</p>
@@ -66,6 +78,7 @@ function Review({ review, labels }: { review: CaseReview; labels: Record<string,
         </>
       )}
     </AiProse>
+    </>
   );
 }
 
