@@ -5,7 +5,7 @@ export type GraphEdge = { source: string; target: string; label: string };
 export type CaseReview = {
   triage: "escalate" | "close" | "request_information"; triage_reason: string;
   narrative: { text: string; evidence: string[] }[]; questions: string[]; unsupported_figures: string[];
-  dropped_citations: string[]; verified: boolean; model: string; written_at: string;
+  dropped_citations: string[]; unknown_names?: string[]; verified: boolean; model: string; written_at: string;
 };
 export type Alert = {
   id: string; scenario: string; title: string; severity: "high" | "medium" | "low"; score: number;

@@ -8,6 +8,7 @@ dropped and every $ and % figure is checked against the evidence. The MLRO decid
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal
@@ -114,7 +115,54 @@ def _shown_evidence(alert: AmlAlert) -> list[dict]:
     return [{**e, "amount": f"${Decimal(e['amount']):,.2f}" if e.get("amount") else None} for e in alert.evidence]
 
 
-def review_alert(db: Session, llm: LLM, alert: AmlAlert) -> dict:
+# Two or three capitalised words in a row: the shape of a person's name in the review's prose.
+NAME_SHAPE = re.compile(r"\b[A-Z][a-z]+(?:[-'][A-Za-z][a-z]+)?(?:\s+[A-Z][a-z]+(?:[-'][A-Za-z][a-z]+)?){1,2}\b")
+# Capitalised words that are not people: sentence openers, calendar words, and the words of compliance, banking and
+# Atrium's own products. A name-shaped phrase made only of these is not a name.
+NOT_NAMES = frozenset("""
+a an the this that these those it its in on at by for from of to and or but with without after before during while
+both each every all any some no not one two three four five six seven eight nine ten first second third mr ms mrs dr
+january february march april may june july august september october november december
+monday tuesday wednesday thursday friday saturday sunday today yesterday
+atrium balanced growth income cash reserve global equity dividend technology core fund funds account accounts bank
+banks client clients money laundering reporting officer mlro suspicious activity report reports sar secrecy act
+federal financial crimes enforcement network fincen office foreign assets control ofac know your customer kyc enhanced
+due diligence source sources wealth possible structuring rapid linked round trip velocity dormant reactivation high
+risk jurisdiction jurisdictions third party funding unusual behaviour behavior alert alerts case review ach wire
+transfer united states america us usa north south korea iran myanmar islamic republic new york boston demo street
+treasury internal revenue service irs securities exchange commission sec finra regulation best interest
+""".split())
+
+
+def _name_words(text: str) -> list[str]:
+    return [w.lower() for w in re.split(r"[\s\-']+", text) if w]
+
+
+def check_review(review: dict, evidence_ids: set[str], allowed_figures: set[float], allowed_names: set[str]) -> dict:
+    """What review_alert checks in Gemini's review: citations that are not evidence ids, $ and % figures in no input,
+    and people named who are not in the inputs."""
+    narrative = review.get("narrative") or []
+    dropped = sorted({i for p in narrative for i in (p.get("evidence") or []) if i not in evidence_ids})
+    text = " ".join([review.get("triage_reason") or "", *((p.get("text") or "") for p in narrative),
+                     *(review.get("questions") or [])])
+    known = {w for name in allowed_names for w in _name_words(name)}
+    unknown: list[str] = []
+    for match in NAME_SHAPE.finditer(text):
+        words = [w for w in match.group(0).split() if w.lower() not in NOT_NAMES]
+        if len(words) < 2:
+            continue
+        candidate = " ".join(words)
+        if candidate.endswith("'s"):
+            candidate = candidate[:-2]
+        if not any(w in known for w in _name_words(candidate)) and candidate not in unknown:
+            unknown.append(candidate)
+    return {"dropped_citations": dropped, "unsupported_figures": unsupported_figures(text, allowed_figures),
+            "unknown_names": unknown}
+
+
+def review_facts(db: Session, alert: AmlAlert) -> tuple[dict, set[str]]:
+    """What the model is given about one alert, and the names of the people in it: the alert's person, the people
+    the linked-entity graph joins to them, and outside payers whose name is a name (not a long narration)."""
     person = db.get(Person, alert.person_id)
     account = db.get(Account, alert.account_id) if alert.account_id else None
     graph = linked_entities(db, alert)
@@ -127,6 +175,14 @@ def review_alert(db: Session, llm: LLM, alert: AmlAlert) -> dict:
                      f" {e['label']} {next(n['label'] for n in graph['nodes'] if n['id'] == e['target'])}"
                      for e in graph["edges"]],
     }
+    names = {person.full_name}
+    names |= {n["label"] for n in graph["nodes"] if n["kind"] == "person"}
+    names |= {n["label"] for n in graph["nodes"] if n["kind"] == "payer" and len(n["label"].split()) <= 4}
+    return facts, names
+
+
+def review_alert(db: Session, llm: LLM, alert: AmlAlert) -> dict:
+    facts, names = review_facts(db, alert)
     prompt = REVIEW_PROMPT.format(alert=json.dumps(facts["alert"], indent=1), evidence=json.dumps(facts["evidence"], indent=1),
                                   entities="\n".join(facts["entities"]))
     result = llm.generate_json(purpose="aml_case_review", prompt=prompt, schema=AlertReview, pro=True)
@@ -134,14 +190,13 @@ def review_alert(db: Session, llm: LLM, alert: AmlAlert) -> dict:
                     subject_type="aml_alert", subject_id=alert.id, input_text=prompt)
     draft: AlertReview = result.parsed
     allowed = {e["id"] for e in alert.evidence}
+    checked = check_review(draft.model_dump(), allowed, collect_figures(facts), names)
     parts = [{"text": p.text, "evidence": [i for i in p.evidence if i in allowed]} for p in draft.narrative]
-    dropped = sorted({i for p in draft.narrative for i in p.evidence if i not in allowed})
-    text = " ".join([draft.triage_reason, *(p.text for p in draft.narrative), *draft.questions])
-    bad = unsupported_figures(text, collect_figures(facts))
+    bad, dropped, unknown = checked["unsupported_figures"], checked["dropped_citations"], checked["unknown_names"]
     alert.ai_review = {"triage": draft.triage, "triage_reason": draft.triage_reason, "narrative": parts,
                        "questions": list(draft.questions), "unsupported_figures": bad, "dropped_citations": dropped,
-                       "verified": not bad and not dropped, "model": result.model,
-                       "written_at": utcnow().isoformat()}
+                       "unknown_names": unknown, "verified": not bad and not dropped and not unknown,
+                       "model": result.model, "written_at": utcnow().isoformat()}
     db.flush()
     return alert.ai_review
 

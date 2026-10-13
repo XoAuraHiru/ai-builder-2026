@@ -135,3 +135,70 @@ def test_the_live_cards_go_through_document_ai_proofing(monkeypatch):
     monkeypatch.setattr(identity_proofing, "get_proofing", lambda: None)
     unconfigured = identity_proofing.live_cards(EvalContext(tier="live", with_documents=True))
     assert unconfigured.passed is False and unconfigured.counts["error"] == 2
+
+
+# Task M3: reconciliation, Guardian, draft compliance, case checkers
+from app.governance.evals.suites import case_reviewer, draft_compliance, pretrade_guardian, reconciler_agent  # noqa: E402
+
+
+def test_the_rules_are_exact_and_the_scorer_is_mostly_right():
+    result = reconciler_agent.rules_and_scorer(FREE)
+    assert result.passed, result.metric
+    assert "precision" in result.metric and "recall" in result.metric
+    assert len(result.cases) == 10
+
+
+def test_a_scorer_that_proposes_on_any_amount_hits_a_decoy(monkeypatch):
+    import app.services.reconciliation as reconciliation
+
+    monkeypatch.setattr(reconciliation, "FUZZY_MIN", 0.25)
+    result = reconciler_agent.rules_and_scorer(FREE)
+    assert result.passed is False
+    assert "interest-equals-a-waiting-amount" in {c.case_id for c in result.cases if c.outcome == "fail"}
+
+
+def test_pairs_are_read_from_matches_and_from_scorer_dicts():
+    ids = {"l1": "L-1", "l2": "L-2", "r1": "I-1"}
+    from app.models import ReconMatch
+
+    match = ReconMatch(line_ids=["L-1"], instruction_ids=["I-1"], tier="fuzzy", confidence=0.8, evidence=[],
+                       proposed_by="rules")
+    assert reconciler_agent.pairs_of([match], ids) == {(frozenset({"l1"}), frozenset({"r1"}))}
+    assert reconciler_agent.pairs_of([{"line_ids": ["L-1", "L-2"], "instruction_id": "I-1"}], ids) == {
+        (frozenset({"l1", "l2"}), frozenset({"r1"}))}
+    assert reconciler_agent.precision_recall(set(), {1}) == (None, 0.0)
+
+
+def test_the_guardian_gives_every_golden_order_its_verdict():
+    result = pretrade_guardian.golden_orders(FREE)
+    assert result.passed and len(result.cases) == 6, [(c.case_id, c.actual) for c in result.cases if c.outcome != "pass"]
+    assert {c.expected for c in result.cases} == {"proceed", "warn", "hold", "block"}
+
+
+def test_the_draft_rules_catch_promises_and_spare_honest_sentences():
+    result = draft_compliance.rules_on_phrases(FREE)
+    assert result.passed and len(result.cases) == 10
+    labels = [c["promissory"] for c in golden.load("draft_compliance/phrases")["cases"]]
+    assert labels.count(True) == 5 and labels.count(False) == 5
+
+
+def test_the_draft_suite_fails_without_the_negation_guard(monkeypatch):
+    import app.services.compliance as compliance
+
+    monkeypatch.setattr(compliance, "_negated", lambda text, start: False)
+    assert draft_compliance.rules_on_phrases(FREE).passed is False
+
+
+def test_the_case_checkers_catch_every_planted_fault():
+    result = case_reviewer.checkers_catch_faults(FREE)
+    assert result.passed and len(result.cases) == 4  # the clean review passes, and each of three faults is caught
+
+
+def test_check_review_names_and_figures():
+    from app.services.compliance_ai import check_review
+
+    review = {"triage": "escalate", "triage_reason": "Three payments of $9,400 or more.",
+              "narrative": [{"text": "Grace Li was paid by Marcus Okonkwo; Jane Doe approved it.", "evidence": ["e1", "x"]}],
+              "questions": ["Did the Suspicious Activity Report team see the $1,000,000?"]}
+    out = check_review(review, {"e1"}, {9400.0}, {"Grace Li", "Marcus Okonkwo"})
+    assert out == {"dropped_citations": ["x"], "unsupported_figures": ["$1,000,000"], "unknown_names": ["Jane Doe"]}

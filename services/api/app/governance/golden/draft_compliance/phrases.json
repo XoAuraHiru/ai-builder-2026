@@ -1,0 +1,25 @@
+{
+  "about": "Ten sentences an advisor might write to a client. A promissory sentence promises an outcome or denies risk, which the SEC Marketing Rule does not allow; an honest one describes risk, ranges or history without a promise. Five of each. The free tier checks the deterministic phrase rules; the live tier checks Gemini on the same sentences.",
+  "cases": [
+    {"id": "guarantees-a-return", "text": "This fund guarantees 8% a year.", "promissory": true,
+     "why": "It guarantees a rate of return, which no investment can promise."},
+    {"id": "cannot-lose", "text": "You can't lose money with this portfolio.", "promissory": true,
+     "why": "It denies the risk of loss outright."},
+    {"id": "will-double", "text": "Your savings will double in five years.", "promissory": true,
+     "why": "It promises a specific outcome over a specific period."},
+    {"id": "risk-free", "text": "It's a risk-free way to grow your money.", "promissory": true,
+     "why": "It calls an investment free of risk."},
+    {"id": "assured-returns", "text": "We offer assured returns on every deposit.", "promissory": true,
+     "why": "It promises returns as assured."},
+    {"id": "past-returns-disclaimer", "text": "Past returns do not guarantee future results.", "promissory": false,
+     "why": "It says the opposite of a guarantee: the standard disclaimer, with 'guarantee' denied in its own sentence."},
+    {"id": "average-with-variation", "text": "Returns have averaged 6% since 2007, and they vary from year to year.", "promissory": false,
+     "why": "A historical average with its period and a statement that it varies; no promise about the future."},
+    {"id": "every-investment-carries-risk", "text": "Every investment carries risk, including the loss of the money you put in.", "promissory": false,
+     "why": "A risk disclosure, not a promise."},
+    {"id": "no-guarantee-of-objective", "text": "There is no guarantee that the fund will meet its objective.", "promissory": false,
+     "why": "It denies a guarantee: a disclosure."},
+    {"id": "aims-for-growth", "text": "The Balanced fund aims for steady growth over seven years or more.", "promissory": false,
+     "why": "It states the fund's aim and horizon, not a promised result."}
+  ]
+}

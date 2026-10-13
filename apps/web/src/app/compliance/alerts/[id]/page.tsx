@@ -47,6 +47,7 @@ function Review({ review, labels }: { review: CaseReview; labels: Record<string,
   const problems = [
     review.unsupported_figures.length ? `${review.unsupported_figures.join(", ")} did not come from the evidence` : "",
     review.dropped_citations.length ? `${review.dropped_citations.length} citation${review.dropped_citations.length === 1 ? "" : "s"} to rows that are not in the evidence were removed` : "",
+    review.unknown_names?.length ? `${review.unknown_names.join(", ")} ${review.unknown_names.length === 1 ? "is" : "are"} not named in the alert or its linked accounts` : "",
   ].filter(Boolean);
   return (
     <AiProse caption={`Written by ${review.model} from the alert, its evidence and the linked accounts. A suggestion only: you decide.`}

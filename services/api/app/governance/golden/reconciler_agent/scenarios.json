@@ -1,0 +1,103 @@
+{
+  "about": "Ten reconciliation scenarios, each built alone: open subscriptions (receipts) waiting for money, and deposit lines on a client money statement as the narration reader would leave them (remitter and reference). A receipt's reference is ATR- plus the first eight characters of its instruction id, so the builder gives each instruction an id that starts with its code. The truth is what a careful operations analyst would match; decoys are lines that must never be proposed. The rules match an exact reference with the exact amount, or a line without a reference paid by the holder whose amount exactly one receipt and one line share; the scorer adds 0.6 for the reference (less 0.15 a character away, up to two), 0.3 for the exact amount (0.15 within $1) and up to 0.1 for the payer's name, and proposes at 0.7 or more, or two or three lines from one payer that add up to one receipt.",
+  "cases": [
+    {
+      "id": "exact-reference",
+      "why": "The line quotes ATR-4471AB2C, Ava Thompson's reference, and pays exactly her $1,500.00: the rules match it.",
+      "receipts": [{"id": "r1", "holder": "Ava Thompson", "account": "ACC-0101", "fund": "ATR-BAL", "amount": "1500.00", "reference": "ATR-4471AB2C", "requested_on": "2026-10-06"}],
+      "lines": [{"id": "l1", "date": "2026-10-08", "amount": "1500.00", "description": "ACH CREDIT AVA THOMPSON REF ATR-4471AB2C", "remitter": "Ava Thompson", "reference": "ATR-4471AB2C"}],
+      "truth": [{"lines": ["l1"], "receipts": ["r1"]}],
+      "decoys": []
+    },
+    {
+      "id": "unique-amount-no-reference",
+      "why": "No reference, but Lucas Moreau paid $2,500.00, the only receipt and the only line for that amount, and the payer is the holder: the rules match it.",
+      "receipts": [
+        {"id": "r1", "holder": "Lucas Moreau", "account": "ACC-0102", "fund": "ATR-GRW", "amount": "2500.00", "reference": "ATR-3C4D7F3K", "requested_on": "2026-10-06"},
+        {"id": "r2", "holder": "Hana Sato", "account": "ACC-0103", "fund": "ATR-INC", "amount": "3000.00", "reference": "ATR-9B8C7D6E", "requested_on": "2026-10-06"}
+      ],
+      "lines": [{"id": "l1", "date": "2026-10-08", "amount": "2500.00", "description": "ONLINE TRANSFER FROM LUCAS MOREAU", "remitter": "Lucas Moreau", "reference": null}],
+      "truth": [{"lines": ["l1"], "receipts": ["r1"]}],
+      "decoys": []
+    },
+    {
+      "id": "one-character-typo",
+      "why": "The line quotes ATR-7F3K200D for Hana Sato's ATR-7F3K201D, one character away, with her exact $3,000.00 and her name: a fuzzy match the rules leave to the scorer (0.45 + 0.3 + 0.1 = 0.85).",
+      "receipts": [{"id": "r1", "holder": "Hana Sato", "account": "ACC-0104", "fund": "ATR-INC", "amount": "3000.00", "reference": "ATR-7F3K201D", "requested_on": "2026-10-06"}],
+      "lines": [{"id": "l1", "date": "2026-10-08", "amount": "3000.00", "description": "ACH CREDIT HANA SATO REF ATR-7F3K200D", "remitter": "Hana Sato", "reference": "ATR-7F3K200D"}],
+      "truth": [{"lines": ["l1"], "receipts": ["r1"]}],
+      "decoys": []
+    },
+    {
+      "id": "two-equal-amounts-told-apart-by-name",
+      "why": "Two receipts of $500.00 and two lines of $500.00 without references; each payer is one of the holders, so Priya Raman's line pays Priya Raman's receipt and Tom Becker's pays Tom Becker's. The amount alone is not unique, so the rules cannot match, and the scorer's 0.4 is under its bar; this is the agent's work.",
+      "receipts": [
+        {"id": "r1", "holder": "Priya Raman", "account": "ACC-0105", "fund": "ATR-BAL", "amount": "500.00", "reference": "ATR-1A2B3C4D", "requested_on": "2026-10-06"},
+        {"id": "r2", "holder": "Tom Becker", "account": "ACC-0106", "fund": "ATR-BAL", "amount": "500.00", "reference": "ATR-5E6F7G8H", "requested_on": "2026-10-06"}
+      ],
+      "lines": [
+        {"id": "l1", "date": "2026-10-08", "amount": "500.00", "description": "ONLINE TRANSFER FROM PRIYA RAMAN", "remitter": "Priya Raman", "reference": null},
+        {"id": "l2", "date": "2026-10-08", "amount": "500.00", "description": "ACH CREDIT TOM BECKER", "remitter": "Tom Becker", "reference": null}
+      ],
+      "truth": [{"lines": ["l1"], "receipts": ["r1"]}, {"lines": ["l2"], "receipts": ["r2"]}],
+      "decoys": []
+    },
+    {
+      "id": "split-payment",
+      "why": "Sofia Rossi owes $1,250.00 and paid $787.50 and $462.50, PART 1 OF 2 and PART 2 OF 2, which add up to it exactly: the two lines together pay the one receipt.",
+      "receipts": [{"id": "r1", "holder": "Sofia Rossi", "account": "ACC-0107", "fund": "ATR-DIV", "amount": "1250.00", "reference": "ATR-6H5G4F3E", "requested_on": "2026-10-06"}],
+      "lines": [
+        {"id": "l1", "date": "2026-10-08", "amount": "787.50", "description": "ACH CREDIT SOFIA ROSSI PART 1 OF 2", "remitter": "Sofia Rossi", "reference": null},
+        {"id": "l2", "date": "2026-10-08", "amount": "462.50", "description": "ACH CREDIT SOFIA ROSSI PART 2 OF 2", "remitter": "Sofia Rossi", "reference": null}
+      ],
+      "truth": [{"lines": ["l1", "l2"], "receipts": ["r1"]}],
+      "decoys": []
+    },
+    {
+      "id": "combined-payment",
+      "why": "Kenji Watanabe owes $2,000.00 and $1,000.00 on two subscriptions and paid $3,000.00 in one wire: the one line pays both receipts. Proposals pair lines with one receipt, so no part of Atrium can propose this yet; the case records the miss in recall.",
+      "receipts": [
+        {"id": "r1", "holder": "Kenji Watanabe", "account": "ACC-0108", "fund": "ATR-GLB", "amount": "2000.00", "reference": "ATR-2K3W4T5N", "requested_on": "2026-10-06"},
+        {"id": "r2", "holder": "Kenji Watanabe", "account": "ACC-0108", "fund": "ATR-GRW", "amount": "1000.00", "reference": "ATR-2K3W9X8Y", "requested_on": "2026-10-06"}
+      ],
+      "lines": [{"id": "l1", "date": "2026-10-08", "amount": "3000.00", "description": "WIRE IN KENJI WATANABE", "remitter": "Kenji Watanabe", "reference": null}],
+      "truth": [{"lines": ["l1"], "receipts": ["r1", "r2"]}],
+      "decoys": []
+    },
+    {
+      "id": "interest-equals-a-waiting-amount",
+      "why": "The bank's INTEREST PAID credit happens to be $500.00, the amount Olivia Brooks owes, but interest has no payer and no reference and is not a client's payment: it must not be matched.",
+      "receipts": [{"id": "r1", "holder": "Olivia Brooks", "account": "ACC-0109", "fund": "ATR-BAL", "amount": "500.00", "reference": "ATR-8B7R6O5K", "requested_on": "2026-10-06"}],
+      "lines": [{"id": "l1", "date": "2026-10-08", "amount": "500.00", "description": "INTEREST PAID", "remitter": null, "reference": null}],
+      "truth": [],
+      "decoys": ["l1"]
+    },
+    {
+      "id": "stranger-deposit",
+      "why": "Kestrel Trading Ltd wired $2,750.00 quoting an invoice, not an Atrium reference; no receipt is for that amount or that payer: nothing should be matched.",
+      "receipts": [{"id": "r1", "holder": "Linda Morales", "account": "ACC-0110", "fund": "ATR-INC", "amount": "800.00", "reference": "ATR-4L5M6R7S", "requested_on": "2026-10-06"}],
+      "lines": [{"id": "l1", "date": "2026-10-08", "amount": "2750.00", "description": "WIRE IN KESTREL TRADING LTD REF INV 2231", "remitter": "Kestrel Trading Ltd", "reference": null}],
+      "truth": [],
+      "decoys": ["l1"]
+    },
+    {
+      "id": "fifty-cents-short",
+      "why": "Arjun Mehta's line quotes his exact reference ATR-7V6U5T4S with his name but is $0.50 short of the $800.00 owed, a bank fee taken on the way: the right match, but not exact, so the scorer proposes it (0.6 + 0.15 + 0.1 = 0.85).",
+      "receipts": [{"id": "r1", "holder": "Arjun Mehta", "account": "ACC-0111", "fund": "ATR-BAL", "amount": "800.00", "reference": "ATR-7V6U5T4S", "requested_on": "2026-10-06"}],
+      "lines": [{"id": "l1", "date": "2026-10-08", "amount": "799.50", "description": "ACH CREDIT ARJUN MEHTA REF ATR-7V6U5T4S", "remitter": "Arjun Mehta", "reference": "ATR-7V6U5T4S"}],
+      "truth": [{"lines": ["l1"], "receipts": ["r1"]}],
+      "decoys": []
+    },
+    {
+      "id": "reference-written-oddly",
+      "why": "The narration writes Noah Williams's reference as REF ATR 4471 CD9E, with spaces, so the rule reading finds no reference on the line; two receipts wait for $1,200.00, so the amount cannot tell them apart. The narration still names Noah Williams and his code 4471CD9E: the line pays his receipt.",
+      "receipts": [
+        {"id": "r1", "holder": "Noah Williams", "account": "ACC-0112", "fund": "ATR-GRW", "amount": "1200.00", "reference": "ATR-4471CD9E", "requested_on": "2026-10-06"},
+        {"id": "r2", "holder": "Emma Walsh", "account": "ACC-0113", "fund": "ATR-GRW", "amount": "1200.00", "reference": "ATR-6E5W4A3L", "requested_on": "2026-10-06"}
+      ],
+      "lines": [{"id": "l1", "date": "2026-10-08", "amount": "1200.00", "description": "ACH CREDIT NOAH WILLIAMS REF ATR 4471 CD9E", "remitter": "Noah Williams", "reference": null}],
+      "truth": [{"lines": ["l1"], "receipts": ["r1"]}],
+      "decoys": []
+    }
+  ]
+}
