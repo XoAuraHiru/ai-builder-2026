@@ -134,3 +134,76 @@ def rules_and_scorer(ctx: EvalContext) -> SuiteResult:
                 bar="Rules 100% precise, scorer at least 80% precise, no proposal on a decoy",
                 metric=f"Rules precision {rules_p:.0%}, scorer precision {scorer_p:.0%}, recall {recall:.0%}",
                 value=1.0 if bars_met and all(c.outcome == "pass" for c in cases) else 0.0, threshold=1.0)
+
+
+AGENT_PRECISION_BAR, AGENT_RECALL_BAR = 0.9, 0.8
+AGENT_NOW = datetime(2026, 10, 12, 15, tzinfo=timezone.utc)
+
+
+def proposals_in(db):
+    from sqlalchemy import select
+
+    from app.models import ReconMatch
+
+    db.flush()
+    return db.scalars(select(ReconMatch)).all()
+
+
+@suite("reconciler_agent", tier="live")
+def agent_scenarios(ctx: EvalContext) -> SuiteResult:
+    """Each scenario through reconcile(): the rules, then the ADK agent on what they leave. A scenario where the agent
+    had work but did not run (no Gemini, or it failed and the scorer stood in) says nothing about the agent: error."""
+    from app.agents.reconciler import reconcile
+    from app.governance.evals.framework import run_case
+
+    cases = []
+    proposed_all: set = set()
+    truth_all: set = set()
+    scorer_found = scorer_truth = 0
+    agent_ran = False
+    for s in golden.load("reconciler_agent/scenarios")["cases"]:
+        truth = {(s["id"], pair) for pair in truth_of(s)}
+        with scratch_db() as db:
+            ids = build_scenario(db, s)
+            outcome: dict = {}
+
+            def check(s=s, db=db, ids=ids, outcome=outcome):
+                result = reconcile(db, ctx.agent_model, AGENT_NOW)
+                outcome.update(result)
+                proposed = pairs_of(proposals_in(db), ids)
+                outcome["proposed"] = proposed
+                left_work = result["summary"] != "Nothing was left for the agent."
+                if left_work and not result["used_agent"]:
+                    return CaseResult(s["id"], "error", detail=f"The agent did not run, so the scorer proposed "
+                                                               f"instead: {result['summary']}")
+                ok = proposed <= truth_of(s) and not decoy_hit(s, proposed)
+                detail = s["why"] if ok else ("A decoy line was proposed. " if decoy_hit(s, proposed) else
+                                              "A proposal is not in the truth. ") + s["why"]
+                return CaseResult(s["id"], "pass" if ok else "fail", expected=sorted(map(_show, truth_of(s))),
+                                  actual={"proposed": sorted(map(_show, proposed)), "summary": result["summary"],
+                                          "agent": result.get("agent", 0)}, detail=detail)
+
+            case = run_case(s["id"], check, db=db)
+        cases.append(case)
+        if case.outcome != "error":
+            agent_ran = agent_ran or bool(outcome.get("used_agent"))
+            proposed_all |= {(s["id"], pair) for pair in outcome.get("proposed", set())}
+            truth_all |= truth
+        with scratch_db() as db:  # the same scenario through the rules and the scorer, for the lift
+            ids = build_scenario(db, s)
+            baseline = pairs_of(propose_by_rules(db), ids) | pairs_of(scorer_proposals(db), ids)
+        scorer_found += len(baseline & truth_of(s))
+        scorer_truth += len(truth_of(s))
+    precision, recall = precision_recall(proposed_all, truth_all)
+    precision = 1.0 if precision is None else precision
+    recall = 1.0 if recall is None else recall
+    baseline_recall = scorer_found / scorer_truth if scorer_truth else 1.0
+    no_decoy = not any(c.outcome == "fail" and c.detail.startswith("A decoy") for c in cases)
+    value = None
+    if agent_ran:
+        value = 1.0 if precision >= AGENT_PRECISION_BAR and recall >= AGENT_RECALL_BAR and no_decoy else 0.0
+    return rate("reconciler_agent", "golden", "live", cases,
+                bar=f"Agent precision at least {AGENT_PRECISION_BAR:.0%}, recall at least {AGENT_RECALL_BAR:.0%}, "
+                    "no proposal on a decoy",
+                metric=f"Agent precision {precision:.0%}, recall {recall:.0%}; scorer alone {baseline_recall:.0%} recall",
+                value=value, threshold=1.0)

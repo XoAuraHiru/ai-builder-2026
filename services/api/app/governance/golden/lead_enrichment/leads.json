@@ -1,0 +1,75 @@
+{
+  "about": "Ten synthetic leads for Gemini's enrichment. A lead passes when the goal category is one the why allows, every suggested fund is in allowed_funds, and an inconsistency of medium or high severity is reported exactly when one was planted (four leads). Funds: ATR-CASH band 1 cash, ATR-INC band 2 bonds, ATR-BAL band 3 60/40, ATR-DIV band 3 dividend equity, ATR-GRW band 4 US growth, ATR-GLB band 4 global equity, ATR-TEC band 5 technology. Each answer is a correct enrichment, used to test the grader.",
+  "cases": [
+    {
+      "id": "long-horizon-growth",
+      "why": "Retirement in 25 years with steady monthly saving from a salary is a growth goal; equity funds of band 3 to 4 suit it; the answers agree with each other.",
+      "fields": {"source": "web", "full_name": "Rowan Hale", "goals": "Grow my savings for retirement in 25 years", "horizon_years": 25, "investable_usd": "80000", "monthly_usd": "1000", "source_of_funds": "salary"},
+      "expect": {"goal_category": ["growth"], "allowed_funds": ["ATR-GRW", "ATR-GLB", "ATR-BAL", "ATR-DIV"], "inconsistent": false},
+      "answer": {"goal_category": "growth", "goals_summary": "Long-term growth for retirement in 25 years.", "suggested_funds": ["ATR-GRW", "ATR-GLB"], "stated_risk_appetite": "medium", "consistency_issues": [], "text_authenticity": "natural", "next_best_action": "Call to confirm the retirement date and monthly plan.", "confidence": 0.85}
+    },
+    {
+      "id": "retirement-income",
+      "why": "Income to cover living costs from savings over five years is an income goal; bonds, dividend equity, a balanced fund or cash suit it, not growth equity.",
+      "fields": {"source": "referral", "full_name": "Marion Keller", "goals": "Steady income from my savings to cover living costs in retirement", "horizon_years": 5, "investable_usd": "300000", "monthly_usd": "0", "source_of_funds": "savings"},
+      "expect": {"goal_category": ["income"], "allowed_funds": ["ATR-INC", "ATR-DIV", "ATR-BAL", "ATR-CASH"], "inconsistent": false},
+      "answer": {"goal_category": "income", "goals_summary": "Retirement income from $300,000 of savings.", "suggested_funds": ["ATR-INC", "ATR-DIV"], "stated_risk_appetite": "low", "consistency_issues": [], "text_authenticity": "natural", "next_best_action": "Discuss how much income is needed each month.", "confidence": 0.85}
+    },
+    {
+      "id": "house-deposit-next-year",
+      "why": "Keeping a house deposit safe for one year is capital preservation; only cash or short bonds suit a one-year horizon.",
+      "fields": {"source": "web", "full_name": "Theo Marsh", "goals": "Keep my house deposit safe until I buy next year", "horizon_years": 1, "investable_usd": "60000", "monthly_usd": "500", "source_of_funds": "salary"},
+      "expect": {"goal_category": ["capital_preservation"], "allowed_funds": ["ATR-CASH", "ATR-INC"], "inconsistent": false},
+      "answer": {"goal_category": "capital_preservation", "goals_summary": "Protect a house deposit for one year.", "suggested_funds": ["ATR-CASH"], "stated_risk_appetite": "low", "consistency_issues": [], "text_authenticity": "natural", "next_best_action": "Confirm the purchase date.", "confidence": 0.9}
+    },
+    {
+      "id": "global-diversification",
+      "why": "Diversifying beyond US stocks for 20 years is a global goal; global equity suits it, with US growth or balanced as companions.",
+      "fields": {"source": "event", "full_name": "Iris Navarro", "goals": "Diversify internationally beyond US stocks for the long run", "horizon_years": 20, "investable_usd": "150000", "monthly_usd": "1500", "source_of_funds": "business"},
+      "expect": {"goal_category": ["global"], "allowed_funds": ["ATR-GLB", "ATR-GRW", "ATR-BAL"], "inconsistent": false},
+      "answer": {"goal_category": "global", "goals_summary": "Global diversification over 20 years.", "suggested_funds": ["ATR-GLB", "ATR-BAL"], "stated_risk_appetite": "medium", "consistency_issues": [], "text_authenticity": "natural", "next_best_action": "Review current US holdings before proposing.", "confidence": 0.85}
+    },
+    {
+      "id": "growing-dividends",
+      "why": "A growing stream of dividends from quality companies over 15 years is a dividend goal (income is a fair reading too); dividend equity, bonds or balanced suit it.",
+      "fields": {"source": "web", "full_name": "Caleb Strand", "goals": "Build a growing stream of dividends from quality companies", "horizon_years": 15, "investable_usd": "120000", "monthly_usd": "800", "source_of_funds": "salary"},
+      "expect": {"goal_category": ["dividend", "income"], "allowed_funds": ["ATR-DIV", "ATR-INC", "ATR-BAL"], "inconsistent": false},
+      "answer": {"goal_category": "dividend", "goals_summary": "Growing dividend income over 15 years.", "suggested_funds": ["ATR-DIV", "ATR-BAL"], "stated_risk_appetite": "medium", "consistency_issues": [], "text_authenticity": "natural", "next_best_action": "Ask whether dividends should be reinvested.", "confidence": 0.8}
+    },
+    {
+      "id": "technology-theme",
+      "why": "Investing in technology and AI companies is a thematic technology goal; the technology fund, US growth or global equity suit a 15-year horizon.",
+      "fields": {"source": "web", "full_name": "Nadia Brook", "goals": "Invest in technology and AI companies for long-term growth", "horizon_years": 15, "investable_usd": "50000", "monthly_usd": "500", "source_of_funds": "salary"},
+      "expect": {"goal_category": ["thematic_tech"], "allowed_funds": ["ATR-TEC", "ATR-GRW", "ATR-GLB"], "inconsistent": false},
+      "answer": {"goal_category": "thematic_tech", "goals_summary": "Long-term technology growth.", "suggested_funds": ["ATR-TEC", "ATR-GRW"], "stated_risk_appetite": "high", "consistency_issues": [], "text_authenticity": "natural", "next_best_action": "Discuss concentration in one sector.", "confidence": 0.8}
+    },
+    {
+      "id": "retire-in-two-years-but-25-year-horizon",
+      "why": "Planted: the goal is to retire in two years and live off the savings, but the horizon given is 25 years. Living off savings is income or preservation; the funds must suit drawing income, not long growth.",
+      "fields": {"source": "web", "full_name": "Owen Pierce", "goals": "Retire in two years and live off my savings", "horizon_years": 25, "investable_usd": "200000", "monthly_usd": "2000", "source_of_funds": "salary"},
+      "expect": {"goal_category": ["income", "capital_preservation", "balanced"], "allowed_funds": ["ATR-INC", "ATR-CASH", "ATR-BAL", "ATR-DIV"], "inconsistent": true},
+      "answer": {"goal_category": "income", "goals_summary": "Retirement in two years, then income from savings.", "suggested_funds": ["ATR-INC", "ATR-BAL"], "stated_risk_appetite": "low", "consistency_issues": [{"field": "horizon_years", "issue": "Retiring in two years conflicts with a 25-year horizon.", "severity": "medium"}], "text_authenticity": "natural", "next_best_action": "Confirm the retirement date and when withdrawals start.", "confidence": 0.7}
+    },
+    {
+      "id": "monthly-out-of-proportion",
+      "why": "Planted: $20,000 a month against $5,000 of investable assets is out of proportion. The goal, wealth for the children over 18 years, is growth or balanced.",
+      "fields": {"source": "web", "full_name": "Priya Sandoval", "goals": "Grow wealth for my children's future", "horizon_years": 18, "investable_usd": "5000", "monthly_usd": "20000", "source_of_funds": "salary"},
+      "expect": {"goal_category": ["growth", "balanced"], "allowed_funds": ["ATR-GRW", "ATR-BAL", "ATR-GLB", "ATR-DIV"], "inconsistent": true},
+      "answer": {"goal_category": "growth", "goals_summary": "Long-term growth for the children.", "suggested_funds": ["ATR-GRW", "ATR-BAL"], "stated_risk_appetite": "medium", "consistency_issues": [{"field": "monthly_usd", "issue": "A $20,000 monthly contribution is out of proportion to $5,000 of assets.", "severity": "high"}], "text_authenticity": "natural", "next_best_action": "Confirm the monthly amount before anything else.", "confidence": 0.7}
+    },
+    {
+      "id": "unspecified-source-large-sum",
+      "why": "Planted: $400,000 with the source of funds left unspecified, which the prompt names as a contradiction to resolve. Growing money over ten years is growth or balanced.",
+      "fields": {"source": "web", "full_name": "Damon Reyes", "goals": "Grow my money over the next ten years", "horizon_years": 10, "investable_usd": "400000", "monthly_usd": "0", "source_of_funds": "unspecified"},
+      "expect": {"goal_category": ["growth", "balanced"], "allowed_funds": ["ATR-GRW", "ATR-BAL", "ATR-GLB", "ATR-DIV"], "inconsistent": true},
+      "answer": {"goal_category": "growth", "goals_summary": "Growth over ten years.", "suggested_funds": ["ATR-BAL", "ATR-GRW"], "stated_risk_appetite": "medium", "consistency_issues": [{"field": "source_of_funds", "issue": "More than $250,000 with no stated source of funds.", "severity": "high"}], "text_authenticity": "natural", "next_best_action": "Ask where the $400,000 comes from before onboarding.", "confidence": 0.7}
+    },
+    {
+      "id": "aggressive-growth-one-year",
+      "why": "Planted: aggressive growth on a one-year horizon, the prompt's own example of a contradiction. The goal is growth; with a one-year horizon nothing above band 4 is defensible, so the technology fund is out.",
+      "fields": {"source": "web", "full_name": "Ezra Lowe", "goals": "Maximize growth as aggressively as possible", "horizon_years": 1, "investable_usd": "90000", "monthly_usd": "1000", "source_of_funds": "salary"},
+      "expect": {"goal_category": ["growth"], "allowed_funds": ["ATR-CASH", "ATR-INC", "ATR-BAL", "ATR-GRW", "ATR-GLB", "ATR-DIV"], "inconsistent": true},
+      "answer": {"goal_category": "growth", "goals_summary": "Aggressive growth within one year.", "suggested_funds": ["ATR-BAL"], "stated_risk_appetite": "high", "consistency_issues": [{"field": "horizon_years", "issue": "Aggressive growth goals with a one-year horizon.", "severity": "high"}], "text_authenticity": "natural", "next_best_action": "Discuss the horizon before suggesting growth funds.", "confidence": 0.65}
+    }
+  ]
+}
