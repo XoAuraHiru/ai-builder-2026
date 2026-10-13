@@ -20,7 +20,7 @@ export const PERSONAS: Persona[] = [
     story: "Works a pipeline of new leads. Three of them are fraud stories the Trust Score catches.",
     tries: ["Open a lead marked high risk and read why", "Turn a clean lead into a Gemini Pro proposal"] },
   { email: "priya@atrium.demo", name: "Priya Raman", role: "Investor", act: "invest", home: "/investor", start: true,
-    story: "Her balanced portfolio has quietly drifted above the risk she signed up for.",
+    story: "A balanced portfolio that has quietly drifted above the risk Priya signed up for.",
     tries: ["See the drift, then test 10,000 futures", "Try buying 60 NVIDIA shares"] },
   { email: "lucas@atrium.demo", name: "Lucas Moreau", role: "Investor", act: "invest", home: "/investor/xray",
     story: "Owns about a tenth of NVIDIA without knowing it, through six different ETFs.",

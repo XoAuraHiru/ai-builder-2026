@@ -31,8 +31,8 @@ describe("journeys", () => {
     expect(stepMatches(priya.steps[0], "/investor")).toBe(true);
     expect(stepMatches(priya.steps[0], "/investor/xray")).toBe(false);
     const omar = journeyFor("omar@atrium.demo")!;
-    expect(stepMatches(omar.steps[1], "/compliance/alerts/abc")).toBe(true);
-    expect(stepMatches(omar.steps[1], "/compliance")).toBe(false);
+    expect(stepMatches(omar.steps[0], "/compliance/alerts/abc")).toBe(true);
+    expect(stepMatches(omar.steps[0], "/compliance")).toBe(false);
   });
   it("ticks the visited steps and points at the first one left", () => {
     const priya = journeyFor("priya@atrium.demo")!;
@@ -85,5 +85,14 @@ describe("guideState", () => {
     expect(guideState("priya@atrium.demo", true)).toBe("hidden");
     expect(guideState("someone@else.example", false)).toBe("none");   // no journey: no column, no "Show your story"
     expect(guideState("someone@else.example", true)).toBe("none");
+  });
+});
+
+describe("the advanced journey steps", () => {
+  it("adds a step to each story that has a new feature", () => {
+    expect(journeyFor("omar@atrium.demo")!.steps.map((s) => s.href)).toEqual(
+      expect.arrayContaining(["/compliance/rings", "/compliance/models"]));
+    expect(journeyFor("priya@atrium.demo")!.steps.map((s) => s.href)).toContain("/investor/scenarios");
+    expect(journeyFor("daniel@atrium.demo")!.steps.some((s) => s.title === "Review a client call")).toBe(true);
   });
 });

@@ -61,3 +61,15 @@ describe("entryRoute", () => {
     expect(entryRoute("dev", null)).toBeNull();
   });
 });
+
+describe("the advanced sections", () => {
+  it("puts rings and models in the compliance rail and scenarios under Portfolio", () => {
+    const compliance = WORKSPACES.compliance.sections.map((s) => s.key);
+    expect(compliance).toEqual(["alerts", "rings", "models", "log"]);
+    expect(sectionFor(WORKSPACES.compliance, "/compliance/models/case_reviewer")?.key).toBe("models");
+    expect(sectionFor(WORKSPACES.compliance, "/compliance/rings")?.key).toBe("rings");
+    const portfolio = WORKSPACES.investor.sections.find((s) => s.key === "portfolio")!;
+    expect(portfolio.tabs?.map((t) => t.href)).toContain("/investor/scenarios");
+    expect(sectionFor(WORKSPACES.investor, "/investor/scenarios")?.key).toBe("portfolio");
+  });
+});

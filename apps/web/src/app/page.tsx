@@ -13,11 +13,13 @@ import { Footer, Wordmark } from "@/components/shell";
 
 const PRINCIPLES = [
   { title: "It explains; the engines count",
-    text: "Prices, simulations, matches and checks are code. Gemini writes the words, and any dollar or percentage it writes that the engine did not produce is flagged on the page." },
+    text: "Prices, simulations, matches and checks are code. In a scenario, Gemini proposes the shocks and you can change each one; the engine computes the result. Any dollar or percentage Gemini writes that the engine did not produce is flagged on the page." },
   { title: "It proposes; people decide",
     text: "Orders, matches and alerts wait for a person. Publishing prices or changing the ledger needs a second person with a one-time code." },
   { title: "It shows where it looked",
-    text: "Answers about funds cite the fact-sheet section; case reviews cite the evidence rows. Anything Gemini wrote is set in a serif, so you always know." },
+    text: "Answers about funds cite the fact-sheet section; case reviews cite the evidence rows; a call's flags quote the call and give the second they were said. Fraud rings are found by the graph, and Gemini only explains them. Anything Gemini wrote is set in a serif." },
+  { title: "It is checked, attacked and paused when it slips",
+    text: "Every model is validated before and after each deploy, attacked by a red team, tested for fair lending and watched against people's decisions. A model that slips is paused, and its feature falls back to the engine." },
 ];
 const PILL = "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors disabled:cursor-wait disabled:opacity-70";
 const PRIMARY = `${PILL} bg-ink text-white hover:bg-[#26343f]`;
@@ -126,7 +128,7 @@ export default function FrontDoor() {
             <h2 className="wide max-w-[22em] text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] sm:text-[34px]">
               What the AI does, and what it never does
             </h2>
-            <div className="mt-10 grid gap-8 md:grid-cols-3">
+            <div className="mt-10 grid gap-8 md:grid-cols-2 xl:grid-cols-4">
               {PRINCIPLES.map((p) => (
                 <div key={p.title} className="border-t-2 border-ink pt-5">
                   <h3 className="text-lg font-semibold">{p.title}</h3>

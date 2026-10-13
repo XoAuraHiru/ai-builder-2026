@@ -16,6 +16,8 @@ const PATHS: Record<IconName, ReactNode> = {
   blotter: <path d="M5 6h14M5 12h14M5 18h9" />,
   alerts: <><path d="M12 4l9 16H3z" /><path d="M12 10v4M12 17v.5" /></>,
   log: <><rect x="5" y="4" width="14" height="16" rx="2" /><path d="M9 9h6M9 13h6M9 17h3" /></>,
+  models: <><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" /><path d="M9 12l2 2 4-4" /></>,
+  rings: <><circle cx="6" cy="17" r="2.5" /><circle cx="18" cy="17" r="2.5" /><circle cx="12" cy="6" r="2.5" /><path d="M8.5 17h7M7.3 14.8l3.4-6.4M16.7 14.8l-3.4-6.4" /></>,
 };
 
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
