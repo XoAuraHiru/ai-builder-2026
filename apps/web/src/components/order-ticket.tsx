@@ -142,7 +142,7 @@ export function OrderTicket({ accountId, symbol, price, held, onPlaced, initialQ
             : <p role="status" className="flex items-center gap-2 rounded-[16px] bg-ai-50 px-5 py-4 text-sm font-medium text-ai-700"><Sparkle />Gemini is writing an explanation of this verdict…</p>}
           {report.verdict === "warn" && (
             <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" className="mt-1 accent-[var(--color-green-500)]" checked={ack} onChange={(e) => setAck(e.target.checked)} />
+              <input type="checkbox" className="mt-1 accent-green-500" checked={ack} onChange={(e) => setAck(e.target.checked)} />
               I have read the warnings and want to go ahead.
             </label>
           )}
