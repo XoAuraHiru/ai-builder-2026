@@ -10,20 +10,19 @@ import { useMe } from "@/lib/session-context";
 import { NarrativeView } from "@/components/ai-prose";
 import { WhyPanel } from "@/components/why-panel";
 import { Button, ButtonLink, EmptyState, Field, inputClass, KeyMoment, Loading, Notice, PageHeader, Panel,
-  Section } from "@/components/ui";
+  Section, Sparkle } from "@/components/ui";
 
 const message = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 const DESCRIPTION = "Replay real market history on what you hold, or describe a scenario and see what it could do. "
   + "Simulations, not investment advice.";
+const LINK = "font-semibold text-green-600 hover:text-green-800 hover:underline";
 
-/** Gemini's words in a small size: serif, with the daylight caption that marks AI. */
+/** Gemini's words in a small size: the violet panel and Newsreader, captioned with the sparkle, like AiProse. */
 function AiLine({ caption, children }: { caption: string; children: ReactNode }) {
   return (
-    <div className="mt-2 max-w-[64ch]">
-      <p className="font-serif text-[15px] leading-relaxed text-ink">{children}</p>
-      <p className="mt-1 flex items-center gap-1.5 text-[11px] text-daylight-ink">
-        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-[1px] bg-daylight" />{caption}
-      </p>
+    <div className="mt-2.5 max-w-[64ch] rounded-control bg-ai-50 px-3.5 py-2.5">
+      <div className="font-serif text-[15px] leading-[22px] text-ink-900">{children}</div>
+      <p className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-ai-700"><Sparkle size={10} />{caption}</p>
     </div>
   );
 }
@@ -38,12 +37,12 @@ function ChangeBars({ holdings }: { holdings: HoldingChange[] }) {
           <li key={h.symbol} className="text-sm">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
               <span className="min-w-0 font-medium">{h.name}</span>
-              <span className={`num ${loss ? "text-loss" : h.change_usd > 0 ? "text-gain" : "text-ink-2"}`}>
-                {signedUsd0(h.change_usd)} <span className="text-muted">({signedPct(h.change_pct)})</span>
+              <span className={`num ${loss ? "text-coral-700" : h.change_usd > 0 ? "text-green-700" : "text-ink-700"}`}>
+                {signedUsd0(h.change_usd)} <span className="text-ink-500">({signedPct(h.change_pct)})</span>
               </span>
             </div>
-            <span className="mt-1.5 block h-1.5 rounded-full bg-line" aria-hidden="true">
-              <span className={`block h-1.5 rounded-full ${loss ? "bg-loss" : "bg-gain"}`}
+            <span className="mt-1.5 block h-1.5 rounded-full bg-sand-100" aria-hidden="true">
+              <span className={`block h-1.5 rounded-full ${loss ? "bg-coral-500" : "bg-green-500"}`}
                 style={{ width: `${(Math.abs(h.change_usd) / widest) * 100}%` }} />
             </span>
           </li>
@@ -56,36 +55,36 @@ function ChangeBars({ holdings }: { holdings: HoldingChange[] }) {
 function ReplayCard({ replay }: { replay: Replay }) {
   const loss = replay.loss_usd < 0;
   return (
-    <Panel className="scroll-mt-24 p-5 sm:p-6">
+    <Panel className="scroll-mt-24 p-6">
       <article id={`replay-${replay.key}`} aria-labelledby={`replay-${replay.key}-title`}
-        className="grid gap-x-8 gap-y-4 md:grid-cols-2 2xl:grid-cols-1">
+        className="grid gap-x-8 gap-y-4 md:grid-cols-2 xl:grid-cols-1">
         <div className="min-w-0">
           <h3 id={`replay-${replay.key}-title`} className="font-semibold">{replay.title}</h3>
-          <p className="text-xs text-muted">{windowText(replay.start, replay.end)}</p>
-          <p className={`num wide mt-3 text-[30px] font-semibold leading-none tracking-[-0.02em] ${loss ? "text-loss" : "text-gain"}`}>
+          <p className="text-xs text-ink-500">{windowText(replay.start, replay.end)}</p>
+          <p className={`num mt-3 text-[30px] font-medium leading-[34px] tracking-[-0.02em] ${loss ? "text-coral-700" : "text-green-700"}`}>
             {signedUsd0(replay.loss_usd)}
           </p>
-          <p className="mt-1.5 text-sm text-ink-2">{signedPct(replay.loss_pct)} of what you hold today</p>
+          <p className="mt-1.5 text-sm text-ink-700">{signedPct(replay.loss_pct)} of what you hold today</p>
         </div>
         <dl className="min-w-0 space-y-2.5 text-sm">
           {replay.worst_holding && (
             <div>
-              <dt className="text-muted">Hardest hit</dt>
-              <dd className="text-ink">{replay.worst_holding.name} <span className="num text-loss">{signedPct(replay.worst_holding.pct)}</span></dd>
+              <dt className="text-ink-500">Hardest hit</dt>
+              <dd className="text-ink-900">{replay.worst_holding.name} <span className="num text-coral-700">{signedPct(replay.worst_holding.pct)}</span></dd>
             </div>
           )}
           <div>
-            <dt className="text-muted">Recovery</dt>
-            <dd className="text-ink">
+            <dt className="text-ink-500">Recovery</dt>
+            <dd className="text-ink-900">
               {recoveryText(replay.recovery_months)}
-              {replay.trough_month && <span className="text-muted"> from its low in {formatMonth(replay.trough_month)}</span>}
+              {replay.trough_month && <span className="text-ink-500"> from its low in {formatMonth(replay.trough_month)}</span>}
             </dd>
           </div>
           {replay.notes.length > 0 && (
             <div>
               <dt className="sr-only">Notes</dt>
               <dd>
-                <ul className="space-y-1 text-xs text-muted">{replay.notes.map((n) => <li key={n}>{n}</li>)}</ul>
+                <ul className="space-y-1 text-xs text-ink-500">{replay.notes.map((n) => <li key={n}>{n}</li>)}</ul>
               </dd>
             </div>
           )}
@@ -101,19 +100,19 @@ function ShockSlider({ row, onChange }: { row: SliderRow; onChange: (pct: number
     <li className="py-4 first:pt-0 last:pb-0">
       <div className="flex items-baseline justify-between gap-3">
         <label htmlFor={id} className="text-sm font-semibold">{row.label}</label>
-        <span className={`num text-sm font-semibold ${row.pct < 0 ? "text-loss" : row.pct > 0 ? "text-gain" : "text-ink-2"}`}>
+        <span className={`num text-sm font-semibold ${row.pct < 0 ? "text-coral-700" : row.pct > 0 ? "text-green-700" : "text-ink-700"}`}>
           {formatShock(row.pct)}
         </span>
       </div>
       <input id={id} type="range" min={row.min} max={row.max} step={1} value={row.pct}
         aria-valuetext={formatShock(row.pct)} onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-2 w-full accent-ink" />
-      <div className="flex justify-between text-[11px] text-muted" aria-hidden="true">
+        className="mt-2 w-full accent-[var(--color-green-500)]" />
+      <div className="flex justify-between text-[11px] text-ink-500" aria-hidden="true">
         <span>{formatShock(row.min)}</span><span>{formatShock(row.max)}</span>
       </div>
-      {row.clamped && <p className="mt-1 text-xs font-medium text-caution">{clampedNote(row.factor, row.pct)}</p>}
+      {row.clamped && <p className="mt-1 text-xs font-medium text-amber-800">{clampedNote(row.factor, row.pct)}</p>}
       {row.reason ? <AiLine caption="Gemini's reason">{row.reason}</AiLine>
-        : <p className="mt-1 text-xs text-muted">Not moved by this scenario. Move it to add your own shock.</p>}
+        : <p className="mt-1 text-xs text-ink-500">Not moved by this scenario. Move it to add your own shock.</p>}
     </li>
   );
 }
@@ -125,7 +124,7 @@ function SearchSuggestions({ html }: { html: string }) {
     + `<body style="margin:0">${html}</body></html>`;
   return (
     <iframe title="Google Search suggestions" srcDoc={doc} sandbox="allow-popups allow-popups-to-escape-sandbox"
-      className="mt-3 h-18 w-full rounded-control border border-line bg-surface" />
+      className="mt-3 h-18 w-full rounded-control border border-sand-200 bg-white" />
   );
 }
 
@@ -140,69 +139,69 @@ function ScenarioResult({ s, onShock, onExplain }:
   return (
     <div className="space-y-10">
       <p className="sr-only" aria-live="polite">{`If this happened: ${total}`}</p>
-      <KeyMoment tone={loss ? "attention" : "good"} label={`If this happened: ${p.title}`} title={total}>
-        <p className="max-w-[62ch] text-[15px] text-ink-2">
+      <KeyMoment tone={loss ? "alert" : "good"} label={`If this happened: ${p.title}`} title={total}>
+        <p className="max-w-[62ch] text-[15px] text-ink-700">
           Over about {p.horizon_months} month{p.horizon_months === 1 ? "" : "s"}, with the shocks below applied to what you hold today.
-          {updating && <span className="ml-2 text-xs text-muted">Updating…</span>}
+          {updating && <span className="ml-2 text-xs text-ink-500">Updating…</span>}
         </p>
         <ChangeBars holdings={impact.holdings} />
       </KeyMoment>
 
       <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
         <Section title="The shocks" description="Gemini proposed these; Atrium holds each within fixed limits. Move any of them and the figures above follow.">
-          <Panel className="p-5">
-            <ul className="divide-y divide-line">
+          <Panel className="p-6">
+            <ul className="divide-y divide-sand-100">
               {rows.map((row) => <ShockSlider key={row.factor} row={row} onChange={(pct) => onShock(row.factor, pct)} />)}
             </ul>
           </Panel>
           {result.dropped.length > 0 && (
-            <p className="mt-3 text-xs text-muted">Left out: {result.dropped.join(", ")}. Atrium does not model {result.dropped.length === 1 ? "that factor" : "those factors"}.</p>
+            <p className="mt-3 text-xs text-ink-500">Left out: {result.dropped.join(", ")}. Atrium does not model {result.dropped.length === 1 ? "that factor" : "those factors"}.</p>
           )}
         </Section>
 
         <div className="space-y-8">
           <Section title="Why these shocks">
-            {p.analogue !== "none" && (
-              <div>
-                <p className="text-sm">
-                  <span className="text-muted">Closest in history: </span>
-                  <a href={`#replay-${p.analogue}`} className="font-semibold underline decoration-line-strong underline-offset-4 hover:decoration-ink">
-                    {ANALOGUE_TITLE[p.analogue]}
-                  </a>
-                </p>
-                {p.analogue_reason && <AiLine caption="Gemini's reading">{p.analogue_reason}</AiLine>}
-              </div>
-            )}
-            {p.assumptions.length > 0 && (
-              <div className="mt-5">
-                <p className="text-sm font-semibold">Assumptions</p>
-                <ul className="mt-1 list-disc space-y-1 pl-5 font-serif text-[15px] text-ink">
-                  {p.assumptions.map((a) => <li key={a}>{a}</li>)}
-                </ul>
-                <p className="mt-1 flex items-center gap-1.5 text-[11px] text-daylight-ink">
-                  <span aria-hidden="true" className="h-1.5 w-1.5 rounded-[1px] bg-daylight" />Gemini&apos;s assumptions
-                </p>
-              </div>
-            )}
+            <Panel className="p-6">
+              {p.analogue !== "none" && (
+                <div>
+                  <p className="text-sm">
+                    <span className="text-ink-500">Closest in history: </span>
+                    <a href={`#replay-${p.analogue}`} className={LINK}>{ANALOGUE_TITLE[p.analogue]}</a>
+                  </p>
+                  {p.analogue_reason && <AiLine caption="Gemini's reading">{p.analogue_reason}</AiLine>}
+                </div>
+              )}
+              {p.assumptions.length > 0 && (
+                <div className={p.analogue !== "none" ? "mt-5" : ""}>
+                  <p className="text-sm font-semibold">Assumptions</p>
+                  <AiLine caption="Gemini's assumptions">
+                    <ul className="list-disc space-y-1 pl-5">{p.assumptions.map((a) => <li key={a}>{a}</li>)}</ul>
+                  </AiLine>
+                </div>
+              )}
+              {p.analogue === "none" && p.assumptions.length === 0 && <p className="text-sm text-ink-500">Gemini gave no analogue or assumptions for this scenario.</p>}
+            </Panel>
           </Section>
           <Section title="Sources" description="What Gemini read on the web, through Google Search, before proposing the shocks.">
-            {result.sources.length > 0 ? (
-              <ul className="space-y-1.5 text-sm">
-                {result.sources.map((s) => (
-                  <li key={s.uri}>
-                    <a href={s.uri} target="_blank" rel="noopener noreferrer" className="underline decoration-line-strong underline-offset-4 hover:decoration-ink">{s.title}</a>
-                  </li>
-                ))}
-              </ul>
-            ) : <p className="text-sm text-muted">{result.sources_note ?? "No sources were cited."}</p>}
-            {result.search_suggestions && <SearchSuggestions html={result.search_suggestions} />}
+            <Panel className="p-6">
+              {result.sources.length > 0 ? (
+                <ul className="space-y-1.5 text-sm">
+                  {result.sources.map((s) => (
+                    <li key={s.uri}>
+                      <a href={s.uri} target="_blank" rel="noopener noreferrer" className={LINK}>{s.title}</a>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="text-sm text-ink-500">{result.sources_note ?? "No sources were cited."}</p>}
+              {result.search_suggestions && <SearchSuggestions html={result.search_suggestions} />}
+            </Panel>
           </Section>
         </div>
       </div>
 
       <Section title="What this means for you" description="Gemini reads the figures above and explains them. It cannot change them.">
         {narrative ? <NarrativeView narrative={narrative} /> : (
-          <Button variant="secondary" busy={explaining} onClick={onExplain}>{explaining ? "Gemini is reading the result" : "Explain this result"}</Button>
+          <Button variant="ai" busy={explaining} onClick={onExplain}>{!explaining && <Sparkle />}{explaining ? "Gemini is reading the result" : "Explain this result"}</Button>
         )}
         {explainError && <div className="mt-3"><Notice tone="caution">{explainError}</Notice></div>}
       </Section>
@@ -290,14 +289,14 @@ export default function ScenariosPage() {
           <KeyMoment tone={worst.loss_usd < 0 ? "alert" : "good"} label="The hardest stretch since 2007, on what you hold"
             title={`${signedUsd0(worst.loss_usd)} (${signedPct(worst.loss_pct)}) in ${worst.title.replace(/^The /, "the ")}`}
             actions={<ButtonLink href="#your-scenario" variant="secondary">Try your own scenario</ButtonLink>}>
-            <p className="max-w-[62ch] text-[15px] text-ink-2">
+            <p className="max-w-[62ch] text-[15px] text-ink-700">
               {windowText(worst.start, worst.end)}. {recoveryText(worst.recovery_months)}.
             </p>
           </KeyMoment>
         )}
 
         <Section title="History" description="What the three hardest stretches of recent markets would do to what you hold today, from month-end closes.">
-          <div className="grid gap-4 2xl:grid-cols-3">
+          <div className="grid gap-4 xl:grid-cols-3">
             {history.replays.map((r) => <ReplayCard key={r.key} replay={r} />)}
           </div>
         </Section>
@@ -309,14 +308,14 @@ export default function ScenariosPage() {
               {history.paused} The replays above still work; they use no AI.
             </Notice>
           ) : (
-            <Panel className="space-y-4 p-5">
+            <Panel className="space-y-4 p-6">
               <Field label="Scenario" hint="For example a rate move, an oil shock or a sector sell-off. Up to 400 characters.">
                 <textarea value={text} maxLength={400} rows={2} onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void map(text); } }}
                   placeholder="Oil at $150 and a US recession" className={`${inputClass} resize-y`} />
               </Field>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-muted">Try:</span>
+                <span className="text-xs text-ink-500">Try:</span>
                 {EXAMPLES.map((x) => (
                   <Button key={x} variant="secondary" size="sm" disabled={s.mapping} onClick={() => map(x)}>{x}</Button>
                 ))}
