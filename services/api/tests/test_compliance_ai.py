@@ -125,3 +125,14 @@ def test_ordinary_payment_text_leaves_the_triage_alone(db, case):
                        alert)
     assert out["triage"] == "close" and out["model_triage"] == "close" and out["steering"] == []
 
+
+def test_the_review_prompt_states_when_to_escalate_ask_or_close():
+    from app.services.compliance_ai import REVIEW_PROMPT
+
+    text = " ".join(REVIEW_PROMPT.split())
+    assert "escalate when the evidence matches a recognised money-laundering typology" in text
+    for typology in ("structuring", "money in and straight out", "round trip", "third party"):
+        assert typology in text, typology
+    assert "request_information only when one missing fact would decide" in text
+    assert "close only when the evidence shows an ordinary explanation" in text
+

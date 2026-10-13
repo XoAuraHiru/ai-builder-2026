@@ -45,7 +45,11 @@ class AlertReview(BaseModel):
 
 REVIEW_PROMPT = """You assist the money laundering reporting officer (MLRO) of Atrium, a US investment platform, with one
 alert from transaction monitoring. From <alert>, <evidence> and <entities>, write:
-- triage: escalate, close or request_information, with a one-sentence reason;
+- triage: escalate, close or request_information, with a one-sentence reason. Choose escalate when the evidence
+  matches a recognised money-laundering typology (structuring just under a reporting threshold, money in and
+  straight out, a round trip between linked accounts, unexplained funding by a third party); choose
+  request_information only when one missing fact would decide the case either way; choose close only when the
+  evidence shows an ordinary explanation. Escalating starts a review by people; it accuses no one;
 - a case narrative in the style of a suspicious activity report: who, what, when, how the money moved and why it is
   unusual, in two to five short parts. Each part lists the evidence ids it rests on, using only ids from <evidence>;
 - up to three questions the MLRO could ask.
