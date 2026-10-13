@@ -21,6 +21,7 @@ from app.models import Account, Person, TradeOrder
 from app.routers.accounts import account_or_404
 from app.routers.invest import EXPLAIN_BUSY
 from app.schemas.trading import DecisionIn, ExplainedOrder, GuardianOut, OrderIn, OrderOut, OrdersOut
+from app.services.analysis_links import AnalysisLinkError, check_link
 from app.services.devices import device_hash, device_label
 from app.services.guardian import OrderRequest, report_json
 from app.services.ledger import balance, q_cash
@@ -61,6 +62,16 @@ def _holder(account: Account, user: CurrentUser) -> bool:
     """Only the account holder's browser is recorded as one of the account's devices; staff looking at a client's
     order must not make their own browser "known" on the client's account."""
     return account.person_id == user.person_id
+
+
+def _linked(db: Session, body: OrderIn, user: CurrentUser) -> str | None:
+    if body.analysis_id and body.side != "buy":
+        raise HTTPException(status_code=422, detail="An analysis can only lead to a purchase, not a sale.")
+    try:
+        return check_link(db, body.analysis_id, kind="share", code=body.symbol.strip().upper(),
+                          person_id=user.person_id)
+    except AnalysisLinkError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
 
 
 def _request(body: OrderIn) -> OrderRequest:
@@ -115,9 +126,11 @@ def place(account_id: str, body: OrderIn, request: Request, db: Session = Depend
           quotes: CommittedQuotes = Depends(quote_book), broker: Broker = Depends(broker_dep),
           user: CurrentUser = Depends(get_current_user)):
     account = _account(db, account_id, user, holder_only="Only the account holder can place orders.")
+    analysis_id = _linked(db, body, user)
     hashed, label = _device(request)
     order = _guarded(lambda: place_order(db, account, _request(body), acknowledge=body.acknowledge_warnings,
                                          device_hash=hashed, device_label=label, quotes=quotes, broker=broker))
+    order.analysis_id = analysis_id
     db.commit()
     return order_out(db, order)
 

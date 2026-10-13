@@ -10,6 +10,7 @@ from app.models import STEP_STATES, Account, Fund, Instruction, InstructionStep,
 from app.routers.accounts import account_or_404
 from app.schemas.instructions import (InstructionIn, InstructionOut, PlanOut, RecurringIn, RecurringOut, RedemptionOut,
                                       StepOut)
+from app.services.analysis_links import AnalysisLinkError, check_link
 from app.services.instructions import (InstructionRejected, create_recurring, payment_reference, plan_instruction,
                                        submit_instruction)
 
@@ -56,6 +57,16 @@ def recurring_out(plan: RecurringPlan, funds: dict[str, Fund]) -> RecurringOut:
                         created_at=plan.created_at)
 
 
+def linked(db: Session, analysis_id: str | None, person, fund_code: str, *, investing: bool = True,
+           monthly: bool = False) -> str | None:
+    if analysis_id and not investing:
+        raise HTTPException(status_code=422, detail="An analysis can only lead to an investment, not a redemption.")
+    try:
+        return check_link(db, analysis_id, kind="unit_trust", code=fund_code, person_id=person.id, monthly=monthly)
+    except AnalysisLinkError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+
 @router.post("/{account_id}/instructions/preview", response_model=PlanOut)
 def preview(account_id: str, body: InstructionIn, db: Session = Depends(get_db),
             user: CurrentUser = Depends(get_current_user)):
@@ -80,12 +91,14 @@ def submit(account_id: str, body: InstructionIn, db: Session = Depends(get_db),
            user: CurrentUser = Depends(get_current_user)):
     account, person = holder(db, account_id, user)
     fund, target = fund_or_404(db, body.fund_code), fund_or_404(db, body.to_fund_code)
+    analysis_id = linked(db, body.analysis_id, person, fund.code, investing=body.type == "subscribe")
     try:
         instruction = submit_instruction(db, account, person, body.type, fund, amount=body.amount_usd,
                                          units=body.units, target=target, acknowledge_risk=body.acknowledge_risk)
     except InstructionRejected as e:
         db.rollback()
         raise HTTPException(status_code=409, detail=str(e)) from e
+    instruction.analysis_id = analysis_id
     db.commit()
     return instruction_out(db, instruction, funds_by_code(db))
 
@@ -105,11 +118,13 @@ def add_recurring(account_id: str, body: RecurringIn, db: Session = Depends(get_
                   user: CurrentUser = Depends(get_current_user)):
     account, person = holder(db, account_id, user)
     fund = fund_or_404(db, body.fund_code)
+    analysis_id = linked(db, body.analysis_id, person, fund.code, monthly=True)
     try:
         plan = create_recurring(db, account, person, fund, body.amount_usd, body.day_of_month, body.acknowledge_risk)
     except InstructionRejected as e:
         db.rollback()
         raise HTTPException(status_code=409, detail=str(e)) from e
+    plan.analysis_id = analysis_id
     db.commit()
     return recurring_out(plan, funds_by_code(db))
 

@@ -12,6 +12,7 @@ class InstructionIn(BaseModel):
     amount_usd: Decimal | None = Field(None, gt=0, le=10_000_000)
     units: Decimal | None = Field(None, gt=0)
     acknowledge_risk: bool = False
+    analysis_id: str | None = Field(None, max_length=32)
 
     @model_validator(mode="after")
     def shape(self):
@@ -78,6 +79,7 @@ class RecurringIn(BaseModel):
     amount_usd: Decimal = Field(gt=0, le=1_000_000)
     day_of_month: int = Field(ge=1, le=28)
     acknowledge_risk: bool = False
+    analysis_id: str | None = Field(None, max_length=32)
 
 
 class RecurringOut(BaseModel):

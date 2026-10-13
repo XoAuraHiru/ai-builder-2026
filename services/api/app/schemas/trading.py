@@ -81,6 +81,7 @@ class OrderIn(BaseModel):
     quantity: int = Field(ge=1, le=100_000)
     limit_price: Decimal | None = Field(default=None, gt=0, le=1_000_000)
     acknowledge_warnings: bool = False
+    analysis_id: str | None = Field(default=None, max_length=32)
 
     @model_validator(mode="after")
     def _limit_needs_a_price(self):

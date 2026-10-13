@@ -43,6 +43,7 @@ class TradeOrder(IdMixin, Base):
     review_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     ai_review: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     timeline: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    analysis_id: Mapped[str | None] = mapped_column(ForeignKey("analysis.id"), nullable=True)  # analyzer run
 
 
 class WatchItem(IdMixin, Base):
