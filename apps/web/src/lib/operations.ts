@@ -204,6 +204,58 @@ export function writtenByModel(model: string): boolean {
   return model !== "rules";
 }
 
+/** What reading a statement does while operations waits (app/services/statements.py ingest_statement): Document AI
+ *  reads a PDF's transactions, the CSV reader a CSV's, then Gemini reads each narration and the references are checked. */
+export function statementSteps(format: "pdf" | "csv"): string[] {
+  return [
+    format === "pdf" ? "Document AI is reading the PDF's transactions" : "Reading the statement's lines from the CSV",
+    "Gemini is reading each narration: who paid, the reference they quoted, how the money came",
+    "Checking each reference appears in its narration",
+  ];
+}
+
+/** How long reading a statement usually takes: a CSV is a few seconds; a PDF waits on Document AI first. */
+export function statementUsually(format: "pdf" | "csv"): string {
+  return format === "pdf" ? "10 to 20 s" : "a few seconds";
+}
+
+/** What finding matches does (app/agents/reconciler.py): the rules first, then the ADK agent with its scoring tools. */
+export const MATCH_STEPS = [
+  "The rules are taking exact references and unique amounts",
+  "The reconciliation agent is listing the deposits left and the subscriptions waiting",
+  "Scoring each deposit's closest subscriptions",
+  "Checking whether split payments add up",
+  "Proposing matches, each with a confidence and a reason",
+];
+
+/** The day-end (app/ops/day_end.py): the engine's steps, then Gemini's brief from the step log, checked figure by figure. */
+export const DAY_END_STEPS = [
+  "Drafting prices, turning due plans into orders and dealing what it can",
+  "Running transaction monitoring and counting the exceptions",
+  "Gemini is writing the morning brief from the step log",
+  "Checking every figure in the brief against the run",
+];
+
+/** When the row at `index` arrives in a list that comes in one row after another: 45 ms apart, as the motion
+ *  foundation's Stagger does, but the first dozen only; every row after the twelfth arrives with it, so a long table
+ *  is never still arriving a second later. */
+export function arriveDelay(index: number, { cap = 12, step = 0.045, start = 0.04 } = {}): number {
+  return start + Math.min(Math.max(0, index), cap - 1) * step;
+}
+
+/** Where the new digits of a one-time code begin: typed one at a time that is the last box, while a pasted or
+ *  suggested code fills every box from the first; deleting adds nothing. */
+export function codeArrival(before: string, after: string): number {
+  let i = 0;
+  while (i < before.length && i < after.length && before[i] === after[i]) i += 1;
+  return i;
+}
+
+/** The pause between a decision going through and its card leaving the queue, long enough for the check to draw. */
+export function confirmPause(reduced: boolean | null): number {
+  return reduced ? 0 : 520;
+}
+
 /** Accept each proposal in turn; one failure does not stop the rest, and the result says what happened. */
 export async function acceptMany(ids: string[], accept: (id: string) => Promise<unknown>):
   Promise<{ accepted: string[]; failed: { id: string; message: string }[] }> {

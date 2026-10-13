@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertFindings, alertsMoment, citationLabels, layoutGraph, purposeLabel, thresholdBars, type EvidenceRow, type GraphNode } from "./compliance";
+import { alertFindings, alertsMoment, citationLabels, drawOrder, layoutGraph, purposeLabel, thresholdBars, type EvidenceRow, type GraphNode } from "./compliance";
 
 const NODES: GraphNode[] = [
   { id: "person:b", kind: "person", label: "Noah Williams", flagged: false },
@@ -87,5 +87,18 @@ describe("thresholdBars", () => {
     expect(thresholdBars([ev("p", "4000.00"), ev("q", "12000.00")], 10000).bars.map((b) => b.tone)).toEqual(["under", "over"]);
     expect(Math.round(linePct)).toBe(93);
     expect(thresholdBars([ev("x", null, "feature")], 10000).bars).toEqual([]);
+  });
+});
+
+describe("drawOrder", () => {
+  it("draws strong links first, then weak ones, each as listed", () => {
+    const order = drawOrder([
+      { source: "a", target: "ip", strong: false }, { source: "a", target: "d", strong: true },
+      { source: "b", target: "ip", strong: false }, { source: "b", target: "d", strong: true },
+    ]);
+    expect(order).toEqual({ "a-d": 0, "b-d": 1, "a-ip": 2, "b-ip": 3 });
+  });
+  it("keeps an alert's links, which carry no strength, as listed", () => {
+    expect(drawOrder([{ source: "p", target: "acc" }, { source: "acc", target: "bank" }])).toEqual({ "p-acc": 0, "acc-bank": 1 });
   });
 });

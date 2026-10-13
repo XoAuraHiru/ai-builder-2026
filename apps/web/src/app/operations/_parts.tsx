@@ -1,8 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "motion/react";
 import type { ReactNode } from "react";
+import { arriveDelay } from "@/lib/operations";
+import { CountUp, DrawnCheck, EASE, GrowBar } from "@/components/motion";
 
 /** Parts the operations and compliance desks share: stat cards, table-sized status chips, the table card and the
- *  small glyphs their tiles carry. Built from design system 0.2; candidates for components/ui.tsx. */
+ *  small glyphs their tiles carry, and the few motions they share (rows arriving in order, a decision confirming and
+ *  leaving its queue). Built from design system 0.2; candidates for components/ui.tsx. */
 
 export type Tone = "gain" | "caution" | "loss" | "neutral";
 
@@ -36,9 +42,11 @@ const TILE: Record<Tone, string> = {
   neutral: "bg-fill text-ink-700",
 };
 
-/** A stat card: an icon tile and a title, the figure at 32px, then a caption with a change or status chip. */
+/** A stat card: an icon tile and a title, the figure at 32px (counting up to itself when it is a figure), then a
+ *  caption with a change or status chip. */
 export function StatCard({ icon, title, value, unit, caption, chip, tone = "gain", href }:
   { icon: GlyphName; title: string; value: ReactNode; unit?: string; caption?: ReactNode; chip?: ReactNode; tone?: Tone; href?: string }) {
+  const figure = typeof value === "number" || typeof value === "string" ? <CountUp text={String(value)} /> : value;
   const body = (
     <>
       <span className="flex items-center gap-2">
@@ -46,7 +54,7 @@ export function StatCard({ icon, title, value, unit, caption, chip, tone = "gain
         <span className="text-sm font-semibold leading-5">{title}</span>
       </span>
       <span className="flex flex-wrap items-baseline gap-x-1.5">
-        <span className="num text-[32px] font-medium leading-9 tracking-[-0.02em]">{value}</span>
+        <span className="num text-[32px] font-medium leading-9 tracking-[-0.02em]">{figure}</span>
         {unit && <span className="text-[13px] text-ink-500">{unit}</span>}
       </span>
       {(caption || chip) && (
@@ -109,13 +117,78 @@ export function TableCard({ title, description, action, children, id }:
   );
 }
 
-/** A green bar on a sand track. */
-export function Bar({ pct, tone = "gain", label }: { pct: number; tone?: Tone; label?: string }) {
+/** A green bar on a sand track, growing to its share when it appears. */
+export function Bar({ pct, tone = "gain", label, delay = 0 }: { pct: number; tone?: Tone; label?: string; delay?: number }) {
   const fill = tone === "loss" ? "bg-coral-500" : tone === "caution" ? "bg-amber-400" : tone === "neutral" ? "bg-ink-400" : "bg-green-500";
   return (
     <span role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}
       className="block h-2 w-full overflow-hidden rounded-full bg-sand-100">
-      <span className={`block h-2 rounded-full ${fill}`} style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
+      <GrowBar pct={pct} className={fill} delay={delay} />
     </span>
+  );
+}
+
+const ARRIVE = { tr: motion.tr, li: motion.li, div: motion.div, span: motion.span };
+
+/** One row of a list that arrives in order when it appears: it rises 6px and fades in, 45 ms after the row before;
+ *  every row after the twelfth comes with the twelfth (arriveDelay), so a long table is not still arriving later. */
+export function Arrive({ index, as = "div", className = "", children, ...rest }:
+  { index: number; as?: keyof typeof ARRIVE; className?: string; children: ReactNode; id?: string; role?: string }) {
+  const Tag = ARRIVE[as];
+  return (
+    <Tag className={className} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, delay: arriveDelay(index), ease: EASE }} {...rest}>
+      {children}
+    </Tag>
+  );
+}
+
+/** A chip or mark arriving in order down a list: a short fade, after the one above it. */
+export function ArriveChip({ index, children }: { index: number; children: ReactNode }) {
+  return (
+    <motion.span className="inline-flex" initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.24, delay: 0.12 + arriveDelay(index), ease: EASE }}>
+      {children}
+    </motion.span>
+  );
+}
+
+/** A decision that just went through: a filled circle whose check draws itself, then what was recorded. Green for a
+ *  decision that changed something, ink for one that was kept (a rejection, a pause). */
+export function Confirmed({ tone = "gain", children, className = "" }: { tone?: "gain" | "neutral"; children: ReactNode; className?: string }) {
+  return (
+    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }}
+      className={`inline-flex items-center gap-2 text-sm font-semibold ${tone === "gain" ? "text-green-700" : "text-ink-700"} ${className}`}>
+      <CheckDot tone={tone} />
+      <span className="min-w-0">{children}</span>
+    </motion.span>
+  );
+}
+
+/** The 24px circle with a check that draws itself. */
+export function CheckDot({ tone = "gain", size = 24 }: { tone?: "gain" | "neutral" | "loss"; size?: number }) {
+  const fill = tone === "gain" ? "bg-green-500" : tone === "loss" ? "bg-coral-500" : "bg-ink-700";
+  return (
+    <motion.span aria-hidden="true" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.22, ease: EASE }} style={{ width: size, height: size }}
+      className={`flex shrink-0 items-center justify-center rounded-full text-white ${fill}`}>
+      <DrawnCheck size={Math.round(size * 0.55)} />
+    </motion.span>
+  );
+}
+
+/** A card in a queue: it arrives in order with the cards around it, and once it is decided it fades and its height
+ *  closes, so the cards below move up smoothly. Put each one directly in an AnimatePresence, in a list with "-mb-4"
+ *  (or its own gap's negative): the gap below a card is its own padding, so the gap closes with it. Four pixels of
+ *  room on every other side keep a focus ring from being clipped while the card closes. */
+export function QueueItem({ index, children, gap = "pb-4" }: { index: number; children: ReactNode; gap?: string }) {
+  const close = { duration: 0.3, delay: 0.08, ease: EASE };
+  return (
+    <motion.div className="-mx-1 -mt-1 overflow-hidden px-1 pt-1" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, delay: arriveDelay(index), ease: EASE }}
+      exit={{ opacity: 0, height: 0, paddingTop: 0, marginTop: 0,
+        transition: { opacity: { duration: 0.16 }, height: close, paddingTop: close, marginTop: close } }}>
+      <div className={gap}>{children}</div>
+    </motion.div>
   );
 }
