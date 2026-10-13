@@ -2,6 +2,7 @@
 
 from app.models.account import Account
 from app.models.ai_decision import AIDecision
+from app.models.calls import CALL_SOURCES, LeadCall
 from app.models.fund import FUND_CATEGORIES, Fund, FundConstituent
 from app.models.governance import (BREAKER_STATES, CASE_OUTCOMES, EVAL_TIERS, EVAL_TRIGGERS, RUN_STATES, SUITE_KINDS,
                                    EvalCase, EvalRun, ModelBreaker)
@@ -27,5 +28,5 @@ __all__ = [
     "ALERT_SEVERITIES", "ALERT_STATES", "APPROVAL_ACTIONS", "APPROVAL_STATES", "AmlAlert", "Approval", "BankStatement",
     "LINE_STATES", "MATCH_STATES", "MATCH_TIERS", "OpsRun", "ReconMatch", "StatementLine",
     "BREAKER_STATES", "CASE_OUTCOMES", "EVAL_TIERS", "EVAL_TRIGGERS", "RUN_STATES", "SUITE_KINDS", "EvalCase",
-    "EvalRun", "ModelBreaker", "RingFlag",
+    "EvalRun", "ModelBreaker", "RingFlag", "CALL_SOURCES", "LeadCall",
 ]

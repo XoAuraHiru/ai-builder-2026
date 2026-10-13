@@ -1,0 +1,121 @@
+{
+  "title": "Discovery call with Emma Walsh",
+  "lead_email": "emma.walsh@example.com",
+  "speakers": {
+    "Daniel": {
+      "role": "advisor",
+      "voice": "Charon",
+      "style": "Read this as a warm, unhurried financial advisor speaking on a phone call:"
+    },
+    "Emma": {
+      "role": "client",
+      "voice": "Aoede",
+      "style": "Read this as a friendly, confident professional in their forties on a phone call:"
+    }
+  },
+  "lines": [
+    {
+      "speaker": "Daniel",
+      "text": "Hi Emma, it's Daniel from Atrium. Thanks for making time today. Is this still a good moment to talk?",
+      "start_s": 0.0
+    },
+    {
+      "speaker": "Emma",
+      "text": "Yes, perfect. I have about twenty minutes before my next meeting.",
+      "start_s": 8.06
+    },
+    {
+      "speaker": "Daniel",
+      "text": "Great. I have the form you filled in last week in front of me. You said you'd like to retire by fifty-five and keep growing what you've saved. Is that still the plan?",
+      "start_s": 13.66
+    },
+    {
+      "speaker": "Emma",
+      "text": "Mostly, but it's changed a bit. We talked it over at home, and I'd like to retire at fifty-two now. So that's twelve years from now, not fifteen.",
+      "start_s": 26.52
+    },
+    {
+      "speaker": "Daniel",
+      "text": "Twelve years. That's helpful to know, thank you. It changes how long the money has to grow.",
+      "start_s": 37.94
+    },
+    {
+      "speaker": "Emma",
+      "text": "Right. And the other change is the monthly amount. I put fifteen hundred dollars a month on the form, but I got a raise in September, so I can put in two thousand dollars a month.",
+      "start_s": 45.75
+    },
+    {
+      "speaker": "Daniel",
+      "text": "Two thousand a month. When would you like that to start?",
+      "start_s": 57.7
+    },
+    {
+      "speaker": "Emma",
+      "text": "From next month, once the new salary comes through.",
+      "start_s": 62.39
+    },
+    {
+      "speaker": "Daniel",
+      "text": "Understood. And the lump sum on the form was one hundred and fifty thousand dollars. Is that the amount you'd start with?",
+      "start_s": 66.68
+    },
+    {
+      "speaker": "Emma",
+      "text": "It's a little more now. With my bonus it's about one hundred and seventy-five thousand dollars.",
+      "start_s": 75.77
+    },
+    {
+      "speaker": "Daniel",
+      "text": "Thank you. And that's all saved from your salary, as the form says?",
+      "start_s": 82.74
+    },
+    {
+      "speaker": "Emma",
+      "text": "Yes, all of it is from work. Nothing else.",
+      "start_s": 88.4
+    },
+    {
+      "speaker": "Daniel",
+      "text": "That's clear. Can I ask how you'd feel if the value fell for a year or two along the way? Every investment carries risk, and markets go down as well as up.",
+      "start_s": 93.17
+    },
+    {
+      "speaker": "Emma",
+      "text": "I'd be uncomfortable, but I wouldn't sell. I know it's a long game.",
+      "start_s": 104.9
+    },
+    {
+      "speaker": "Daniel",
+      "text": "That's a sensible way to see it. With twelve years, a balanced growth mix could suit you, but I'd like to send you a written proposal first, with the fees and the risks laid out, so you can take your time.",
+      "start_s": 110.55
+    },
+    {
+      "speaker": "Emma",
+      "text": "That would be great. Could you also show what happens if I retire a year or two later than planned?",
+      "start_s": 126.65
+    },
+    {
+      "speaker": "Daniel",
+      "text": "Of course, I'll show both. I'll also update your profile with the new timeline, the monthly amount and the starting sum, and you can check them before anything is set up.",
+      "start_s": 134.42
+    },
+    {
+      "speaker": "Emma",
+      "text": "Perfect. Thanks, Daniel.",
+      "start_s": 146.5
+    },
+    {
+      "speaker": "Daniel",
+      "text": "Thank you, Emma. You'll have the proposal by Friday. Speak soon.",
+      "start_s": 149.4
+    }
+  ],
+  "duration_s": 154.25,
+  "rendered_with": {
+    "model": "gemini-3.1-flash-tts-preview",
+    "voices": {
+      "Daniel": "Charon",
+      "Emma": "Aoede"
+    }
+  }
+}

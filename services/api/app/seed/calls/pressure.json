@@ -1,0 +1,132 @@
+{
+  "title": "First call with Ruth Alvarez",
+  "lead_email": "ruth.alvarez@example.test",
+  "speakers": {
+    "Daniel": {
+      "role": "advisor",
+      "voice": "Charon",
+      "style": "Read this as a smooth, eager financial advisor speaking on a phone call:"
+    },
+    "Ruth": {
+      "role": "client",
+      "voice": "Gacrux",
+      "style": "Read this slowly and hesitantly, as a softly spoken person in their seventies who is unsure:"
+    },
+    "Kevin": {
+      "role": "third_party",
+      "voice": "Puck",
+      "style": "Read this quickly and pushily, as an impatient younger relative who wants to take over:"
+    }
+  },
+  "lines": [
+    {
+      "speaker": "Daniel",
+      "text": "Hello, Mrs. Alvarez, it's Daniel from Atrium. Thank you for sending in your form. Is this still a good time?",
+      "start_s": 0.0
+    },
+    {
+      "speaker": "Ruth",
+      "text": "Oh, yes, hello. My nephew Kevin is here with me. He said he would help.",
+      "start_s": 7.94
+    },
+    {
+      "speaker": "Kevin",
+      "text": "Hi, Daniel. I'm Kevin. I handle most of Aunt Ruth's paperwork these days, so you can talk to me.",
+      "start_s": 17.6
+    },
+    {
+      "speaker": "Daniel",
+      "text": "Nice to meet you, Kevin. Mrs. Alvarez, your form says you'd like to keep your savings safe and leave something for your grandchildren. Is that right?",
+      "start_s": 22.94
+    },
+    {
+      "speaker": "Kevin",
+      "text": "That was before. She wants it all in the tech fund, right, Aunt Ruth?",
+      "start_s": 32.75
+    },
+    {
+      "speaker": "Ruth",
+      "text": "Well, I, I'm not sure. I don't really understand these funds.",
+      "start_s": 36.8
+    },
+    {
+      "speaker": "Daniel",
+      "text": "That's all right. Can I ask what matters most to you about this money?",
+      "start_s": 46.06
+    },
+    {
+      "speaker": "Ruth",
+      "text": "My husband left it to me when he passed. I just don't want to lose it. I'm seventy-four, and I may need some of it for the house.",
+      "start_s": 51.16
+    },
+    {
+      "speaker": "Kevin",
+      "text": "She worries too much. Put the whole hundred and eighty thousand in the tech fund, and send the papers to me. I'll get her to sign.",
+      "start_s": 66.3
+    },
+    {
+      "speaker": "Daniel",
+      "text": "We usually go through the documents with the client directly. But I hear you. Honestly, the growth fund basically guarantees 8% a year, so it would grow nicely for the grandchildren.",
+      "start_s": 74.11
+    },
+    {
+      "speaker": "Ruth",
+      "text": "Eight percent, every year? Is that, is that safe for me?",
+      "start_s": 87.21
+    },
+    {
+      "speaker": "Kevin",
+      "text": "It's fine, Aunt Ruth. Daniel just said so. She'll do it.",
+      "start_s": 95.55
+    },
+    {
+      "speaker": "Ruth",
+      "text": "I suppose, if Kevin thinks so. I would still like to understand what I'm signing.",
+      "start_s": 100.25
+    },
+    {
+      "speaker": "Daniel",
+      "text": "Of course. I can send the forms today. Kevin, should they go to your email?",
+      "start_s": 111.59
+    },
+    {
+      "speaker": "Kevin",
+      "text": "Yes, send everything to me. She doesn't really use email.",
+      "start_s": 117.37
+    },
+    {
+      "speaker": "Ruth",
+      "text": "I do check it sometimes.",
+      "start_s": 121.54
+    },
+    {
+      "speaker": "Kevin",
+      "text": "It's easier this way. Let's just get it done this week, before she changes her mind.",
+      "start_s": 127.31
+    },
+    {
+      "speaker": "Daniel",
+      "text": "All right. I'll put the paperwork together for the growth fund and send it over to you, Kevin.",
+      "start_s": 132.18
+    },
+    {
+      "speaker": "Ruth",
+      "text": "Thank you. I hope I'm doing the right thing.",
+      "start_s": 137.59
+    },
+    {
+      "speaker": "Daniel",
+      "text": "You're in good hands, Mrs. Alvarez. Talk soon.",
+      "start_s": 144.02
+    }
+  ],
+  "duration_s": 147.52,
+  "rendered_with": {
+    "model": "gemini-3.1-flash-tts-preview",
+    "voices": {
+      "Daniel": "Charon",
+      "Ruth": "Gacrux",
+      "Kevin": "Puck"
+    }
+  }
+}

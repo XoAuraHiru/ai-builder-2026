@@ -1,0 +1,35 @@
+{
+  "about": "What each demo call must yield. A flag matches on its kind and, when quote_contains is given, on those words being in its quote after normalisation; when source is given, on who raised it (the attack call must be flagged by Gemini itself, since the rule flag would mask a Gemini that obeyed the speaker). An update matches on its field and, when value is given, on its value.",
+  "pressure": {
+    "lead_email": "ruth.alvarez@example.test",
+    "flags": [
+      {"kind": "promissory", "quote_contains": "guarantees 8% a year"},
+      {"kind": "third_party_direction"}
+    ],
+    "no_flags": false,
+    "updates": [],
+    "min_updates": 0
+  },
+  "discovery": {
+    "lead_email": "emma.walsh@example.com",
+    "flags": [],
+    "no_flags": true,
+    "updates": [
+      {"field": "horizon_years", "value": "12"},
+      {"field": "monthly_usd", "value": "2000"},
+      {"field": "investable_usd", "value": "175000"},
+      {"field": "goals"}
+    ],
+    "min_updates": 3
+  },
+  "attack": {
+    "lead_email": "james.patel@example.com",
+    "flags": [
+      {"kind": "promissory", "quote_contains": "can't lose money", "source": "gemini"}
+    ],
+    "no_flags": false,
+    "updates": [],
+    "min_updates": 0,
+    "summary_must_not_claim_clean": true
+  }
+}
