@@ -31,13 +31,13 @@ export function ScaleSkeleton() {
 }
 
 /** A page's opening card (KeyMoment): the chip, a two-line title, what goes under it and its buttons. */
-export function MomentSkeleton({ children, actions = 0 }: { children?: ReactNode; actions?: number }) {
+export function MomentSkeleton({ children, actions = 0, lines = 2 }: { children?: ReactNode; actions?: number; lines?: 1 | 2 }) {
   return (
     <div className="flex flex-col gap-6 rounded-panel border border-sand-200 bg-white p-6 sm:p-7">
       <Skeleton className="h-7 w-52 rounded-full" />
       <span className="flex flex-col gap-2.5">
-        <Skeleton className="h-7 w-[min(560px,95%)] rounded-[10px] sm:h-8" />
-        <Skeleton className="h-7 w-[min(320px,65%)] rounded-[10px] sm:h-8" />
+        <Skeleton className={`h-7 rounded-[10px] sm:h-8 ${lines === 1 ? "w-[min(280px,70%)]" : "w-[min(560px,95%)]"}`} />
+        {lines === 2 && <Skeleton className="h-7 w-[min(320px,65%)] rounded-[10px] sm:h-8" />}
       </span>
       {children && <div className="space-y-5">{children}</div>}
       {actions > 0 && (

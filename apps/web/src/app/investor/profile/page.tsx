@@ -4,8 +4,14 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { api, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
+import { THINKING } from "@/lib/invest";
 import { AiProse } from "@/components/ai-prose";
-import { BAND_LABEL, Button, inputClass, KeyMoment, Loading, Notice, PageHeader, Panel, RiskBand, Section, Segmented } from "@/components/ui";
+import { AiThinking } from "@/components/ai-thinking";
+import { EASE } from "@/components/motion";
+import { Skeleton, SkeletonText } from "@/components/skeleton";
+import { BAND_LABEL, Button, inputClass, KeyMoment, Notice, PageHeader, Panel, RiskBand, Section, Segmented } from "@/components/ui";
+import { Confirmed } from "../_parts/confirmed";
+import { LoadingRegion, MomentSkeleton } from "../_parts/shapes";
 
 type Option = { value: string | number; label: string };
 type Question = { key: keyof Answers; text: string; options: Option[] | null };
@@ -34,6 +40,41 @@ function Reasons({ band, reasons, capacity, tolerance }: { band: number; reasons
   );
 }
 
+const DESCRIPTION = "Your band, from 1 (preserve) to 5 (adventurous), is the lower of what you can afford to risk and what you are comfortable with. Atrium checks every instruction against it.";
+
+/** The profile while it loads: the band card, then the conversation beside what Atrium has understood. */
+function ProfileSkeleton() {
+  return (
+    <LoadingRegion label="Loading your risk profile" className="space-y-12">
+      <MomentSkeleton lines={1}>
+        <span className="flex items-center gap-2.5">
+          <span className="flex gap-[3px]">{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-3 w-7 rounded-[3px]" />)}</span>
+          <Skeleton className="h-4 w-24" />
+        </span>
+        <SkeletonText lines={2} className="max-w-[520px]" />
+      </MomentSkeleton>
+      <div>
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3 px-1">
+          <Skeleton className="h-5 w-44 rounded-[8px]" />
+          <Skeleton className="h-11 w-[min(340px,100%)] rounded-full" />
+        </div>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
+          <div className="flex min-h-[420px] flex-col rounded-panel border border-sand-200 bg-white">
+            <span className="flex-1 p-5"><SkeletonText lines={2} className="max-w-[60ch]" /></span>
+            <span className="flex gap-2 border-t border-sand-100 p-3"><Skeleton className="h-11 flex-1 rounded-control" /><Skeleton className="h-11 w-20 rounded-full" /></span>
+          </div>
+          <div className="flex flex-col gap-3 rounded-panel border border-sand-200 bg-white p-5">
+            <Skeleton className="h-3.5 w-44" />
+            {[0, 1, 2, 3, 4].map((i) => (
+              <span key={i} className="grid grid-cols-[6.5rem_1fr] items-center gap-3"><Skeleton className="h-3 w-20" /><Skeleton className="h-2 rounded-[4px]" /></span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </LoadingRegion>
+  );
+}
+
 export default function ProfilePage() {
   const [state, setState] = useState<State | null>(null);
   const [mode, setMode] = useState<"chat" | "form">("chat");
@@ -42,7 +83,10 @@ export default function ProfilePage() {
   const [known, setKnown] = useState<Answers>(EMPTY);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [form, setForm] = useState<Answers>(EMPTY);
-  const [busy, setBusy] = useState(false);
+  // Gemini reading an answer and Atrium saving the profile are separate waits: only the first is Gemini's.
+  const [thinking, setThinking] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const busy = thinking || saving;
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
 
@@ -56,7 +100,7 @@ export default function ProfilePage() {
     const next: Message[] = [...messages, { role: "user", text, ai: false }];
     setMessages(next);
     setDraft("");
-    setBusy(true);
+    setThinking(true);
     setError("");
     try {
       const r = await api<ChatOut>("/me/risk-profile/chat", { method: "POST", body: JSON.stringify({
@@ -67,13 +111,14 @@ export default function ProfilePage() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "The conversation is unavailable right now. Answer the five questions instead.");
     } finally {
-      setBusy(false);
+      setThinking(false);
     }
   }
 
   async function save(answers: Answers, source: "conversation" | "questionnaire") {
-    setBusy(true);
+    setSaving(true);
     setError("");
+    setSaved("");
     try {
       await api("/me/risk-profile", { method: "POST", body: JSON.stringify({ answers, source }) });
       setSaved(source === "conversation" ? "Saved. Your profile now comes from this conversation." : "Saved. Your profile now comes from your answers.");
@@ -82,16 +127,17 @@ export default function ProfilePage() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Atrium could not save your profile.");
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
   }
 
-  if (!state) return error ? <Notice tone="error">{error}</Notice> : <Loading label="Loading your risk profile" />;
+  const header = <PageHeader title="Risk profile" description={DESCRIPTION} />;
+  if (!state) return <>{header}{error ? <Notice tone="error">{error}</Notice> : <ProfileSkeleton />}</>;
   const formComplete = Object.values(form).every((v) => v !== null && v !== "");
   const band = state.profile?.band ?? state.current_band;
   return (
     <>
-      <PageHeader title="Risk profile" description="Your band, from 1 (preserve) to 5 (adventurous), is the lower of what you can afford to risk and what you are comfortable with. Atrium checks every instruction against it." />
+      {header}
       <div className="space-y-12">
         <KeyMoment tone={band ? "good" : "attention"} label={band ? "Your band now" : "One thing to do"}
           title={band ? `Band ${band}, ${BAND_LABEL[band]}.` : "Set your risk profile, so Atrium can check every instruction against it."}>
@@ -106,7 +152,7 @@ export default function ProfilePage() {
               <p className="text-sm text-ink-700">{band ? "Set when your account opened. Retake the profile below to see the reasoning behind it." : "Not set yet. Talk it through or answer the five questions below."}</p>
             </div>
           )}
-          {saved && <Notice tone="success">{saved}</Notice>}
+          {saved && <Confirmed>{saved}</Confirmed>}
         </KeyMoment>
         <Section title="Retake your profile" actions={<Segmented label="How to answer" value={mode} onChange={setMode}
           options={[{ value: "chat", label: "Talk it through" }, { value: "form", label: "Answer five questions" }]} />}>
@@ -117,7 +163,8 @@ export default function ProfilePage() {
                   {messages.map((m, i) => (
                     <li key={i} className={m.role === "user" ? "flex justify-end" : ""}>
                       {m.role === "user" ? (
-                        <p className="max-w-[80%] rounded-[20px] rounded-br-md bg-green-100 px-4 py-2.5 text-[15px] text-green-900">{m.text}</p>
+                        <motion.p initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.26, ease: EASE }}
+                          className="max-w-[80%] rounded-[20px] rounded-br-md bg-green-100 px-4 py-2.5 text-[15px] text-green-900">{m.text}</motion.p>
                       ) : m.ai ? (
                         <AiProse caption="Gemini"><p>{m.text}</p></AiProse>
                       ) : (
@@ -125,13 +172,13 @@ export default function ProfilePage() {
                       )}
                     </li>
                   ))}
-                  {busy && <li className="text-sm text-ink-500" role="status">Gemini is reading your answer…</li>}
+                  {thinking && <li><AiThinking compact {...THINKING.profileChat} /></li>}
                 </ol>
                 <form onSubmit={send} className="flex gap-2 border-t border-sand-100 p-3">
                   <label htmlFor="answer" className="sr-only">Your answer</label>
                   <input id="answer" className={inputClass} value={draft} maxLength={1000} onChange={(e) => setDraft(e.target.value)}
                     placeholder="Answer in your own words" disabled={busy || Boolean(preview)} />
-                  <Button type="submit" busy={busy} disabled={!draft.trim() || Boolean(preview)}>Send</Button>
+                  <Button type="submit" busy={thinking} disabled={saving || !draft.trim() || Boolean(preview)}>Send</Button>
                 </form>
               </Panel>
               <div className="space-y-4">
@@ -153,7 +200,7 @@ export default function ProfilePage() {
                     <p className="text-sm font-medium">Your result</p>
                     <Reasons band={preview.band} reasons={preview.reasons} capacity={preview.capacity_band} tolerance={preview.tolerance_band} />
                     <p className="text-xs text-ink-500">Computed by Atrium&apos;s rules from your answers, not by the AI. Nothing is saved until you choose.</p>
-                    <Button busy={busy} onClick={() => save(known, "conversation")}>Save this profile</Button>
+                    <Button busy={saving} onClick={() => save(known, "conversation")}>Save this profile</Button>
                   </Panel>
                 )}
               </div>
@@ -181,7 +228,7 @@ export default function ProfilePage() {
                   )}
                 </fieldset>
               ))}
-              <Button type="submit" busy={busy} disabled={!formComplete}>Save my profile</Button>
+              <Button type="submit" busy={saving} disabled={thinking || !formComplete}>Save my profile</Button>
             </form>
           )}
           {error && <div className="mt-4"><Notice tone="caution">{error}</Notice></div>}
