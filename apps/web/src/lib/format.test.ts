@@ -11,6 +11,8 @@ describe("formatUsd", () => {
 describe("compactUsd", () => {
   it("shortens large amounts for chart labels", () => {
     expect(compactUsd(1_234_567)).toBe("$1.2M");
+    expect(compactUsd(999_710)).toBe("$1M");
+    expect(compactUsd(999_400)).toBe("$999k");
     expect(compactUsd(250_000)).toBe("$250k");
     expect(compactUsd(9_500)).toBe("$9.5k");
     expect(compactUsd(950)).toBe("$950");

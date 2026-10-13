@@ -14,7 +14,7 @@ export function compactUsd(value: number): string {
   const n = Math.abs(value);
   const sign = value < 0 ? "-" : "";
   if (n >= 1e9) return `${sign}$${trim(n / 1e9)}B`;
-  if (n >= 1e6) return `${sign}$${trim(n / 1e6)}M`;
+  if (n >= 999_500) return `${sign}$${trim(n / 1e6)}M`;  // $999,710 reads $1M, not $1000k
   if (n >= 1e4) return `${sign}$${Math.round(n / 1e3)}k`;
   if (n >= 1e3) return `${sign}$${trim(n / 1e3)}k`;
   return `${sign}$${Math.round(n)}`;
