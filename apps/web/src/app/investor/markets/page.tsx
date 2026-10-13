@@ -6,8 +6,12 @@ import { api, ApiError } from "@/lib/api";
 import { formatUsd } from "@/lib/format";
 import { changeText, filterRows, priceSource, profileLegend, type MarketFilter, type MarketRow,
   type Markets } from "@/lib/markets";
+import { motion } from "motion/react";
 import { SessionChip, TickerTile, WatchButton } from "@/components/market-bits";
-import { EmptyState, inputClass, Loading, Notice, PageHeader, Panel, RiskBand, Segmented } from "@/components/ui";
+import { EASE } from "@/components/motion";
+import { Skeleton } from "@/components/skeleton";
+import { EmptyState, inputClass, Notice, PageHeader, Panel, RiskBand, Segmented } from "@/components/ui";
+import { LoadingRegion } from "../_parts/shapes";
 
 const FILTERS: { value: MarketFilter; label: string }[] = [
   { value: "all", label: "All" }, { value: "stock", label: "Stocks" }, { value: "etf", label: "ETFs" }, { value: "watchlist", label: "Watchlist" },
@@ -29,6 +33,54 @@ function Change({ pct, className = "" }: { pct: number; className?: string }) {
   );
 }
 
+/** Each row's risk meter arrives in one quiet fade with every other row's: one moment across the table, not a ripple. */
+function Meter({ band, profile, showLabel }: { band: number | null; profile: number | null; showLabel?: boolean }) {
+  return (
+    <motion.span className="inline-flex" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.12, ease: EASE }}>
+      <RiskBand band={band} profile={profile} showLabel={showLabel} />
+    </motion.span>
+  );
+}
+
+/** Markets while prices load: the toolbar, the column heads and rows with ticker tiles, in the table's own grid. */
+function MarketsSkeleton() {
+  return (
+    <LoadingRegion label="Loading prices">
+      <div className="flex flex-col gap-2 rounded-panel border border-sand-200 bg-white px-4 pb-2 pt-4 sm:px-6 sm:pt-5">
+        <div className="flex flex-wrap items-center gap-3 pb-2">
+          <Skeleton className="h-11 w-full rounded-control sm:w-80" />
+          <Skeleton className="h-11 w-[min(316px,100%)] rounded-full" />
+          <span className="hidden flex-1 lg:block" />
+          <Skeleton className="hidden h-3 w-56 lg:block" />
+        </div>
+        <div className={`${COLS} border-b border-sand-100 py-3`}>
+          <span />
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="hidden h-3 w-12 xl:block" />
+          <Skeleton className="hidden h-3 w-16 md:block" />
+          <Skeleton className="ml-auto h-3 w-10" />
+          <Skeleton className="ml-auto hidden h-3 w-10 md:block" />
+          <span className="hidden md:block" />
+        </div>
+        {Array.from({ length: 9 }, (_, i) => (
+          <div key={i} className={`${COLS} items-center border-b border-sand-100 py-3 last:border-b-0`}>
+            <Skeleton className="h-6 w-6 rounded-full" />
+            <span className="flex min-w-0 items-center gap-3">
+              <Skeleton className="h-8 w-11 shrink-0 rounded-tile" />
+              <span className="flex min-w-0 flex-1 flex-col gap-2"><Skeleton className="h-3.5 w-[min(200px,90%)]" /><Skeleton className="h-3 w-16" /></span>
+            </span>
+            <Skeleton className="hidden h-3.5 w-28 xl:block" />
+            <span className="hidden gap-[3px] md:flex">{[0, 1, 2, 3, 4].map((j) => <Skeleton key={j} className="h-2 w-3.5 rounded-[3px]" />)}</span>
+            <span className="flex flex-col items-end gap-1.5"><Skeleton className="h-3.5 w-16" /><Skeleton className="h-3 w-12 md:hidden" /></span>
+            <Skeleton className="ml-auto hidden h-3.5 w-14 md:block" />
+            <span className="hidden md:block" />
+          </div>
+        ))}
+      </div>
+    </LoadingRegion>
+  );
+}
+
 /** M4: a row that highlights in fill on hover or focus and shows a green Trade button; the whole row opens the symbol. */
 function Row({ r, profile, onToggle }: { r: MarketRow; profile: number | null; onToggle: () => void }) {
   const href = `/investor/markets/${r.symbol}`;
@@ -46,12 +98,12 @@ function Row({ r, profile, onToggle }: { r: MarketRow; profile: number | null; o
           </Link>
           <span className="flex items-center gap-2 text-xs text-ink-500">
             <span className="truncate">{kind}{r.watched ? " · on your watchlist" : ""}</span>
-            <span className="md:hidden"><RiskBand band={r.risk_band} profile={profile} showLabel={false} /></span>
+            <span className="md:hidden"><Meter band={r.risk_band} profile={profile} showLabel={false} /></span>
           </span>
         </span>
       </span>
       <span role="cell" className="hidden min-w-0 truncate text-sm text-ink-700 xl:block">{r.sector ?? <span className="text-ink-500">ETF</span>}</span>
-      <span role="cell" className="hidden md:flex"><RiskBand band={r.risk_band} profile={profile} /></span>
+      <span role="cell" className="hidden md:flex"><Meter band={r.risk_band} profile={profile} /></span>
       <span role="cell" className="num text-right text-sm">
         {formatUsd(r.price)}
         <Change pct={r.change_pct} className="block text-xs md:hidden" />
@@ -97,7 +149,7 @@ export default function MarketsPage() {
   }
 
   if (error) return <><PageHeader title="Markets" description={DESCRIPTION} /><Notice tone="error" title="Prices are unavailable">{error}</Notice></>;
-  if (!data) return <><PageHeader title="Markets" description={DESCRIPTION} /><Loading label="Loading prices" /></>;
+  if (!data) return <><PageHeader title="Markets" description={DESCRIPTION} /><MarketsSkeleton /></>;
 
   return (
     <>
