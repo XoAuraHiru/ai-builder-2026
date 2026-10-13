@@ -11,6 +11,7 @@ import { useSession } from "@/lib/session-context";
 import { Analyzer } from "@/components/analyzer";
 import { PlanDiagram } from "@/components/plan-diagram";
 import { Footer, Wordmark } from "@/components/shell";
+import { Badge, Button, ButtonLink } from "@/components/ui";
 
 const PRINCIPLES = [
   { title: "It explains; the engines count",
@@ -22,35 +23,45 @@ const PRINCIPLES = [
   { title: "It is checked, attacked and paused when it slips",
     text: "Every model is validated before and after each deploy, attacked by a red team, tested for fair lending and watched against people's decisions. A model that slips is paused, and its feature falls back to the engine." },
 ];
-const PILL = "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition-colors disabled:cursor-wait disabled:opacity-70";
-const PRIMARY = `${PILL} bg-ink text-white hover:bg-[#26343f]`;
-const SECONDARY = `${PILL} border border-line-strong bg-surface text-ink hover:border-ink`;
+const NAV = [{ href: "#analyze", label: "Analyze" }, { href: "#how", label: "How it works" }, { href: "#journeys", label: "Journeys" }];
+
+function SectionHead({ id, title, children }: { id?: string; title: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex max-w-[680px] flex-col gap-3">
+      <h2 id={id} className="text-[26px] font-semibold leading-8 tracking-[-0.02em] sm:text-[30px] sm:leading-9">{title}</h2>
+      {children && <p className="text-[15px] leading-[22px] text-ink-700 sm:text-[17px] sm:leading-[26px]">{children}</p>}
+    </div>
+  );
+}
 
 function PersonCard({ person, current, opening, disabled, onEnter }:
   { person: Persona; current: boolean; opening: boolean; disabled: boolean; onEnter: () => void }) {
   const first = person.name.split(" ")[0];
   return (
-    <article className={`flex flex-col gap-3 rounded-panel border bg-surface p-5 ${person.start ? "border-ink" : "border-line"}`}>
-      <div className="flex items-center gap-3">
-        <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-ink text-sm font-semibold">
-          {initials(person.name)}
-        </span>
-        <span className="flex flex-col">
-          <span className="text-[17px] font-semibold">{person.name}</span>
-          <span className="text-[13px] text-muted">{person.role}{person.start ? ", start here" : ""}{current ? ", signed in now" : ""}</span>
-        </span>
+    <article className="flex flex-col gap-4 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+        <div className="flex min-w-[160px] flex-1 items-center gap-3">
+          <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-200 text-[13px] font-semibold text-green-900">
+            {initials(person.name)}
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="text-base font-semibold leading-[22px]">{person.name}</span>
+            <span className="text-[13px] text-ink-500">{person.role}</span>
+          </span>
+        </div>
+        {current ? <Badge tone="gain">Signed in</Badge> : person.start ? <Badge tone="gain">Start here</Badge> : null}
       </div>
-      <p className="text-sm">{person.story}</p>
-      <ul className="flex flex-col gap-1.5 text-sm text-ink-2">
+      <p className="text-sm leading-[21px] text-ink-900">{person.story}</p>
+      <ul className="flex flex-col gap-2 text-[13px] leading-[19px] text-ink-700">
         {person.tries.map((t) => (
           <li key={t} className="flex items-baseline gap-2.5">
-            <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 -translate-y-0.5 rounded-[1px] bg-daylight" />{t}
+            <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 -translate-y-px rounded-full bg-green-500" />{t}
           </li>
         ))}
       </ul>
-      <button type="button" disabled={disabled} onClick={onEnter} className={`${person.start ? PRIMARY : SECONDARY} mt-1`}>
+      <Button variant="tonal" disabled={disabled} onClick={onEnter} className="mt-1 w-full">
         {opening ? "Opening…" : `Enter as ${first}`}
-      </button>
+      </Button>
     </article>
   );
 }
@@ -63,6 +74,7 @@ export default function FrontDoor() {
   const space = me ? workspaceFor(me.roles) : null;
   const start = PERSONAS.find((p) => p.start) ?? PERSONAS[0];
   const signedInAs = personaFor(me?.email)?.email;
+  const firstName = me ? (me.full_name ?? me.email).split(" ")[0] : "";
 
   useEffect(() => {
     getConfig().then(setCfg);
@@ -83,86 +95,90 @@ export default function FrontDoor() {
 
   const busy = Boolean(opening) || !cfg;
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-line bg-surface">
+    <div className="min-h-screen bg-white">
+      <header>
         <div className="mx-auto flex h-[72px] max-w-[1240px] items-center justify-between gap-4 px-4 sm:px-8">
           <Wordmark href="/" />
-          <nav aria-label="Sections" className="flex items-center gap-3 sm:gap-7">
-            <a href="#analyze" className="flex min-h-11 items-center text-[15px] text-ink-2 hover:text-ink">Analyze</a>
-            <a href="#how" className="hidden min-h-11 items-center text-[15px] text-ink-2 hover:text-ink sm:flex">How it works</a>
-            <a href="#journeys" className="flex min-h-11 items-center text-[15px] text-ink-2 hover:text-ink">Journeys</a>
+          <div className="flex items-center gap-3">
+            <nav aria-label="Sections" className="hidden gap-1 rounded-full border border-sand-200 bg-white p-1 md:flex">
+              {NAV.map((n) => (
+                <a key={n.href} href={n.href} className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium text-ink-700 hover:bg-fill hover:text-ink-900">
+                  {n.label}
+                </a>
+              ))}
+            </nav>
             {me && space
-              ? <Link href={space.home} className={PRIMARY}>Continue as {(me.full_name ?? me.email).split(" ")[0]}</Link>
-              : <button type="button" disabled={busy} onClick={() => enter(start)} className={PRIMARY}>Start as {start.name.split(" ")[0]}</button>}
-          </nav>
+              ? <ButtonLink href={space.home} variant="tonal" size="sm">Continue as {firstName}</ButtonLink>
+              : <Button variant="tonal" size="sm" disabled={busy} onClick={() => enter(start)}>Start as {start.name.split(" ")[0]}</Button>}
+          </div>
         </div>
       </header>
 
       <main>
-        <section className="mx-auto max-w-[1240px] px-4 pb-20 pt-12 sm:px-8 lg:pb-28 lg:pt-20">
+        <section className="mx-auto max-w-[1240px] px-4 pb-16 pt-8 sm:px-8 lg:pb-24 lg:pt-14">
           <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.02fr)] lg:gap-16">
-            <div className="flex flex-col gap-7">
-              <h1 className="wide text-[38px] font-semibold leading-[1.05] tracking-[-0.025em] sm:text-[52px] lg:text-[58px]">
+            <div className="flex flex-col gap-6">
+              <h1 className="text-[36px] font-semibold leading-[42px] tracking-[-0.025em] sm:text-[44px] sm:leading-[48px]">
                 A wealth firm run by people, with an AI that shows its working.
               </h1>
-              <p className="max-w-[34em] text-[17px] leading-relaxed text-ink-2 sm:text-[19px]">
+              <p className="max-w-[34em] text-[17px] leading-[26px] text-ink-700">
                 Atrium follows an investor from the first enquiry to a reconciled ledger: four stages, eight people, and Gemini at
                 every step, checked against the numbers it explains.
               </p>
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
                 {me && space
-                  ? <Link href={space.home} className={PRIMARY}>Continue as {(me.full_name ?? me.email).split(" ")[0]}</Link>
+                  ? <ButtonLink href={space.home}>Continue as {firstName}</ButtonLink>
                   : (
-                    <button type="button" disabled={busy} onClick={() => enter(start)} className={PRIMARY}>
+                    <Button disabled={busy} onClick={() => enter(start)}>
                       {opening === start.email ? "Opening…" : `Start as ${start.name.split(" ")[0]}, an investor`}
-                    </button>
+                    </Button>
                   )}
-                <a href="#journeys" className={SECONDARY}>Choose another person</a>
+                <ButtonLink href="#journeys" variant="tonal">Choose another person</ButtonLink>
               </div>
-              <p className="text-sm text-muted">Every person, account and trade here is synthetic. Trading uses paper money at real US market prices.</p>
+              <p className="text-[13px] leading-[19px] text-ink-500">
+                Every person, account and trade here is synthetic. Trading uses paper money at real US market prices.
+              </p>
             </div>
             <PlanDiagram />
           </div>
         </section>
 
-        <section id="how" className="scroll-mt-4 border-y border-line bg-surface">
-          <div className="mx-auto max-w-[1240px] px-4 py-16 sm:px-8 lg:py-20">
-            <h2 className="wide max-w-[22em] text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] sm:text-[34px]">
-              What the AI does, and what it never does
-            </h2>
-            <div className="mt-10 grid gap-8 md:grid-cols-2 xl:grid-cols-4">
-              {PRINCIPLES.map((p) => (
-                <div key={p.title} className="border-t-2 border-ink pt-5">
-                  <h3 className="text-lg font-semibold">{p.title}</h3>
-                  <p className="mt-2 text-ink-2">{p.text}</p>
-                </div>
-              ))}
-            </div>
+        <section id="how" aria-labelledby="how-title" className="mx-auto max-w-[1240px] scroll-mt-4 px-4 pb-16 sm:px-8 lg:pb-24">
+          <SectionHead id="how-title" title="What the AI does, and what it never does" />
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {PRINCIPLES.map((p, i) => (
+              <div key={p.title} className="flex flex-col gap-2.5 rounded-panel border border-sand-200 bg-white p-6">
+                <span className="code text-ink-500">0{i + 1}</span>
+                <h3 className="text-[17px] font-semibold leading-6">{p.title}</h3>
+                <p className="text-sm leading-[21px] text-ink-500">{p.text}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        <section id="analyze" className="mx-auto max-w-[1240px] scroll-mt-4 px-4 pt-16 sm:px-8 lg:pt-24">
-          <h2 className="wide text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] sm:text-[34px]">See what your money could become</h2>
-          <p className="mt-3 max-w-[40em] text-[17px] text-ink-2">
+        <section id="analyze" aria-labelledby="analyze-title" className="mx-auto max-w-[1240px] scroll-mt-4 px-4 pb-16 sm:px-8 lg:pb-24">
+          <SectionHead id="analyze-title" title="See what your money could become">
             Pick an Atrium fund or a share, an amount and a number of years. No sign-in needed: the figures come from real
             prices since 2007, and you can turn them into an investment or a conversation with an advisor.
-          </p>
-          <div className="mt-10"><Analyzer /></div>
+          </SectionHead>
+          <div className="mt-8"><Analyzer /></div>
         </section>
 
-        <section id="journeys" className="mx-auto max-w-[1240px] scroll-mt-4 px-4 py-16 sm:px-8 lg:py-24">
-          <h2 className="wide text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] sm:text-[34px]">Choose a person</h2>
-          <p className="mt-3 max-w-[40em] text-[17px] text-ink-2">
-            Each journey takes two or three minutes. A guide beside every page tells you what to try next, and you can switch
-            person at any time from the top bar.
-          </p>
+        <section id="journeys" aria-labelledby="journeys-title" className="mx-auto max-w-[1240px] scroll-mt-4 px-4 pb-16 sm:px-8 lg:pb-24">
+          <SectionHead id="journeys-title" title="Choose a person">
+            Each journey takes two or three minutes. The story line at the top of every page tells you what to try next, and
+            you can switch person at any time from the person switcher.
+          </SectionHead>
           {cfg && cfg.authMode !== "dev" && (
-            <p className="mt-3 text-sm text-ink-2">This deployment uses real sign-in. <Link href="/login" className="font-semibold underline underline-offset-4">Sign in</Link> to continue.</p>
+            <p className="mt-3 text-sm text-ink-700">This deployment uses real sign-in. <Link href="/login" className="font-semibold text-green-600 hover:text-green-800 hover:underline">Sign in</Link> to continue.</p>
           )}
-          <div className="mt-10 grid gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-4 xl:items-start">
+          <div className="mt-8 grid gap-x-4 gap-y-8 sm:grid-cols-2 xl:grid-cols-4 xl:items-start">
             {personasByAct().map(({ act, people }) => (
-              <div key={act.key} className="flex flex-col gap-3.5">
-                <p className="text-sm text-muted"><span className="num font-semibold text-ink">{act.number}</span>&ensp;{act.label}</p>
+              <div key={act.key} className="flex flex-col gap-3">
+                <div className="flex flex-col gap-2 px-1">
+                  <span aria-hidden="true" className="h-1 rounded-[2px] bg-green-500" />
+                  <p className="text-[13px] text-ink-500"><span className="num font-semibold text-ink-900">{act.number}</span> · {act.label}</p>
+                </div>
                 {people.map((p) => (
                   <PersonCard key={p.email} person={p} current={signedInAs === p.email} opening={opening === p.email}
                     disabled={busy} onEnter={() => enter(p)} />

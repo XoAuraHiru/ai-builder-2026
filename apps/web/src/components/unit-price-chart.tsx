@@ -52,38 +52,38 @@ export function UnitPriceChart({ points, inception }: { points: UnitPoint[]; inc
       <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full touch-none select-none" role="img" aria-label={summary}>
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={M.left} x2={W - M.right} y1={y(t)} y2={y(t)} stroke="var(--color-line)" />
-            <text x={M.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="num fill-muted text-[11px]">{t.toFixed(hi - lo < 10 ? 1 : 0)}</text>
+            <line x1={M.left} x2={W - M.right} y1={y(t)} y2={y(t)} stroke="var(--color-sand-100)" />
+            <text x={M.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="num fill-ink-500 text-[11px]">{t.toFixed(hi - lo < 10 ? 1 : 0)}</text>
           </g>
         ))}
         {yearMarks.map(({ i, year }) => (
-          <text key={year} x={x(i)} y={H - 8} textAnchor="middle" className="num fill-muted text-[11px]">{year}</text>
+          <text key={year} x={x(i)} y={H - 8} textAnchor="middle" className="num fill-ink-500 text-[11px]">{year}</text>
         ))}
         {split > 0 && (
           <g>
-            <line x1={x(split)} x2={x(split)} y1={M.top} y2={H - M.bottom} stroke="var(--color-line-strong)" strokeDasharray="2 3" />
-            <text x={x(split) - 6} y={M.top + 10} textAnchor="end" className="fill-muted text-[11px]">Backtest</text>
-            <text x={x(split) + 6} y={M.top + 10} className="fill-ink-2 text-[11px] font-medium">Published</text>
+            <line x1={x(split)} x2={x(split)} y1={M.top} y2={H - M.bottom} stroke="var(--color-sand-300)" strokeDasharray="2 3" />
+            <text x={x(split) - 6} y={M.top + 10} textAnchor="end" className="fill-ink-500 text-[11px]">Backtest</text>
+            <text x={x(split) + 6} y={M.top + 10} className="fill-ink-700 text-[11px] font-medium">Published</text>
           </g>
         )}
         {before.length > 1 && (
-          <path d={linePath(before)} fill="none" stroke="var(--color-ink-2)" strokeWidth={1.5} strokeDasharray="4 3" />
+          <path d={linePath(before)} fill="none" stroke="var(--color-green-300)" strokeWidth={1.5} strokeDasharray="4 3" />
         )}
-        {after.length > 1 && <path d={linePath(after)} fill="none" stroke="var(--color-ink)" strokeWidth={2} strokeLinejoin="round" />}
+        {after.length > 1 && <path d={linePath(after)} fill="none" stroke="var(--color-green-500)" strokeWidth={2} strokeLinejoin="round" />}
         {point && hover !== null && (
           <g>
-            <line x1={x(hover)} x2={x(hover)} y1={M.top} y2={H - M.bottom} stroke="var(--color-ink)" strokeOpacity={0.3} />
-            <circle cx={x(hover)} cy={y(point.price)} r={3.5} fill="var(--color-ink)" />
+            <line x1={x(hover)} x2={x(hover)} y1={M.top} y2={H - M.bottom} stroke="var(--color-green-700)" strokeOpacity={0.3} />
+            <circle cx={x(hover)} cy={y(point.price)} r={4} fill="var(--color-green-500)" stroke="white" strokeWidth={1.5} />
           </g>
         )}
         <rect x={M.left} y={M.top} width={W - M.left - M.right} height={H - M.top - M.bottom} fill="transparent"
           onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={() => setHover(null)} />
       </svg>
       {point && hover !== null && (
-        <div className="pointer-events-none absolute top-2 rounded-control border border-line bg-surface px-3 py-2 text-xs shadow-[0_8px_24px_-12px_rgba(23,32,42,0.35)]"
+        <div className="pointer-events-none absolute top-2 rounded-control border border-sand-200 bg-white px-3 py-2 text-xs shadow-float"
           style={{ left: `${(x(hover) / W) * 100}%`, transform: x(hover) > W * 0.6 ? "translateX(calc(-100% - 10px))" : "translateX(10px)" }}>
           <p className="font-medium">{formatDate(point.date)}</p>
-          <p className="num text-ink-2">{point.price.toFixed(2)} a unit{point.backtest ? " (backtest)" : ""}</p>
+          <p className="num text-ink-700">{point.price.toFixed(2)} a unit{point.backtest ? " (backtest)" : ""}</p>
         </div>
       )}
     </div>
