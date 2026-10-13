@@ -1,14 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { codeDigits, type Authenticator } from "@/lib/operations";
-import { inputClass } from "@/components/ui";
+import { Button } from "@/components/ui";
 
-export function CodeField({ value, onChange }: { value: string; onChange: (code: string) => void }) {
+/** The one-time code as six boxes: one real input lies over them, so typing, pasting and the phone's code suggestion
+ *  all work; the box the next digit goes into is ringed in green-600 while the field has focus. */
+export function CodeField({ value, onChange, label = "Six-digit code from your authenticator", id }:
+  { value: string; onChange: (code: string) => void; label?: string; id?: string }) {
+  const [focused, setFocused] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const at = Math.min(value.length, 5);
   return (
-    <input inputMode="numeric" autoComplete="one-time-code" aria-label="Six-digit code" placeholder="000000" value={value}
-      className={`${inputClass} num w-40 text-center text-lg tracking-[0.3em]`} onChange={(e) => onChange(codeDigits(e.target.value))} />
+    <span className="relative inline-flex gap-1.5" onClick={() => input.current?.focus()}>
+      {Array.from({ length: 6 }, (_, i) => {
+        const on = focused && i === at;
+        return (
+          <span key={i} aria-hidden="true"
+            className={`flex h-11 w-10 items-center justify-center rounded-[10px] font-mono text-[18px] text-ink-900 transition-shadow ${on ? "bg-white shadow-[0_0_0_2px_var(--color-green-600)]" : "bg-fill"}`}>
+            {value[i] ?? (on ? <span className="h-5 w-[1.5px] animate-pulse bg-ink-900 motion-reduce:animate-none" /> : "")}
+          </span>
+        );
+      })}
+      <input ref={input} id={id} inputMode="numeric" autoComplete="one-time-code" aria-label={label} maxLength={6} value={value}
+        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} onChange={(e) => onChange(codeDigits(e.target.value))}
+        className="absolute inset-0 h-full w-full cursor-text rounded-[10px] text-transparent caret-transparent opacity-0" />
+    </span>
   );
 }
 
@@ -47,17 +65,16 @@ export function DemoAuthenticator({ onUse }: { onUse: (code: string) => void }) 
 
   if (hidden || !auth) return null;
   return (
-    <div className="flex items-center gap-5 rounded-panel border border-dashed border-line-strong px-4 py-3" title={auth.note}>
+    <div className="inline-flex flex-wrap items-center gap-x-4 gap-y-2 rounded-control bg-fill py-2.5 pl-4 pr-2" title={auth.note}>
       <div>
-        <p className="text-xs text-muted">Demo authenticator</p>
-        <p className="num wider text-[22px] font-semibold tracking-[0.12em]">{auth.code.slice(0, 3)} {auth.code.slice(3)}</p>
-        <div className="mt-1 h-px w-28 bg-line" aria-hidden="true">
-          <div className="h-px bg-ink" style={{ width: `${(left / auth.period) * 100}%` }} />
+        <p className="text-xs text-ink-500">Demo authenticator</p>
+        <p className="font-mono text-[20px] leading-7 tracking-[0.12em] text-ink-900">{auth.code.slice(0, 3)} {auth.code.slice(3)}</p>
+        <div className="mt-1 h-1 w-28 overflow-hidden rounded-full bg-sand-200" aria-hidden="true">
+          <div className="h-1 rounded-full bg-green-500 transition-[width] duration-1000 ease-linear" style={{ width: `${(left / auth.period) * 100}%` }} />
         </div>
         <p className="sr-only" aria-live="off">{left} seconds left</p>
       </div>
-      <button type="button" onClick={() => onUse(auth.code)}
-        className="text-sm underline decoration-line-strong underline-offset-4 hover:decoration-ink">Use this code</button>
+      <Button variant="quiet" size="sm" onClick={() => onUse(auth.code)}>Use this code</Button>
     </div>
   );
 }
