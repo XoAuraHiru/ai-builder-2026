@@ -96,7 +96,7 @@ function StoryBar({ email, path, hidden, onHide, onShow }:
   if (hidden) {
     return (
       <button type="button" onClick={onShow}
-        className="h-10 shrink-0 rounded-full border border-sand-200 bg-white px-4 text-[13px] font-semibold hover:bg-fill">
+        className="order-last h-10 shrink-0 rounded-full border border-sand-200 bg-white px-4 text-[13px] font-semibold hover:bg-fill lg:order-none">
         Show your story
       </button>
     );
@@ -104,7 +104,7 @@ function StoryBar({ email, path, hidden, onHide, onShow }:
   const { done, current, count } = progress(journey, visited);
   const step = current === null ? null : journey.steps[current];
   return (
-    <div ref={box} className="relative min-w-0 flex-[3] lg:max-w-[760px]">
+    <div ref={box} className="relative order-last w-full min-w-0 lg:order-none lg:w-auto lg:max-w-[760px] lg:flex-[3]">
       <div className="flex h-[52px] items-center gap-3 rounded-full border border-sand-200 bg-white pl-[18px] pr-1.5">
         <span className="hidden whitespace-nowrap text-[13px] font-semibold md:inline">{journey.title}</span>
         <span aria-hidden="true" className="flex gap-[3px]">
@@ -252,7 +252,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <IconRail space={space} active={section} />
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="no-print flex flex-col gap-3 lg:gap-0">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 lg:flex-nowrap">
               <Link href={space.home} aria-label="Atrium, workspace home" className="lg:hidden"><AtriumMark /></Link>
               {guide !== "none" && (
                 <StoryBar email={me.email} path={path} hidden={guide === "hidden"} onHide={() => setGuide(true)} onShow={() => setGuide(false)} />
