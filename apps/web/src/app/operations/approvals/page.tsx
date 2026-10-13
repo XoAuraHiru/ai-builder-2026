@@ -175,7 +175,7 @@ export default function ApprovalsPage() {
                         className={`block w-full rounded-panel border px-4 py-3.5 text-left transition-colors ${on ? "border-green-300 bg-green-50" : "border-sand-200 bg-white hover:bg-fill"}`}>
                         <span className="flex items-center justify-between gap-2">
                           <span className="text-[13px] font-semibold">{ACTION_COPY[a.action]}</span>
-                          <span className="code text-[11px] text-ink-500">{shortId(a.id)}</span>
+                          <span className="code text-[11px]! text-ink-500">{shortId(a.id)}</span>
                         </span>
                         <span className="mt-1 line-clamp-2 block text-sm text-ink-900">{a.summary}</span>
                         <span className="mt-1 block text-xs text-ink-500">Asked by {a.requested_by}{a.mine ? " (you)" : ""}, {formatDate(a.requested_at)}</span>
