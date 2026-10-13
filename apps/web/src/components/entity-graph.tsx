@@ -1,5 +1,16 @@
-import type { ReactNode } from "react";
-import { layoutGraph, type GraphColumns, type GraphEdge, type GraphNode } from "@/lib/compliance";
+"use client";
+
+import { motion, useReducedMotion } from "motion/react";
+import { useId, type ReactNode } from "react";
+import { drawOrder, layoutGraph, type GraphColumns, type GraphEdge, type GraphNode } from "@/lib/compliance";
+import { EASE } from "@/components/motion";
+
+// The graph assembles once, when it appears: its people and what they share fade in, then each link draws from one
+// end to the other (strong links first), then each flagged node's coral ring pulses once. Nothing repeats.
+const NODES_FADE = 0.3;
+const LINKS_AT = 0.32;
+const LINK_DRAW = 0.45;
+const linkStep = (count: number) => Math.min(0.07, 0.7 / Math.max(1, count));
 
 const WIDTH = 720;
 const ROW = 84;
@@ -74,42 +85,77 @@ export function EntityGraph({ nodes, edges, columns, highlight = [], legend = AL
   { nodes: GraphNode[]; edges: GraphEdge[]; columns?: GraphColumns; highlight?: string[]; legend?: ReactNode; title?: string }) {
   const { at, height } = layoutGraph(nodes, WIDTH, ROW, columns);
   const label = (id: string) => nodes.find((n) => n.id === id)?.label ?? id;
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const reduce = useReducedMotion();
+  const order = drawOrder(edges);
+  const step = linkStep(edges.length);
+  const drawAt = (key: string) => LINKS_AT + (order[key] ?? 0) * step;
+  const pulseAt = LINKS_AT + Math.max(0, edges.length - 1) * step + LINK_DRAW;
+  // With reduced motion the graph is simply there; a lit link still changes colour.
+  const draw = (key: string) => (reduce ? {} : {
+    initial: { pathLength: 0 }, animate: { pathLength: 1 }, transition: { duration: LINK_DRAW, delay: drawAt(key), ease: EASE },
+  });
+  const fade = (delay: number) => (reduce ? {} : {
+    initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: NODES_FADE, delay, ease: EASE },
+  });
+  const lightUp = { transition: "stroke 250ms ease-out, stroke-width 250ms ease-out, fill 250ms ease-out" };
   return (
     <figure>
       {/* Below 600px the graph keeps its size and scrolls sideways, so its labels stay readable on a phone. */}
       <div className="-mx-1 overflow-x-auto px-1">
-        <svg viewBox={`0 0 ${WIDTH} ${height}`} className="mx-auto h-auto w-full min-w-[600px] max-w-[760px]" role="img" aria-labelledby="entity-graph-title">
-          <title id="entity-graph-title">{title ?? `Linked entities: ${nodes.length} people, accounts and payers joined by ${edges.length} links`}</title>
+        <svg viewBox={`0 0 ${WIDTH} ${height}`} className="mx-auto h-auto w-full min-w-[600px] max-w-[760px]" role="img" aria-labelledby={`${uid}-title`}>
+          <title id={`${uid}-title`}>{title ?? `Linked entities: ${nodes.length} people, accounts and payers joined by ${edges.length} links`}</title>
           {edges.map((e) => {
             const a = at[e.source];
             const b = at[e.target];
             if (!a || !b) return null;
+            const key = `${e.source}-${e.target}`;
             const curve = a.x === b.x;
+            const d = curve ? `M ${a.x} ${a.y} Q ${a.x + 140} ${(a.y + b.y) / 2} ${b.x} ${b.y}` : `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
             // A ring's links fan into the few identifiers they share, so their ids sit near the member's end, where
             // the lines are still apart; an alert's labels sit midway.
             const along = e.strong === undefined ? 0.5 : 0.2;
             const mid = curve ? { x: a.x + 70, y: (a.y + b.y) / 2 } : { x: a.x + (b.x - a.x) * along, y: a.y + (b.y - a.y) * along };
             const lit = e.id !== undefined && highlight.includes(e.id);
+            const dashed = e.strong === false;
+            const mask = `${uid}-m${order[key] ?? 0}`;
+            const line = { fill: "none", stroke: stroke(lit), strokeWidth: lit ? 3 : 1.25, strokeLinecap: "round" as const, style: lightUp };
             return (
-              <g key={`${e.source}-${e.target}`}>
-                <path d={curve ? `M ${a.x} ${a.y} Q ${a.x + 140} ${(a.y + b.y) / 2} ${b.x} ${b.y}` : `M ${a.x} ${a.y} L ${b.x} ${b.y}`}
-                  fill="none" stroke={stroke(lit)} strokeWidth={lit ? 3 : 1.25} strokeLinecap="round"
-                  strokeDasharray={e.strong === false ? "5 4" : undefined} />
-                <text x={mid.x} y={mid.y - 4} textAnchor="middle" fontSize={11} fill={lit ? C.ai700 : C.ink500}
-                  fontFamily={e.id ? "var(--font-mono)" : undefined}
-                  fontWeight={lit ? 600 : undefined} stroke={C.white} strokeWidth={4} paintOrder="stroke">{e.label}</text>
+              <g key={key}>
+                {dashed ? (
+                  // A dashed line cannot draw itself without losing its dashes, so a solid line drawing inside a mask
+                  // reveals it from one end to the other.
+                  <>
+                    {!reduce && (
+                      <mask id={mask} maskUnits="userSpaceOnUse">
+                        <motion.path d={d} fill="none" stroke="white" strokeWidth={8} strokeLinecap="round" {...draw(key)} />
+                      </mask>
+                    )}
+                    <path d={d} {...line} strokeDasharray="5 4" mask={reduce ? undefined : `url(#${mask})`} />
+                  </>
+                ) : <motion.path d={d} {...line} {...draw(key)} />}
+                <motion.text x={mid.x} y={mid.y - 4} textAnchor="middle" fontSize={11} fill={lit ? C.ai700 : C.ink500}
+                  fontFamily={e.id ? "var(--font-mono)" : undefined} style={lightUp}
+                  fontWeight={lit ? 600 : undefined} stroke={C.white} strokeWidth={4} paintOrder="stroke"
+                  {...fade(drawAt(key) + LINK_DRAW * 0.6)}>{e.label}</motion.text>
               </g>
             );
           })}
-          {nodes.map((n) => {
+          {nodes.map((n, i) => {
             const p = at[n.id];
             const halo = RING_KINDS.has(n.kind) ? { stroke: C.white, strokeWidth: 4, paintOrder: "stroke" as const } : {};
             return (
-              <g key={n.id}>
+              <motion.g key={n.id} {...fade(Math.min(i, 8) * 0.03)}>
+                {/* A flagged node's ring pulses once, after the links have drawn: here is who the graph is about. */}
+                {n.flagged && !reduce && (
+                  <motion.circle cx={p.x} cy={p.y} fill="none" stroke={C.coral500} strokeWidth={2}
+                    initial={{ r: 10, opacity: 0 }} animate={{ r: [10, 26], opacity: [0.7, 0] }}
+                    transition={{ duration: 0.8, delay: pulseAt, ease: EASE }} />
+                )}
                 <Mark kind={n.kind} flagged={n.flagged} x={p.x} y={p.y} />
                 <text x={p.x} y={p.y + 26} textAnchor="middle" fontSize={13} fontWeight={n.flagged ? 600 : 400}
                   fill={n.flagged ? C.coral700 : C.ink900} {...halo}>{n.label}</text>
-              </g>
+              </motion.g>
             );
           })}
         </svg>

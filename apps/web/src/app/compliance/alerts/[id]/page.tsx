@@ -4,14 +4,21 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { formatDate, formatUsd } from "@/lib/format";
+import { motion } from "motion/react";
 import {
-  alertFindings, citationLabels, EVIDENCE_KIND, SCENARIO_COPY, SEVERITY_LABEL, SEVERITY_TONE, STATE_LABEL, thresholdBars, TRIAGE_COPY,
-  type AlertDetail, type BarTone, type CaseReview, type EvidenceRow, type Finding,
+  alertFindings, CASE_REVIEW_STEPS, citationLabels, EVIDENCE_KIND, SCENARIO_COPY, SEVERITY_LABEL, SEVERITY_TONE, STATE_LABEL, thresholdBars,
+  TRIAGE_COPY, type AlertDetail, type BarTone, type CaseReview, type EvidenceRow, type Finding,
 } from "@/lib/compliance";
 import { AiProse } from "@/components/ai-prose";
+import { AiThinking } from "@/components/ai-thinking";
 import { EntityGraph } from "@/components/entity-graph";
-import { Badge, Button, Field, inputClass, KeyMoment, Loading, Notice, PageHeader, Panel, Section, Sparkle } from "@/components/ui";
-import { StatusChip, TableCard, tbl } from "../../../operations/_parts";
+import { CountUp, EASE } from "@/components/motion";
+import { Skeleton, SkeletonText } from "@/components/skeleton";
+import { Badge, Button, Field, inputClass, KeyMoment, Notice, PageHeader, Panel, Section, Sparkle } from "@/components/ui";
+import { Arrive, Confirmed, StatusChip, TableCard, tbl } from "../../../operations/_parts";
+import {
+  CardSkeleton, DetailHeaderSkeleton, LoadingRegion, MomentSkeleton, SectionTitleSkeleton, TableCardSkeleton,
+} from "../../../operations/_skeletons";
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 /** An evidence label in the engine's own voice: Geist Mono on sand. */
@@ -30,17 +37,21 @@ function ThresholdChart({ evidence }: { evidence: EvidenceRow[] }) {
     <figure className="space-y-3">
       <div role="img" className="relative h-52 sm:h-60"
         aria-label={`${bars.length} payments, ${bars.map((b) => `${formatUsd(b.amount)} on ${formatDate(b.date)}`).join(", ")}, against the $10,000 reporting threshold`}>
+        {/* The threshold is drawn first; then each payment grows toward it, one after another. */}
         <div aria-hidden="true" className="absolute inset-0 grid gap-4 px-2 sm:gap-10 sm:px-10" style={columns}>
-          {bars.map((b) => (
+          {bars.map((b, i) => (
             <div key={b.id} className="mx-auto flex h-full w-full max-w-14 flex-col justify-end overflow-hidden rounded-full bg-sand-100">
-              <div className={`w-full rounded-full ${FILL[b.tone]}`} style={{ height: `${b.pct}%` }} />
+              <motion.div className={`w-full rounded-full ${FILL[b.tone]}`} initial={{ height: "0%" }} animate={{ height: `${b.pct}%` }}
+                transition={{ duration: 0.6, delay: 0.3 + i * 0.12, ease: EASE }} />
             </div>
           ))}
         </div>
-        <div aria-hidden="true" className="absolute inset-x-0 border-t-2 border-dashed border-coral-500" style={{ bottom: `${linePct}%` }} />
-        <span aria-hidden="true" className="absolute right-0 rounded-full bg-coral-50 px-2.5 py-0.5 text-xs font-semibold text-coral-700" style={{ bottom: `calc(${linePct}% + 8px)` }}>
+        <motion.div aria-hidden="true" className="absolute inset-x-0 origin-left border-t-2 border-dashed border-coral-500" style={{ bottom: `${linePct}%` }}
+          initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.4, ease: EASE }} />
+        <motion.span aria-hidden="true" className="absolute right-0 rounded-full bg-coral-50 px-2.5 py-0.5 text-xs font-semibold text-coral-700" style={{ bottom: `calc(${linePct}% + 8px)` }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.25 }}>
           $10,000 reporting threshold
-        </span>
+        </motion.span>
       </div>
       <div className="grid gap-4 px-2 sm:gap-10 sm:px-10" style={columns}>
         {bars.map((b) => (
@@ -58,19 +69,75 @@ function ThresholdChart({ evidence }: { evidence: EvidenceRow[] }) {
   );
 }
 
-function FindingCard({ finding }: { finding: Finding }) {
+function FindingCard({ finding, index }: { finding: Finding; index: number }) {
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
+    <Arrive index={index} className="flex min-w-0 flex-col gap-3 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-[15px] font-semibold">{finding.title}</span>
         <StatusChip tone={finding.chip.tone}>{finding.chip.label}</StatusChip>
       </div>
       <span className="flex items-baseline gap-1.5">
-        <span className="num text-[36px] font-medium leading-10 tracking-[-0.03em] sm:text-[44px] sm:leading-[46px]">{finding.figure}</span>
+        <span className="num text-[36px] font-medium leading-10 tracking-[-0.03em] sm:text-[44px] sm:leading-[46px]"><CountUp text={finding.figure} /></span>
         {finding.unit && <span className="text-sm text-ink-500">{finding.unit}</span>}
       </span>
       <span className="text-sm text-ink-700">{finding.text}</span>
+    </Arrive>
+  );
+}
+
+/** The threshold chart's shape: payments as pale columns of different heights under a dashed line. */
+function ChartSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="relative h-52 sm:h-60">
+        <div className="absolute inset-0 grid grid-cols-3 gap-4 px-2 sm:gap-10 sm:px-10">
+          {["h-[78%]", "h-[84%]", "h-[80%]"].map((h) => (
+            <div key={h} className="mx-auto flex h-full w-full max-w-14 flex-col justify-end"><Skeleton className={`w-full rounded-full ${h}`} /></div>
+          ))}
+        </div>
+        <span className="absolute inset-x-0 bottom-[88%] border-t-2 border-dashed border-sand-200" />
+      </div>
+      <div className="grid grid-cols-3 gap-4 px-2 sm:gap-10 sm:px-10">
+        {[0, 1, 2].map((i) => <span key={i} className="flex flex-col items-center gap-1.5"><Skeleton className="h-4 w-16" /><Skeleton className="h-3 w-12" /></span>)}
+      </div>
     </div>
+  );
+}
+
+/** An alert while it loads: its header, the opening card and its findings, the review beside the decision, who is
+ *  linked, and the evidence. */
+function AlertSkeleton() {
+  return (
+    <LoadingRegion label="Loading the alert">
+      <DetailHeaderSkeleton badges={2} />
+      <div className="space-y-12">
+        <div className="space-y-4">
+          <MomentSkeleton><ChartSkeleton /><Skeleton className="h-3.5 w-[min(560px,90%)]" /></MomentSkeleton>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex min-w-0 flex-col gap-3 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
+                <span className="flex items-center justify-between gap-2"><Skeleton className="h-4 w-32" /><Skeleton className="h-[26px] w-24 rounded-full" /></span>
+                <Skeleton className="h-10 w-28 rounded-[10px] sm:h-[46px]" />
+                <SkeletonText lines={1} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] xl:items-start">
+          <CardSkeleton lines={2} />
+          <div className="flex min-w-0 flex-col gap-4 rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-24 w-full rounded-control" />
+            <span className="flex gap-2"><Skeleton className="h-11 w-28 rounded-full" /><Skeleton className="h-11 w-36 rounded-full" /></span>
+          </div>
+        </div>
+        <div>
+          <SectionTitleSkeleton width="w-36" />
+          <div className="rounded-panel border border-sand-200 bg-white p-5 sm:p-6"><Skeleton className="h-64 w-full rounded-control" /></div>
+        </div>
+        <TableCardSkeleton rows={4} widths={[0.4, 1.2, 0.9, 3, 0.9]} />
+      </div>
+    </LoadingRegion>
   );
 }
 
@@ -118,6 +185,7 @@ export default function AlertPage() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [decided, setDecided] = useState(false);  // the decision went through on this visit: it confirms
 
   const load = useCallback(async () => setAlert(await api<AlertDetail>(`/compliance/alerts/${id}`)), [id]);
   useEffect(() => {
@@ -129,6 +197,7 @@ export default function AlertPage() {
     setError("");
     try {
       setAlert(await api<AlertDetail>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }));
+      if (key === "escalate" || key === "close") setDecided(true);
     } catch (e) {
       setError(msg(e, fallback));
     } finally {
@@ -136,7 +205,7 @@ export default function AlertPage() {
     }
   }
 
-  if (!alert) return error ? <Notice tone="error">{error}</Notice> : <Loading label="Loading the alert" />;
+  if (!alert) return error ? <Notice tone="error">{error}</Notice> : <AlertSkeleton />;
   const labels = citationLabels(alert.evidence);
   const findings = alertFindings(alert);
   return (
@@ -154,7 +223,7 @@ export default function AlertPage() {
           </KeyMoment>
           {findings.length > 0 && (
             <div className={`grid grid-cols-1 gap-4 ${findings.length === 3 ? "md:grid-cols-3" : findings.length === 2 ? "md:grid-cols-2" : ""}`}>
-              {findings.map((f) => <FindingCard key={f.title} finding={f} />)}
+              {findings.map((f, i) => <FindingCard key={f.title} finding={f} index={i} />)}
             </div>
           )}
         </div>
@@ -167,9 +236,12 @@ export default function AlertPage() {
             </div>
             {alert.ai_review ? <Review review={alert.ai_review} labels={labels} /> : alert.review_paused ? (
               <Notice tone="caution" title="Decide from the evidence">{alert.review_paused}</Notice>
+            ) : busy === "review" ? (
+              // Where the review will be: what Gemini Pro is doing with the case meanwhile.
+              <AiThinking steps={CASE_REVIEW_STEPS} usually="10 to 20 s" />
             ) : (
               <div className="space-y-4">
-                <p className="max-w-[60ch] text-sm text-ink-700">Gemini Pro reads the alert, its evidence and the linked accounts, and suggests what to do. It takes about half a minute; the decision stays yours.</p>
+                <p className="max-w-[60ch] text-sm text-ink-700">Gemini Pro reads the alert, its evidence and the linked accounts, and suggests what to do. It usually takes 10 to 20 seconds; the decision stays yours.</p>
                 <Button variant="ai" busy={busy === "review"} disabled={Boolean(busy)}
                   onClick={() => post("review", `/compliance/alerts/${alert.id}/review`, undefined, "The case review is unavailable right now.")}>
                   <Sparkle />Ask Gemini Pro for a case review
@@ -195,9 +267,14 @@ export default function AlertPage() {
                 {!note.trim() && <p className="text-xs text-ink-500">Write your note first: both decisions are kept with it.</p>}
               </>
             ) : (
-              <Notice tone={alert.state === "escalated" ? "caution" : "info"} title={`${STATE_LABEL[alert.state]} by ${alert.decided_by} on ${formatDate(alert.decided_at ?? alert.raised_at)}`}>
-                {alert.decision_note}
-              </Notice>
+              <>
+                {decided && (
+                  <Confirmed>{alert.state === "escalated" ? "Escalated: a suspicious activity report starts from here." : "Closed, with your note kept."}</Confirmed>
+                )}
+                <Notice tone={alert.state === "escalated" ? "caution" : "info"} title={`${STATE_LABEL[alert.state]} by ${alert.decided_by} on ${formatDate(alert.decided_at ?? alert.raised_at)}`}>
+                  {alert.decision_note}
+                </Notice>
+              </>
             )}
           </Panel>
         </div>
@@ -213,8 +290,8 @@ export default function AlertPage() {
               <span role="columnheader">Row</span><span role="columnheader">Kind</span><span role="columnheader">Date</span>
               <span role="columnheader">Detail</span><span role="columnheader" className="text-right">Amount</span>
             </div>
-            {alert.evidence.map((e) => (
-              <div key={e.id} id={`ev-${e.id}`} role="row"
+            {alert.evidence.map((e, i) => (
+              <Arrive index={i} key={e.id} id={`ev-${e.id}`} role="row"
                 className="-mx-2 grid scroll-mt-24 grid-cols-[48px_minmax(0,1fr)_auto] gap-x-3 gap-y-1 rounded-control border-b border-sand-100 px-2 py-3 last:border-b-0 target:bg-green-50 md:grid-cols-[48px_150px_110px_minmax(0,1fr)_110px] md:gap-4">
                 <span role="cell"><span className={REF}>{labels[e.id]}</span></span>
                 <span role="cell" className="text-ink-700 md:whitespace-nowrap">{EVIDENCE_KIND[e.kind] ?? e.kind}<span className="text-ink-500 md:hidden">, {formatDate(e.date)}</span></span>
@@ -223,7 +300,7 @@ export default function AlertPage() {
                 <span role="cell" className={`${tbl.amount} row-start-1 col-start-3 md:row-start-auto md:col-start-auto`}>
                   {e.amount ? formatUsd(e.amount) : <span className="text-ink-400">None</span>}
                 </span>
-              </div>
+              </Arrive>
             ))}
           </div>
         </TableCard>
