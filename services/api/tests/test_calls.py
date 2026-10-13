@@ -315,7 +315,7 @@ def test_a_file_that_is_not_audio_is_rejected_before_the_model(db, people, make_
     assert e.value.status == 422 and llm.calls == []
 
 
-def test_a_third_party_directing_the_client_lowers_the_trust_score_by_twenty(db, people, make_lead):
+def test_a_third_party_directing_the_client_takes_a_clean_lead_out_of_clear(db, people, make_lead):
     lead = make_lead()
     before = assess_trust(db, lead, None, None)
     assert "T08" not in [s.code for s in before.signals]
@@ -324,10 +324,11 @@ def test_a_third_party_directing_the_client_lowers_the_trust_score_by_twenty(db,
     db.flush()
     after = assess_trust(db, lead, None, None)
     t08 = next(s for s in after.signals if s.code == "T08")
-    assert (t08.label, t08.weight, t08.source, t08.blocking) == ("A third party directed the client on a call", -20,
+    assert (t08.label, t08.weight, t08.source, t08.blocking) == ("A third party directed the client on a call", -25,
                                                                 "call", False)
     assert "She wants it all in the tech fund" in t08.evidence and "0:24" in t08.evidence
-    assert after.score == before.score - 20
+    assert after.score == before.score - 25
+    assert before.band == "clear" and after.band == "review"  # a possible exploitation call always earns a review
     assert lead.trust_score == after.score  # analyze_call rescored the lead
 
 

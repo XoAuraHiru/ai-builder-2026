@@ -264,7 +264,7 @@ demo calls, which can be played in the page. The reading shows:
   validated by type and bounds. The existing promissory-language rules (`check_compliance` rules) also run over the
   advisor's segments and add rule flags.
 - A high-severity third-party-direction flag adds trust signal **T08** ("A third party directed the client on a
-  call", weight −20) and rescores trust.
+  call", weight −25, so a clean lead moves from Clear to Review) and rescores trust.
 - Updatable fields: goals, horizon_years, investable_usd, monthly_usd, source_of_funds. Applying writes the fields,
   records who applied which update from which call, and emits `LeadUpdatedFromCall`.
 - Stored per call (`lead_call`): lead, filename, duration, the reading, dropped counts, applied updates, created by,

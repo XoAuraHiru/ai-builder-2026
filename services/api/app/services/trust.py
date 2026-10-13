@@ -125,7 +125,8 @@ def _call_signals(db: Session, lead: Lead) -> list[TrustSignal]:
     for call in calls:
         found = third_party_flag(call.reading)
         if found:
-            return [TrustSignal("T08", "A third party directed the client on a call", -20,
+            # -25, not -20: from a clean 100, -20 lands exactly on "clear"; possible exploitation always earns a review.
+            return [TrustSignal("T08", "A third party directed the client on a call", -25,
                                 f"“{found['quote']}” at {clock(found['start_s'])} in {call.filename}", "call")]
     return []
 
