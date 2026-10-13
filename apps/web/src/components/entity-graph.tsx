@@ -5,39 +5,66 @@ const WIDTH = 720;
 const ROW = 84;
 const RING_KINDS = new Set(["lead", "client", "device", "phone", "email", "ip", "document"]);
 
-function Mark({ node, x, y }: { node: GraphNode; x: number; y: number }) {
-  const fill = node.flagged ? "var(--color-ink)" : "var(--color-surface)";
-  if (node.kind === "person") return <circle cx={x} cy={y} r={8} fill={fill} stroke="var(--color-ink)" strokeWidth={1.5} />;
-  if (node.kind === "account") return <rect x={x - 8} y={y - 8} width={16} height={16} rx={3} fill={fill} stroke="var(--color-ink)" strokeWidth={1.5} />;
-  if (node.kind === "bank") return <rect x={x - 9} y={y - 7} width={18} height={14} fill="var(--color-surface)" stroke="var(--color-loss)" strokeWidth={1.5} />;
-  if (node.kind === "payer") return <path d={`M ${x} ${y - 9} L ${x + 9} ${y} L ${x} ${y + 9} L ${x - 9} ${y} Z`} fill="var(--color-surface)" stroke="var(--color-caution)" strokeWidth={1.5} />;
-  // Ring graphs: leads and clients are filled discs (a client has an outer ring), flagged ones in the loss tone; what
-  // they share is a small square.
-  const tone = node.flagged ? "var(--color-loss)" : "var(--color-ink)";
-  if (node.kind === "lead") return <circle cx={x} cy={y} r={7} fill={tone} />;
-  if (node.kind === "client") {
+// Design system 0.2: people and clients in green, what they share in sand and ink, anything flagged in coral, and
+// violet only for a link Gemini cites.
+const C = {
+  green100: "var(--color-green-100)", green500: "var(--color-green-500)", green600: "var(--color-green-600)",
+  sand100: "var(--color-sand-100)", sand200: "var(--color-sand-200)", ink400: "var(--color-ink-400)",
+  ink500: "var(--color-ink-500)", ink700: "var(--color-ink-700)", ink900: "var(--color-ink-900)",
+  coral50: "var(--color-coral-50)", coral500: "var(--color-coral-500)", coral700: "var(--color-coral-700)",
+  ai500: "var(--color-ai-500)", ai700: "var(--color-ai-700)", white: "#ffffff",
+};
+
+type MarkKind = GraphNode["kind"];
+
+function Mark({ kind, flagged, x, y }: { kind: MarkKind; flagged: boolean; x: number; y: number }) {
+  if (kind === "person") {
+    return <circle cx={x} cy={y} r={8} fill={flagged ? C.coral500 : C.green100} stroke={flagged ? C.coral700 : C.green600} strokeWidth={1.5} />;
+  }
+  if (kind === "payer") {
+    return <path d={`M ${x} ${y - 9} L ${x + 9} ${y} L ${x} ${y + 9} L ${x - 9} ${y} Z`} fill={flagged ? C.coral50 : C.white} stroke={flagged ? C.coral700 : C.green600} strokeWidth={1.5} />;
+  }
+  if (kind === "lead") return <circle cx={x} cy={y} r={7} fill={flagged ? C.coral500 : C.green500} />;
+  if (kind === "client") {
     return (
       <g>
-        <circle cx={x} cy={y} r={12} fill="var(--color-surface)" stroke={tone} strokeWidth={1.5} />
-        <circle cx={x} cy={y} r={7} fill={tone} />
+        <circle cx={x} cy={y} r={12} fill={C.white} stroke={flagged ? C.coral500 : C.green600} strokeWidth={1.5} />
+        <circle cx={x} cy={y} r={7} fill={flagged ? C.coral500 : C.green500} />
       </g>
     );
   }
-  return <rect x={x - 6} y={y - 6} width={12} height={12} rx={2} fill="var(--color-surface)" stroke={node.kind === "ip" ? "var(--color-muted)" : "var(--color-ink-2)"} strokeWidth={1.5} />;
+  // What people share: Atrium accounts, bank accounts, devices, documents, phones, emails and networks.
+  const stroke = flagged ? C.coral700 : kind === "ip" ? C.ink400 : C.ink700;
+  if (kind === "account") return <rect x={x - 8} y={y - 8} width={16} height={16} rx={3} fill={flagged ? C.coral50 : C.sand100} stroke={stroke} strokeWidth={1.5} />;
+  if (kind === "bank") return <rect x={x - 9} y={y - 7} width={18} height={14} rx={2} fill={flagged ? C.coral50 : C.sand200} stroke={stroke} strokeWidth={1.5} />;
+  return <rect x={x - 6} y={y - 6} width={12} height={12} rx={2} fill={flagged ? C.coral50 : C.sand100} stroke={stroke} strokeWidth={1.5} />;
 }
 
-function stroke(e: GraphEdge, lit: boolean): string {
-  if (lit) return "var(--color-daylight)";
-  if (e.strong !== undefined) return "var(--color-muted)";
-  return e.label === "shares a device" ? "var(--color-caution)" : "var(--color-line-strong)";
+/** Every link is ink-400; a weak one is dashed, and one Gemini cites is lit in violet. */
+const stroke = (lit: boolean) => (lit ? C.ai500 : C.ink400);
+
+/** A key entry: the mark as drawn in the graph, then what it means. */
+export function KeyItem({ mark, children }: { mark: MarkKind | "flagged" | "strong" | "weak" | "cited"; children: ReactNode }) {
+  const line = mark === "strong" || mark === "weak" || mark === "cited";
+  return (
+    <span className="inline-flex items-center gap-2">
+      <svg width={line ? 22 : 18} height="18" viewBox={line ? "0 0 22 18" : "0 0 18 18"} aria-hidden="true" className="shrink-0">
+        {line
+          ? <path d="M 1 9 L 21 9" stroke={mark === "cited" ? C.ai500 : C.ink400} strokeWidth={mark === "cited" ? 3 : 1.5} strokeDasharray={mark === "weak" ? "4 3" : undefined} />
+          : <Mark kind={mark === "flagged" ? "person" : mark} flagged={mark === "flagged"} x={9} y={9} />}
+      </svg>
+      {children}
+    </span>
+  );
 }
 
 const ALERT_LEGEND = (
   <>
-    <span>Circles are people; the filled one is the alert&apos;s subject.</span>
-    <span>Squares are Atrium accounts.</span>
-    <span>Red boxes are bank accounts, linked by a keyed hash, never the number.</span>
-    <span>Diamonds are outside payers.</span>
+    <KeyItem mark="person">A person</KeyItem>
+    <KeyItem mark="flagged">The alert&apos;s subject</KeyItem>
+    <KeyItem mark="account">An Atrium account</KeyItem>
+    <KeyItem mark="bank">A bank account, linked by a keyed hash, never the number</KeyItem>
+    <KeyItem mark="payer">An outside payer</KeyItem>
   </>
 );
 
@@ -50,8 +77,8 @@ export function EntityGraph({ nodes, edges, columns, highlight = [], legend = AL
   return (
     <figure>
       {/* Below 600px the graph keeps its size and scrolls sideways, so its labels stay readable on a phone. */}
-      <div className="overflow-x-auto">
-        <svg viewBox={`0 0 ${WIDTH} ${height}`} className="h-auto w-full min-w-[600px]" role="img" aria-labelledby="entity-graph-title">
+      <div className="-mx-1 overflow-x-auto px-1">
+        <svg viewBox={`0 0 ${WIDTH} ${height}`} className="mx-auto h-auto w-full min-w-[600px] max-w-[760px]" role="img" aria-labelledby="entity-graph-title">
           <title id="entity-graph-title">{title ?? `Linked entities: ${nodes.length} people, accounts and payers joined by ${edges.length} links`}</title>
           {edges.map((e) => {
             const a = at[e.source];
@@ -66,28 +93,29 @@ export function EntityGraph({ nodes, edges, columns, highlight = [], legend = AL
             return (
               <g key={`${e.source}-${e.target}`}>
                 <path d={curve ? `M ${a.x} ${a.y} Q ${a.x + 140} ${(a.y + b.y) / 2} ${b.x} ${b.y}` : `M ${a.x} ${a.y} L ${b.x} ${b.y}`}
-                  fill="none" stroke={stroke(e, lit)} strokeWidth={lit ? 3 : 1.25}
+                  fill="none" stroke={stroke(lit)} strokeWidth={lit ? 3 : 1.25} strokeLinecap="round"
                   strokeDasharray={e.strong === false ? "5 4" : undefined} />
-                <text x={mid.x} y={mid.y - 4} textAnchor="middle" fontSize={11} fill={lit ? "var(--color-daylight-ink)" : "var(--color-muted)"}
-                  fontWeight={lit ? 600 : undefined} stroke="var(--color-ground)" strokeWidth={4} paintOrder="stroke">{e.label}</text>
+                <text x={mid.x} y={mid.y - 4} textAnchor="middle" fontSize={11} fill={lit ? C.ai700 : C.ink500}
+                  fontFamily={e.id ? "var(--font-mono)" : undefined}
+                  fontWeight={lit ? 600 : undefined} stroke={C.white} strokeWidth={4} paintOrder="stroke">{e.label}</text>
               </g>
             );
           })}
           {nodes.map((n) => {
             const p = at[n.id];
-            const halo = RING_KINDS.has(n.kind) ? { stroke: "var(--color-surface)", strokeWidth: 4, paintOrder: "stroke" as const } : {};
+            const halo = RING_KINDS.has(n.kind) ? { stroke: C.white, strokeWidth: 4, paintOrder: "stroke" as const } : {};
             return (
               <g key={n.id}>
-                <Mark node={n} x={p.x} y={p.y} />
-                <text x={p.x} y={p.y + 26} textAnchor="middle" fontSize={13} fontWeight={n.flagged ? 600 : 400} fill="var(--color-ink)" {...halo}>{n.label}</text>
+                <Mark kind={n.kind} flagged={n.flagged} x={p.x} y={p.y} />
+                <text x={p.x} y={p.y + 26} textAnchor="middle" fontSize={13} fontWeight={n.flagged ? 600 : 400}
+                  fill={n.flagged ? C.coral700 : C.ink900} {...halo}>{n.label}</text>
               </g>
             );
           })}
         </svg>
       </div>
-      <p className="mt-2 text-xs text-muted sm:hidden">Swipe sideways to see the whole graph.</p>
-      <figcaption className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
-        <span className="sm:hidden">Scroll sideways to see the whole graph.</span>
+      <figcaption className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-ink-500">
+        <span className="w-full sm:hidden">Swipe sideways to see the whole graph.</span>
         {legend}
       </figcaption>
       <ul className="sr-only">
