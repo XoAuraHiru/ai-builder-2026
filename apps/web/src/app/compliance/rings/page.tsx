@@ -5,13 +5,16 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import {
-  canFlagLeads, canOpenCase, flaggedMessage, KIND_LABEL, PATTERN_LABEL, RING_COLUMNS, ringHeadline, scoreTone, stageLabel,
-  type NarrateResult, type Ring, type RingDetail, type RingList,
+  canFlagLeads, canOpenCase, citedLinks, flaggedMessage, KIND_LABEL, PATTERN_LABEL, RING_COLUMNS, RING_STEPS, ringHeadline, scoreTone,
+  stageLabel, type NarrateResult, type Ring, type RingDetail, type RingList,
 } from "@/lib/rings";
 import { AiProse } from "@/components/ai-prose";
+import { AiThinking } from "@/components/ai-thinking";
 import { EntityGraph, KeyItem } from "@/components/entity-graph";
-import { Button, ButtonLink, EmptyState, KeyMoment, Loading, Notice, PageHeader, Panel, Section, Sparkle } from "@/components/ui";
-import { StatusChip, TableCard, tbl } from "../../operations/_parts";
+import { Skeleton } from "@/components/skeleton";
+import { Button, ButtonLink, EmptyState, KeyMoment, Notice, PageHeader, Panel, Section, Sparkle } from "@/components/ui";
+import { Arrive, ConfirmedNotice, StatusChip, TableCard, tbl } from "../../operations/_parts";
+import { ChipsSkeleton, LoadingRegion, MomentSkeleton, SectionTitleSkeleton } from "../../operations/_skeletons";
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 /** A link id Gemini cites, inside its violet block: Geist Mono on white. */
@@ -73,6 +76,53 @@ function Reading({ result, onLight }: { result: NarrateResult; onLight: (ids: st
     </AiProse>
   );
 }
+
+/** The graph's place while a ring loads: its section title and a panel with the three columns of marks sketched in. */
+function RingDetailSkeleton() {
+  return (
+    <div className="min-w-0 space-y-12">
+      <div>
+        <SectionTitleSkeleton width="w-44" />
+        <div className="rounded-panel border border-sand-200 bg-white p-5 sm:p-6">
+          <div className="grid h-72 grid-cols-3 items-center">
+            {[3, 2, 1].map((n, c) => (
+              <span key={c} className="flex flex-col items-center gap-10">
+                {Array.from({ length: n }, (_, i) => <span key={i} className="flex flex-col items-center gap-2"><Skeleton className="h-4 w-4 rounded-full" /><Skeleton className="h-3 w-20" /></span>)}
+              </span>
+            ))}
+          </div>
+          <span className="mt-4 flex flex-wrap gap-x-5 gap-y-2">{["w-16", "w-20", "w-16", "w-56", "w-24"].map((w, i) => <Skeleton key={i} className={`h-3 ${w}`} />)}</span>
+        </div>
+      </div>
+      <div>
+        <SectionTitleSkeleton width="w-40" />
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-dashed border-sand-300 bg-white p-5 sm:p-6">
+          <Skeleton className="h-3.5 w-[min(460px,100%)]" /><Skeleton className="h-11 w-40 rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The ring list's cards while they load. */
+function RingListSkeleton() {
+  return (
+    <div>
+      <SectionTitleSkeleton width="w-32" />
+      <div className="space-y-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex flex-col gap-2 rounded-panel border border-sand-200 bg-white px-4 py-3.5">
+            <span className="flex items-center justify-between gap-2"><Skeleton className="h-4 w-28" /><Skeleton className="h-[26px] w-20 rounded-full" /></span>
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-3 w-4/5" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const RING_MOMENT = <MomentSkeleton actions={3}><ChipsSkeleton count={3} /></MomentSkeleton>;
 
 export default function RingsPage() {
   const [list, setList] = useState<RingList | null>(null);
@@ -143,7 +193,22 @@ export default function RingsPage() {
     <PageHeader title="Fraud rings"
       description="One graph across leads, clients, devices, bank accounts and documents. The graph finds the rings; Gemini only explains them; you decide." />
   );
-  if (!list) return <>{header}{error ? <Notice tone="error">{error}</Notice> : <Loading label="Loading the rings" />}</>;
+  if (!list) {
+    return (
+      <>
+        {header}
+        {error ? <Notice tone="error">{error}</Notice> : (
+          <LoadingRegion label="Loading the rings" className="space-y-12">
+            {RING_MOMENT}
+            <div className="grid grid-cols-1 gap-12 xl:grid-cols-[18rem_minmax(0,1fr)] xl:items-start xl:gap-8">
+              <RingListSkeleton />
+              <RingDetailSkeleton />
+            </div>
+          </LoadingRegion>
+        )}
+      </>
+    );
+  }
   if (list.rings.length === 0) {
     return (
       <>
@@ -155,6 +220,8 @@ export default function RingsPage() {
 
   const ring = detail && detail.id === selected ? detail : null;
   const reading = ring ? readings[ring.id] : undefined;
+  // Once Gemini has read the ring, the links it cites stay lit in the graph; pointing at one part lights only its own.
+  const cited = reading ? citedLinks(reading.narrative) : [];
   const allFlagged = ring ? ring.flagged_leads === ring.members.filter((m) => m.kind === "lead").length : false;
   const explain = ring && (
     <Button variant="ai" busy={busy === "narrate"} disabled={Boolean(busy)} onClick={() => act("narrate", ring)}>
@@ -184,11 +251,11 @@ export default function RingsPage() {
             }>
             <RingFacts ring={ring} />
             {done?.kind === "case" && (
-              <Notice tone="success" title="Case opened">
+              <ConfirmedNotice title="Case opened">
                 <Link className={LINK} href={`/compliance/alerts/${done.alertId}`}>{done.title}</Link> is an open alert now; you decide it from the alert page as usual.
-              </Notice>
+              </ConfirmedNotice>
             )}
-            {done?.kind === "flagged" && <Notice tone="success" title="Leads flagged">{done.text}</Notice>}
+            {done?.kind === "flagged" && <ConfirmedNotice title="Leads flagged">{done.text}</ConfirmedNotice>}
             {ring.case && done?.kind !== "case" && (
               <p className="text-sm text-ink-700">A case is {ring.case.state} for this ring: <Link className={LINK} href={`/compliance/alerts/${ring.case.id}`}>{ring.case.title}</Link>.</p>
             )}
@@ -198,15 +265,16 @@ export default function RingsPage() {
               </Notice>
             )}
           </KeyMoment>
-        ) : error ? <Notice tone="error">{error}</Notice> : <Loading label="Loading the ring" />}
+        ) : error ? <Notice tone="error">{error}</Notice> : <LoadingRegion label="Loading the ring">{RING_MOMENT}</LoadingRegion>}
 
         <div className="grid grid-cols-1 gap-12 xl:grid-cols-[18rem_minmax(0,1fr)] xl:items-start xl:gap-8">
           <Section title="Every ring" description="Strongest first. Choose one to see how it connects.">
             <ul className="space-y-2">
-              {list.rings.map((r) => {
+              {/* The rings arrive strongest first, in order. */}
+              {list.rings.map((r, i) => {
                 const on = r.id === selected;
                 return (
-                  <li key={r.id}>
+                  <Arrive as="li" index={i} key={r.id}>
                     <button type="button" aria-pressed={on} onClick={() => choose(r.id)}
                       className={`w-full rounded-panel border px-4 py-3.5 text-left transition-colors ${on ? "border-green-300 bg-green-50" : "border-sand-200 bg-white hover:bg-fill"}`}>
                       <span className="flex items-center justify-between gap-2">
@@ -222,23 +290,24 @@ export default function RingsPage() {
                         </span>
                       )}
                     </button>
-                  </li>
+                  </Arrive>
                 );
               })}
             </ul>
           </Section>
 
-          {ring && (
+          {!ring ? !error && <LoadingRegion label="Loading how the ring connects"><RingDetailSkeleton /></LoadingRegion> : (
             <div className="min-w-0 space-y-12">
               <Section title="How they connect" description="Each line is a link Atrium recorded: a lead's form, a client's account, a device that signed in.">
                 <Panel className="p-5 sm:p-6">
-                  <EntityGraph nodes={ring.graph.nodes} edges={ring.graph.edges} columns={RING_COLUMNS} highlight={lit} legend={RING_LEGEND}
+                  <EntityGraph key={ring.id} nodes={ring.graph.nodes} edges={ring.graph.edges} columns={RING_COLUMNS} highlight={lit.length ? lit : cited} legend={RING_LEGEND}
                     title={`Ring of ${ring.members.length} identities joined through ${plural(ring.identifiers, "shared identifier")} by ${plural(ring.links, "link")}`} />
                 </Panel>
               </Section>
 
               <Section title="Gemini's reading" description="What the ring resembles, each point citing the links it rests on. Point at a link id to find it in the graph.">
-                {reading ? <Reading result={reading} onLight={setLit} /> : (
+                {busy === "narrate" ? <AiThinking steps={RING_STEPS} usually="about 4 s" />
+                  : reading ? <Reading result={reading} onLight={setLit} /> : (
                   <div className="flex flex-wrap items-center justify-between gap-4 rounded-panel border border-dashed border-sand-300 bg-white p-5 sm:p-6">
                     <p className="max-w-[60ch] text-sm text-ink-700">Gemini Flash reads the members and links above and says which pattern they resemble. It cites only this ring&apos;s links; it cannot add new ones.</p>
                     {explain}

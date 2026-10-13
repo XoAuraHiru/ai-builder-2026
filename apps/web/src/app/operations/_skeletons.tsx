@@ -7,9 +7,9 @@ import { Skeleton, SkeletonText } from "@/components/skeleton";
 
 export function LoadingRegion({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) {
   return (
-    <div role="status" aria-live="polite" className={className}>
+    <div role="status" aria-live="polite">
       <span className="sr-only">{label}…</span>
-      <div aria-hidden="true">{children}</div>
+      <div aria-hidden="true" className={className}>{children}</div>
     </div>
   );
 }

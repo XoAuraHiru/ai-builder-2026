@@ -57,12 +57,14 @@ const stroke = (lit: boolean) => (lit ? C.ai500 : C.ink400);
 /** A key entry: the mark as drawn in the graph, then what it means. */
 export function KeyItem({ mark, children }: { mark: MarkKind | "flagged" | "strong" | "weak" | "cited"; children: ReactNode }) {
   const line = mark === "strong" || mark === "weak" || mark === "cited";
+  // A client's mark is a ring 26px across, so its key draws it scaled down to the others' 18px instead of clipping it.
+  const box = mark === "client" ? 26 : 18;
   return (
     <span className="inline-flex items-center gap-2">
-      <svg width={line ? 22 : 18} height="18" viewBox={line ? "0 0 22 18" : "0 0 18 18"} aria-hidden="true" className="shrink-0">
+      <svg width={line ? 22 : 18} height="18" viewBox={line ? "0 0 22 18" : `0 0 ${box} ${box}`} aria-hidden="true" className="shrink-0">
         {line
           ? <path d="M 1 9 L 21 9" stroke={mark === "cited" ? C.ai500 : C.ink400} strokeWidth={mark === "cited" ? 3 : 1.5} strokeDasharray={mark === "weak" ? "4 3" : undefined} />
-          : <Mark kind={mark === "flagged" ? "person" : mark} flagged={mark === "flagged"} x={9} y={9} />}
+          : <Mark kind={mark === "flagged" ? "person" : mark} flagged={mark === "flagged"} x={box / 2} y={box / 2} />}
       </svg>
       {children}
     </span>
