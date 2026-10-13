@@ -1,7 +1,7 @@
 """Paper-trading demo data, seeded once: paper cash for every investor, a known phone for each account, and the
 positions behind the trading stories.
 
-- Lucas holds NVIDIA directly and through his funds: buying more shows the look-through concentration warning.
+- Lucas holds NVIDIA directly and through funds: buying more shows the look-through concentration warning.
 - Tom holds a large Tesla position: selling it all from a browser Atrium has not seen before is held as a possible
   account takeover.
 - Hana sold a stock at a loss less than three weeks ago: buying it back raises the wash-sale warning.

@@ -8,7 +8,7 @@
   1. Arjun Mehta: three subscriptions just under $10,000 within a week (structuring).
   2. Sofia Rossi: $45,000 in and $42,000 out six days later (money in and straight out).
   3. Grace Li: a subscription paid by Marcus Okonkwo, matched on last week's statement (third-party funding).
-  4. Noah Williams and Aisha Khan: up to $8,000 out of Noah's account (most of his cash fund) and into Aisha's four
+  4. Noah Williams and Aisha Khan: up to $8,000 out of Noah's account (most of Noah's cash fund) and into Aisha's four
      days later, from the same bank account (a round trip between linked accounts).
 - Monitoring runs once, so the compliance workspace opens with alerts.
 """
