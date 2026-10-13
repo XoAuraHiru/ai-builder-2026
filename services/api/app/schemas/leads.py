@@ -23,6 +23,7 @@ class LeadIn(BaseModel):
     source_of_funds: SourceOfFunds = "unspecified"
     notes: str | None = Field(default=None, max_length=2000)
     device_id: str = Field(min_length=8, max_length=64, pattern=r"^[A-Za-z0-9-]+$")
+    analysis_id: str | None = Field(default=None, max_length=32)  # the analyzer run that led here, if any
 
     @model_validator(mode="after")
     def _normalise_phone(self):
@@ -76,6 +77,23 @@ class LeadOut(BaseModel):
     scored_at: datetime | None
     scoring_error: str | None
     converted_person_id: str | None
+    analysis: "LeadAnalysisOut | None" = None
+
+
+class LeadAnalysisOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    created_at: datetime
+    kind: str
+    code: str
+    name: str
+    initial_usd: Decimal
+    monthly_usd: Decimal
+    years: int
+    summary: dict
+
+
+LeadOut.model_rebuild()
 
 
 class IdentityCheckOut(BaseModel):

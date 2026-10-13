@@ -1,5 +1,5 @@
 import logging
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from sqlalchemy import select
@@ -11,11 +11,13 @@ from app.auth import CurrentUser, require_roles
 from app.config import get_settings
 from app.db import get_db
 from app.events import emit
-from app.models import AIDecision, Lead, Proposal
+from app.models import AIDecision, Analysis, Lead, Proposal
+from app.models.base import utcnow
 from app.knowledge.search import get_fund_search
 from app.schemas.leads import AskIn, ConvertIn, IdentityCheckOut, LeadAck, LeadIn, LeadOut, ProposalOut, StageIn
 from app.services.capture_guard import check_capture_rate, ip_hash
 from app.services.conversion import ConversionError, convert_lead
+from app.services.devices import aware
 from app.services.lead_pipeline import count_pending, process_lead, score_pending
 from app.services.identity import (MAX_BYTES, DocumentTooLarge, ProofingClient, UnsupportedDocument,
                                    analyze_identity, get_proofing)
@@ -27,6 +29,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/leads", tags=["leads"])
 staff = require_roles("staff")
 BUSY = "The AI assistant is busy right now; please try again in a minute."
+ANALYSIS_LINK_AGE = timedelta(days=7)
 PROPOSAL_BUSY = "The proposal writer is busy right now; please try again in a minute."
 
 
@@ -37,13 +40,29 @@ def lead_or_404(db: Session, lead_id: str) -> Lead:
     return lead
 
 
+def usable_analysis(db: Session, analysis_id: str | None) -> str | None:
+    """An application may carry the analyzer run that led to it: a recent one no other lead has claimed. A link that
+    fails those checks is dropped, never fatal: the prospect's submission must not fail because of it."""
+    if not analysis_id:
+        return None
+    analysis = db.get(Analysis, analysis_id)
+    fresh = analysis is not None and aware(analysis.created_at) >= utcnow() - ANALYSIS_LINK_AGE
+    taken = db.scalar(select(Lead.id).where(Lead.analysis_id == analysis_id).limit(1))
+    if not fresh or taken:
+        log.info("lead capture dropped analysis link %s (found=%s, taken=%s)", analysis_id, analysis is not None,
+                 bool(taken))
+        return None
+    return analysis_id
+
+
 @router.post("", response_model=LeadAck, status_code=201)
 def capture_lead(body: LeadIn, request: Request, db: Session = Depends(get_db), llm: LLM = Depends(get_llm)):
     ip = ip_hash(request)
     settings = get_settings()
     check_capture_rate(db, body.device_id, ip, settings.lead_capture_limit_per_hour,
                        settings.lead_capture_global_per_hour)
-    lead = Lead(**body.model_dump(), ip_hash=ip)
+    lead = Lead(**body.model_dump(exclude={"analysis_id"}), ip_hash=ip)
+    lead.analysis_id = usable_analysis(db, body.analysis_id)
     db.add(lead)
     db.flush()
     emit("LeadCreated", {"lead_id": lead.id, "source": lead.source})

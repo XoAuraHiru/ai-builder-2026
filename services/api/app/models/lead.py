@@ -2,9 +2,10 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import JSON, DateTime, ForeignKey, Integer, Numeric, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
+from app.models.analysis import Analysis  # noqa: F401  (the relationship target)
 from app.models.base import IdMixin
 
 LEAD_STAGES = ("new", "qualified", "proposal", "onboarding", "client", "disqualified")
@@ -40,6 +41,9 @@ class Lead(IdMixin, Base):
     scored_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     scoring_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     converted_person_id: Mapped[str | None] = mapped_column(ForeignKey("person.id"), nullable=True)
+    analysis_id: Mapped[str | None] = mapped_column(ForeignKey("analysis.id"), nullable=True)  # from the front door
+
+    analysis: Mapped["Analysis | None"] = relationship(lazy="selectin")
 
 
 class IdentityCheck(IdMixin, Base):

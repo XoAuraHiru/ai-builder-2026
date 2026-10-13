@@ -55,3 +55,47 @@ def test_lead_created_event(client, people):
     set_event_bus(bus)
     lead_id = client.post("/leads", json=LEAD).json()["id"]
     assert any(e.type == "LeadCreated" and e.payload["lead_id"] == lead_id for e in bus.history)
+
+
+def _analysis(client, db, device="device-visitor-1"):
+    from app.seed.funds import seed_funds
+
+    if not client.get("/analyzer/options").json()["funds"]:
+        seed_funds(db)
+        db.commit()
+    return client.post("/analyzer", json={"kind": "unit_trust", "code": "ATR-BAL", "initial_usd": 20000,
+                                          "monthly_usd": 300, "years": 15, "device_id": device}).json()
+
+
+def test_lead_keeps_its_analysis_and_staff_see_it(client, db, people):
+    analysis = _analysis(client, db)
+    lead_id = client.post("/leads", json={**LEAD, "analysis_id": analysis["id"]}).json()["id"]
+    shown = client.get(f"/leads/{lead_id}", headers=STAFF).json()["analysis"]
+    assert shown["id"] == analysis["id"] and shown["name"] == "Atrium Balanced" and shown["years"] == 15
+    assert shown["summary"]["median_usd"] == analysis["result"]["scenarios"][0]["final"]["p50"]
+
+
+def test_unknown_used_or_stale_analysis_is_dropped_not_fatal(client, db, people):
+    from datetime import timedelta
+
+    from app.models import Analysis, Lead
+    from app.models.base import utcnow
+
+    r = client.post("/leads", json={**LEAD, "analysis_id": "does-not-exist"})
+    assert r.status_code == 201 and db.get(Lead, r.json()["id"]).analysis_id is None
+
+    analysis = _analysis(client, db)
+    first = client.post("/leads", json={**LEAD, "analysis_id": analysis["id"]}).json()["id"]
+    second = client.post("/leads", json={**LEAD, "email": "b@example.test", "analysis_id": analysis["id"]}).json()["id"]
+    assert db.get(Lead, first).analysis_id == analysis["id"] and db.get(Lead, second).analysis_id is None
+
+    stale = _analysis(client, db)
+    db.get(Analysis, stale["id"]).created_at = utcnow() - timedelta(days=8)
+    db.commit()
+    third = client.post("/leads", json={**LEAD, "email": "c@example.test", "analysis_id": stale["id"]}).json()["id"]
+    assert db.get(Lead, third).analysis_id is None
+
+
+def test_lead_without_analysis_shows_none(client, people):
+    lead_id = client.post("/leads", json=LEAD).json()["id"]
+    assert client.get(f"/leads/{lead_id}", headers=STAFF).json()["analysis"] is None
