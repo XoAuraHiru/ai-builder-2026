@@ -436,6 +436,16 @@ def clock(seconds: float) -> str:
     return f"{whole // 60}:{whole % 60:02d}"
 
 
+def summary_figures(reading: CallReading, lead: Lead) -> list[str]:
+    """The $ and % figures in Gemini's summary and action items that were neither said on the call (as figures, in
+    words or digits) nor are on the lead's form. They are shown with the summary, never hidden."""
+    from app.ai.figures import collect_numbers, figures_in, unsupported_figures
+
+    allowed = {value for s in reading.transcript for _, value, _ in figures_in(normalise_text(s.text))}
+    allowed |= collect_numbers([lead.investable_usd, lead.monthly_usd])
+    return unsupported_figures(" ".join([reading.summary, *reading.action_items]), allowed)
+
+
 def third_party_flag(reading: dict) -> dict | None:
     """The first kept high-severity flag of a third party directing the client, if the reading has one."""
     return next((f for f in (reading or {}).get("flags", [])
@@ -463,9 +473,9 @@ def analyze_call(db: Session, llm: LLM, lead: Lead, *, data: bytes, mime_type: s
         raise CallError(NO_SPEECH)
     kept, dropped = ground(reading.model_copy(update={"transcript": speech}), lead)
     kept = kept.model_copy(update={"flags": merge_flags(kept.flags, rule_flags(kept))})
+    stored = {**kept.model_dump(mode="json"), "unsupported_figures": summary_figures(kept, lead)}
     call = LeadCall(lead_id=lead.id, filename=filename, source=source, duration_s=kept.duration_s,
-                    reading=kept.model_dump(mode="json"), dropped=dropped, applied=[], created_by=by.full_name,
-                    decision_id=decision.id)
+                    reading=stored, dropped=dropped, applied=[], created_by=by.full_name, decision_id=decision.id)
     db.add(call)
     db.flush()
     if third_party_flag(call.reading):

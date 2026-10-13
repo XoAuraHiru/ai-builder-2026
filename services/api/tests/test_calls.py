@@ -233,6 +233,15 @@ def test_analyze_call_stores_the_grounded_reading_and_its_decision(db, people, m
     assert sent["attachments"][0].data == MP3 and "ruth.mp3" in sent["prompt"]
 
 
+def test_figures_in_the_summary_are_checked_against_what_was_said(db, people, make_lead):
+    said = _gemini_says(summary="Daniel said the fund returns 8% a year; Ruth can add $2,000 a month and has $60,000.",
+                        action_items=["Correct the 12% figure.", "Confirm the $75,000 transfer."])
+    call = analyze_call(db, FakeLLM({"call_analysis": said}), make_lead(), data=MP3, mime_type="audio/mpeg",
+                        filename="a.mp3", by=people["advisor"], source="upload")
+    # 8% and $2,000 were said ("eight percent", "two thousand dollars"); $60,000 is on the form; 12% and $75,000 neither
+    assert call.reading["unsupported_figures"] == ["12%", "$75,000"]
+
+
 def test_rule_flags_join_a_reading_where_gemini_missed_the_promise(db, people, make_lead):
     llm = FakeLLM({"call_analysis": _gemini_says(flags=[])})
     call = analyze_call(db, llm, make_lead(), data=MP3, mime_type="audio/mpeg", filename="a.mp3",
