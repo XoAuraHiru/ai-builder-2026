@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  agreementLine, canPause, caseValue, driftLine, headline, runLine, STATUS_LABEL, STATUS_TONE, suiteTitle, type ModelRow, type RunRow,
+  agreementLine, canPause, caseValue, driftLine, headline, runLine, runNotice, STATUS_LABEL, STATUS_TONE, suiteTitle, type ModelRow, type RunRow,
 } from "./governance";
 
 const row = (status: ModelRow["status"], over: Partial<ModelRow> = {}): ModelRow => ({
@@ -63,3 +63,12 @@ describe("governance copy", () => {
       .toBe("Lead scores: not enough recently scored leads yet (3 of 20).");
   });
 });
+
+describe("the notice after a run", () => {
+  it("says a run finished only when it did", () => {
+    expect(runNotice({ status: "finished" } as never)).toEqual({ tone: "success", title: "The checks finished" });
+    expect(runNotice({ status: "failed" } as never)).toEqual({ tone: "error", title: "The checks did not finish" });
+    expect(runNotice({ status: "did_not_finish" } as never)).toEqual({ tone: "error", title: "The checks ran out of time" });
+  });
+});
+

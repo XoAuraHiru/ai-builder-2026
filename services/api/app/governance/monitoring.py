@@ -160,14 +160,21 @@ def drift(db: Session, now: datetime | None = None) -> dict:
 
 
 def monitoring(db: Session, now: datetime | None = None) -> dict:
-    return {"agreement": agreement(db, now), "drift": drift(db, now), "window_days": WINDOW_DAYS}
+    from app.config import get_settings
+
+    return {"agreement": agreement(db, now), "drift": drift(db, now), "window_days": WINDOW_DAYS,
+            "trips": get_settings().monitoring_trips}
 
 
 def apply_monitoring_breakers(db: Session, now: datetime | None = None) -> list[str]:
     """Trip a High-tier model with a fallback when people agreed with it in fewer than 60% of at least ten decisions.
-    Returns the keys tripped now."""
+    Returns the keys tripped now. Report-only (MONITORING_TRIPS=false) trips nothing: in a public demo, visitors'
+    exploratory accepts and rejects are not a population whose disagreement should switch a model off."""
+    from app.config import get_settings
     from app.governance.breakers import breaker_open, trip
 
+    if not get_settings().monitoring_trips:
+        return []
     tripped = []
     for key, found in agreement(db, now, since_reset=True).items():
         spec = MODELS[key]

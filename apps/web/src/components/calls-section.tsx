@@ -23,12 +23,18 @@ export function CallsSection({ leadId, demoCall, onChange }:
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState<Busy>("");
   const [error, setError] = useState("");
+  const [paused, setPaused] = useState<string | null>(null);  // the breaker's message while call analysis is paused
   const [audio, setAudio] = useState<Record<string, string>>({});  // a demo name or an uploaded call's id -> object URL
   const urls = useRef<string[]>([]);
 
   const loadCalls = useCallback(async () => {
     try {
-      setCalls(await api<LeadCall[]>(`/leads/${leadId}/calls`));
+      const [list, status] = await Promise.all([
+        api<LeadCall[]>(`/leads/${leadId}/calls`),
+        api<{ paused: string | null }>(`/leads/${leadId}/calls/status`).catch(() => ({ paused: null })),
+      ]);
+      setCalls(list);
+      setPaused(status.paused);
     } catch (e) {
       setError(`Could not load the calls: ${message(e)}`);
       setCalls([]);
@@ -90,19 +96,26 @@ export function CallsSection({ leadId, demoCall, onChange }:
       description="Gemini listens to a recorded call and proposes; you decide. A flag or update whose words are not in the transcript is dropped. The audio is never stored, only the reading.">
       <div className="flex flex-wrap items-center gap-2.5">
         {demoCall && (
-          <Button busy={busy === demoCall} disabled={Boolean(busy)} onClick={() => runDemo(demoCall)}>
+          <Button busy={busy === demoCall} disabled={Boolean(busy) || Boolean(paused)} onClick={() => runDemo(demoCall)}>
             {busy === demoCall ? LISTENING : `Analyse the ${demoCall} call`}
           </Button>
         )}
-        <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold ${demoCall ? "border border-line-strong bg-surface text-ink hover:border-ink focus-within:border-ink" : "bg-ink text-white hover:bg-[#26343f]"} ${busy ? "pointer-events-none opacity-60" : ""}`}>
+        <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold ${demoCall ? "border border-line-strong bg-surface text-ink hover:border-ink focus-within:border-ink" : "bg-ink text-white hover:bg-[#26343f]"} ${busy || paused ? "pointer-events-none opacity-60" : ""}`} aria-disabled={Boolean(paused) || undefined}>
           {busy === "upload" ? LISTENING : "Upload a recording"}
-          <input type="file" accept={ACCEPT} className="sr-only" disabled={Boolean(busy)}
+          <input type="file" accept={ACCEPT} className="sr-only" disabled={Boolean(busy) || Boolean(paused)}
             onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ""; }} />
         </label>
       </div>
       <p className="mt-2 text-xs text-muted">
         MP3, WAV, M4A or OGG, up to 20 MB.{demoCall && ` The ${demoCall} call is a demo recorded for this lead: synthetic voices reading a script.`}
       </p>
+      {paused && (
+        <div className="mt-4">
+          <Notice tone="caution" title="Call analysis is paused">
+            {paused} Earlier readings below stay available; the Model Risk Office resets the model once it passes its checks again.
+          </Notice>
+        </div>
+      )}
       {busy && <p role="status" className="mt-3 text-sm text-daylight-ink">{LISTENING} A three-minute call takes about half a minute.</p>}
       {error && <div className="mt-4"><Notice tone="error" title="The call could not be analysed">{error}</Notice></div>}
       {calls === null ? <p role="status" className="mt-6 text-sm text-muted">Loading the calls…</p>

@@ -178,3 +178,16 @@ def test_drift_needs_twenty_recent_leads_and_measures_psi(db):
     shifted = drift(db, now=NOW)["lead_score"]
     assert shifted["psi"] > 0.25 and shifted["warn"] is True and shifted["recent"] == 40
     assert "aml_anomaly" in drift(db, now=NOW)
+
+
+def test_report_only_monitoring_shows_the_rate_but_never_pauses(db, monkeypatch):
+    from app.config import get_settings
+
+    for i in range(12):
+        _match(db, "agent", "rejected" if i < 8 else "accepted", NOW - timedelta(days=2))
+    db.flush()
+    monkeypatch.setattr(get_settings(), "monitoring_trips", False)
+    assert apply_monitoring_breakers(db, now=NOW) == [] and not breaker_open(db, "reconciler_agent")
+    report = monitoring(db, now=NOW)
+    assert report["trips"] is False and round(report["agreement"]["reconciler_agent"]["rate"], 2) == 0.33
+

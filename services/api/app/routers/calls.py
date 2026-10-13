@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.ai.llm import LLM, LLMError, get_llm
 from app.auth import CurrentUser, require_roles
 from app.db import get_db
-from app.governance.breakers import BreakerOpen
+from app.governance.breakers import BreakerOpen, breaker_message
 from app.models import Lead, LeadCall, Person
 from app.routers.leads import lead_or_404
 from app.schemas.leads import LeadOut
@@ -79,6 +79,13 @@ def list_calls(lead_id: str, db: Session = Depends(get_db), user: CurrentUser = 
     lead_or_404(db, lead_id)
     return db.scalars(select(LeadCall).where(LeadCall.lead_id == lead_id)
                       .order_by(LeadCall.created_at.desc())).all()
+
+
+@router.get("/leads/{lead_id}/calls/status")
+def calls_status(lead_id: str, db: Session = Depends(get_db), user: CurrentUser = Depends(staff)):
+    """Whether call analysis is paused, so the page can say so before anyone uploads a recording."""
+    lead_or_404(db, lead_id)
+    return {"paused": breaker_message(db, "call_analyst")}
 
 
 @router.post("/leads/{lead_id}/calls", response_model=CallOut, status_code=201)

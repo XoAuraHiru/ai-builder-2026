@@ -49,6 +49,9 @@ API_ENV="${API_ENV}@GOOGLE_CLOUD_PROJECT=${PROJECT_ID}@GOOGLE_CLOUD_LOCATION=glo
 API_ENV="${API_ENV}@FUND_SEARCH_ENGINE=atrium-fund-search@FUND_SEARCH_LOCATION=global"
 # The Models page's "Run the live checks" button starts this job with the API's own identity.
 API_ENV="${API_ENV}@EVALS_JOB=projects/${PROJECT_ID}/locations/${REGION}/jobs/atrium-evals"
+# Report-only monitoring for the judging window: visitors' exploratory accepts and rejects must not switch a model
+# off. MONITORING_TRIPS=true bash infra/deploy.sh restores trips. The live checks still trip breakers either way.
+API_ENV="${API_ENV}@MONITORING_TRIPS=${MONITORING_TRIPS:-false}"
 
 gcloud run deploy atrium-api --source services/api --region "$REGION" --allow-unauthenticated --quiet \
   --service-account "$SA" --add-cloudsql-instances "$CONN" \
@@ -84,7 +87,7 @@ gcloud run jobs deploy atrium-evals --image "$IMAGE" --region "$REGION" --quiet 
   --service-account "$SA" --set-cloudsql-instances "$CONN" --set-secrets "$EVALS_SECRETS" \
   --set-env-vars "${API_ENV}@GIT_SHA=${GIT_SHA}" \
   --command python --args=-m,app.governance.evals,--tier,live,--store,--trigger,deploy \
-  --max-retries 0 --task-timeout 1200 --memory 1Gi --cpu 1 >/dev/null
+  --max-retries 0 --task-timeout 2700 --memory 1Gi --cpu 1 >/dev/null
 # The API runs as $SA; the button starts the job through the Cloud Run Admin API, which needs roles/run.invoker.
 gcloud run jobs add-iam-policy-binding atrium-evals --region "$REGION" \
   --member "serviceAccount:${SA}" --role roles/run.invoker --quiet >/dev/null

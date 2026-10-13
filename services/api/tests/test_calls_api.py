@@ -239,3 +239,13 @@ def test_offline_an_uploaded_copy_of_a_demo_call_is_recognised_by_its_size(clien
     assert r.status_code == 201 and r.json()["reading"]["transcript"][0]["speaker"] == "Daniel"
     other = client.post(f"/leads/{ruth.id}/calls", files={"file": ("mine.mp3", MP3, "audio/mpeg")}, headers=STAFF)
     assert other.status_code == 201 and "Offline mode" in other.json()["reading"]["transcript"][0]["text"]
+
+
+def test_the_calls_section_learns_call_analysis_is_paused_before_anyone_clicks(client, db, ruth):
+    assert client.get(f"/leads/{ruth.id}/calls/status", headers=STAFF).json() == {"paused": None}
+    trip(db, "call_analyst", reason="It missed its bar in the live checks.", by="Live checks")
+    db.commit()
+    status = client.get(f"/leads/{ruth.id}/calls/status", headers=STAFF).json()
+    assert status["paused"].startswith("Call analysis is paused: It missed its bar")
+    assert client.get(f"/leads/{ruth.id}/calls/status", headers=INVESTOR).status_code == 403
+

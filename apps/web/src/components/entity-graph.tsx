@@ -85,6 +85,7 @@ export function EntityGraph({ nodes, edges, columns, highlight = [], legend = AL
           })}
         </svg>
       </div>
+      <p className="mt-2 text-xs text-muted sm:hidden">Swipe sideways to see the whole graph.</p>
       <figcaption className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
         <span className="sm:hidden">Scroll sideways to see the whole graph.</span>
         {legend}

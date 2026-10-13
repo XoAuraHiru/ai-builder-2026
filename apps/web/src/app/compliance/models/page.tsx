@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import {
-  agreementLine, clockUtc, driftLine, GENERATIVE, headline, MONITORED, runLine, STATUS_LABEL, STATUS_TONE,
+  agreementLine, clockUtc, driftLine, GENERATIVE, headline, MONITORED, runLine, runNotice, STATUS_LABEL, STATUS_TONE,
   type ModelRow, type ModelsOut, type Monitoring, type RunRow,
 } from "@/lib/governance";
 import { Badge, Button, KeyMoment, Loading, Notice, PageHeader, Panel, Section, tableStyles as t } from "@/components/ui";
@@ -85,6 +85,12 @@ function Watching({ monitoring }: { monitoring: Monitoring }) {
   ];
   return (
     <Panel className="divide-y divide-line">
+      {monitoring.trips === false && (
+        <p className="px-5 py-3.5 text-sm text-ink-2">
+          Report-only for the judging window: visitors&apos; exploratory decisions are shown here, but a low rate does not
+          pause a model. The live checks still pause a model that misses its bar.
+        </p>
+      )}
       {lines.map((l) => (
         <Link key={l.key} href={l.href} className="flex items-start gap-3 px-5 py-3.5 text-sm text-ink-2 hover:text-ink">
           <span aria-hidden="true" className="mt-1.75 h-1.5 w-1.5 shrink-0 rounded-xs bg-ink-2" />{l.text}
@@ -99,7 +105,7 @@ export default function ModelsPage() {
   const [monitoring, setMonitoring] = useState<Monitoring | null>(null);
   const [running, setRunning] = useState<RunRow | null>(null);
   const [refused, setRefused] = useState("");
-  const [done, setDone] = useState("");
+  const [done, setDone] = useState<RunRow | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -122,7 +128,7 @@ export default function ModelsPage() {
         if (!latest || latest.status !== "running") {
           clearInterval(timer);
           await load();
-          if (latest) setDone(runLine(latest));
+          if (latest) setDone(latest);
         }
       } catch {
         // a missed poll is retried on the next tick
@@ -135,14 +141,14 @@ export default function ModelsPage() {
     setBusy(true);
     setError("");
     setRefused("");
-    setDone("");
+    setDone(null);
     try {
       const run = await api<RunRow>("/governance/evals/run", { method: "POST" });
       if (run.status === "running") {
         setRunning(run);
       } else {
         await load();
-        setDone(runLine(run));
+        setDone(run);
       }
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) setRefused(e.message);
@@ -174,7 +180,7 @@ export default function ModelsPage() {
           <div className="space-y-3">
             {refused && <Notice tone="caution" title="The live checks cannot start yet">{refused}</Notice>}
             {error && <Notice tone="error">{error}</Notice>}
-            {done && <Notice tone="success" title="The checks finished">{done}.</Notice>}
+            {done && <Notice tone={runNotice(done).tone} title={runNotice(done).title}>{runLine(done)}.</Notice>}
           </div>
         )}
         <KeyMoment tone={tone} label="Model risk" title={top.title}>

@@ -212,3 +212,36 @@ def test_the_job_adopts_the_run_the_button_asked_for(db):
     assert adopt_or_start(db, tier="live", trigger="deploy", now=NOW + timedelta(minutes=2)).id == asked.id
     other = adopt_or_start(db, tier="live", trigger="deploy", now=NOW + timedelta(minutes=30))
     assert other.id != asked.id and other.trigger == "deploy"
+
+
+def test_a_live_suite_judges_only_the_cases_that_reached_the_model():
+    live = every_case("call_analyst", "golden", "live", [CaseResult("a", "pass"), CaseResult("b", "error")], bar="b")
+    assert live.passed is True and live.metric == "1 of 1 cases passed (1 could not reach the model)"
+    none = every_case("call_analyst", "golden", "live", [CaseResult("a", "error"), CaseResult("b", "error")], bar="b")
+    assert none.passed is False and none.metric.startswith("No result")
+    free = every_case("lead_score", "golden", "free", [CaseResult("a", "pass"), CaseResult("b", "error")], bar="b")
+    assert free.passed is False  # the free tier has no model to blame: an error there is a failure
+
+
+def test_a_small_sample_bar_counts_misses_instead_of_rounding_a_percentage_up_to_all():
+    from app.governance.evals.framework import within_misses
+
+    cases = [CaseResult(str(i), "pass") for i in range(5)]
+    assert within_misses("lead_enrichment", "fairness", "live", cases, bar="b", metric="17 of 18",
+                         judged=18, misses=1, max_misses=1).passed is True
+    assert within_misses("lead_enrichment", "fairness", "live", cases, bar="b", metric="16 of 18",
+                         judged=18, misses=2, max_misses=1).passed is False
+    nothing = within_misses("lead_enrichment", "fairness", "live", cases, bar="b", metric="m",
+                            judged=0, misses=0, max_misses=1)
+    assert nothing.passed is False and nothing.metric.startswith("No result")
+
+
+def test_the_runner_waits_exactly_as_long_as_the_job_may_run():
+    import re
+    from pathlib import Path as P
+
+    deploy = (P(__file__).resolve().parents[3] / "infra" / "deploy.sh").read_text(encoding="utf-8")
+    job = deploy[deploy.index("run jobs deploy atrium-evals"):]
+    seconds = int(re.search(r"--task-timeout (\d+)", job).group(1))
+    assert RUN_TIMEOUT.total_seconds() == seconds == 45 * 60
+

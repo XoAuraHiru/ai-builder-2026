@@ -43,6 +43,7 @@ export type LeadDrift = { psi: number | null; recent: number; warn: boolean; not
 export type AnomalyDrift = { share: number | null; flagged: number; accounts: number; training_share: number; note: string };
 export type Monitoring = {
   agreement: Record<string, Agreement>; drift: { lead_score: LeadDrift; aml_anomaly: AnomalyDrift }; window_days: number;
+  trips?: boolean;  // false: report-only, a low rate never pauses a model
 };
 
 export const STATUS_LABEL: Record<ModelStatus, string> = {
@@ -107,6 +108,13 @@ const TRIGGER: Record<RunRow["trigger"], string> = {
 };
 
 /** One run as a line: what started it, how it ended, and what it cost. */
+/** The notice after a run: success only when it finished; a failed or timed-out run is an error. */
+export function runNotice(run: Pick<RunRow, "status">): { tone: "success" | "error"; title: string } {
+  if (run.status === "finished") return { tone: "success", title: "The checks finished" };
+  if (run.status === "did_not_finish") return { tone: "error", title: "The checks ran out of time" };
+  return { tone: "error", title: "The checks did not finish" };
+}
+
 export function runLine(run: RunRow): string {
   const what = `${run.tier === "free" ? "Free checks" : "Live checks"} ${TRIGGER[run.trigger] ?? "run"}`;
   const cost = `$${Number(run.cost_usd || 0).toFixed(2)}`;

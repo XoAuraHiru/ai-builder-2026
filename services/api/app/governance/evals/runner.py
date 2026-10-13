@@ -16,7 +16,9 @@ from app.governance.inventory import MODELS, versions
 from app.models import EvalCase, EvalRun
 from app.models.base import utcnow
 
-RUN_TIMEOUT = timedelta(minutes=20)  # the job's task timeout: a run still running after this did not finish
+# The job's task timeout (deploy.sh --task-timeout): a run still running after this did not finish. About 100 Gemini
+# calls and 11 agent runs, in sequence, take 12 to 15 minutes before any quota back-off; 45 leaves room.
+RUN_TIMEOUT = timedelta(minutes=45)
 COOLDOWN = timedelta(hours=1)
 TRIP_KINDS = ("golden", "red_team", "fairness")  # a challenger's result is evidence, never a trip
 

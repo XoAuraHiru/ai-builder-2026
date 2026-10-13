@@ -150,7 +150,22 @@ def rate(model_key: str, kind: str, tier: str, cases: list[CaseResult], *, bar: 
 
 
 def every_case(model_key: str, kind: str, tier: str, cases: list[CaseResult], *, bar: str) -> SuiteResult:
-    """A suite that passes only when every case passes."""
-    good = sum(c.outcome == "pass" for c in cases)
-    return SuiteResult(model_key, kind, tier, bar, f"{good} of {len(cases)} cases passed",
-                       bool(cases) and good == len(cases), cases)
+    """A suite that passes only when every judged case passes. In a live suite, a case whose model could not be
+    reached is not judged (one quota error must not fail, or pause, a model that answered every other case well);
+    with no judged case there is no result. The free tier has no model to blame, so there an error is a failure."""
+    judged = cases if tier == "free" else [c for c in cases if c.outcome != "error"]
+    if cases and not judged:
+        return SuiteResult(model_key, kind, tier, bar, "No result: the model could not be reached", False, cases)
+    good = sum(c.outcome == "pass" for c in judged)
+    unreached = len(cases) - len(judged)
+    metric = f"{good} of {len(judged)} cases passed" + (f" ({unreached} could not reach the model)" if unreached else "")
+    return SuiteResult(model_key, kind, tier, bar, metric, bool(judged) and good == len(judged), cases)
+
+
+def within_misses(model_key: str, kind: str, tier: str, cases: list[CaseResult], *, bar: str, metric: str,
+                  judged: int, misses: int, max_misses: int) -> SuiteResult:
+    """A suite judged by how many judged items missed, for samples too small for a percentage: at 18 pairs, 95% means
+    none may miss, which reads one run-to-run flip as a finding."""
+    if judged == 0:
+        return SuiteResult(model_key, kind, tier, bar, "No result: the model could not be reached", False, cases)
+    return SuiteResult(model_key, kind, tier, bar, metric, misses <= max_misses, cases)

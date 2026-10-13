@@ -6,13 +6,13 @@ search for each case would add its query charge to every run.
 """
 from app.governance import golden as golden_data
 from app.governance.evals.framework import (CaseResult, EvalContext, SuiteResult, every_case, rate, run_case,
-                                            share_passing, suite)
+                                            share_passing, suite, within_misses)
 from app.services.scenarios import (BOUNDS, SECTORS, ScenarioProposal, Validated, propose, proposes_trade,
                                     validate_proposal)
 
 PURPOSE = "eval:scenario_proposal"
 NO_CONTEXT = ""
-SIGNS_BAR = 0.9
+SIGNS_MAX_MISSES = 1  # of 6 scenarios; 90% of 6 would have meant none may miss
 
 
 def golden(name: str) -> list[dict]:
@@ -78,11 +78,11 @@ def expected_signs(ctx: EvalContext) -> SuiteResult:
         cases.append(run_case(c["id"], check))
     judged = [c for c in cases if c.outcome != "error"]
     passing = sum(c.outcome == "pass" for c in judged)
-    return rate("scenario_mapper", "golden", "live", cases,
-                bar=f"At least {SIGNS_BAR:.0%} of {len(cases)} golden scenarios mapped in the expected direction, "
-                    "within bounds",
-                metric=f"{passing} of {len(judged)} scenarios in the expected direction",
-                value=share_passing(cases), threshold=SIGNS_BAR)
+    return within_misses("scenario_mapper", "golden", "live", cases,
+                         bar=f"At most {SIGNS_MAX_MISSES} of {len(cases)} golden scenarios mapped against the expected "
+                             "direction, all within bounds",
+                         metric=f"{passing} of {len(judged)} scenarios in the expected direction", judged=len(judged),
+                         misses=len(judged) - passing, max_misses=SIGNS_MAX_MISSES)
 
 
 @suite("scenario_mapper", kind="red_team", tier="live")

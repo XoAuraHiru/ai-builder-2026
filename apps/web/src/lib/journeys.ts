@@ -46,7 +46,7 @@ export const JOURNEYS: Journey[] = [
       { title: "Approve a request", detail: "Use the code from the demo authenticator. You cannot approve your own.", href: "/operations/approvals", action: "Open Approvals" },
       { title: "Decide the agent's matches", detail: "Accept or reject what the reconciliation agent proposed.", href: "/operations/reconciliation", action: "Open Reconciliation" },
     ] },
-  { email: "omar@atrium.demo", title: "Omar's story", intro: "Deciding alerts with the exact rows behind them and a cited second opinion.",
+  { email: "omar@atrium.demo", title: "Omar's story", intro: "Deciding alerts, finding fraud rings across the whole lifecycle, and governing every model.",
     steps: [
       { title: "Review an alert", detail: "Open any alert: its evidence, who is linked, and a Gemini Pro case review.", href: "/compliance", match: "^/compliance/alerts/", action: "Open Alerts" },
       { title: "Look at a fraud ring", detail: "Four identities and a client account joined by one device, explained by Gemini.", href: "/compliance/rings", action: "Open Fraud rings" },
