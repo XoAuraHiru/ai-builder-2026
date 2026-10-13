@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { attentionHeadline, deviceId, groupByStage, scoreTone, STAGES, strongestSignal, triage, trustTone, type Lead } from "./leads";
+import {
+  attentionHeadline, deviceId, groupByStage, scoreTone, signedWeight, sourceLabel, STAGES, strongestSignal, timeAgo, topSignals, triage,
+  TRUST_SEGMENTS, trustMeter, trustTone, type Lead,
+} from "./leads";
 
 const lead = (id: string, stage: Lead["stage"], score: number | null, name = id) =>
   ({ id, stage, lead_score: score, full_name: name }) as Lead;
@@ -58,5 +61,47 @@ describe("triage", () => {
     expect(attentionHeadline([scored("x", { trust_band: "blocked" }), scored("y", { trust_band: "blocked" })])).toBe("2 leads need a look before anyone calls them.");
     expect(strongestSignal(ring[0])).toBe("Many leads from one device");
     expect(strongestSignal(scored("z", {}))).toBeNull();
+  });
+  it("finds the strongest signal by the size of its deduction, as the API sends them (negative)", () => {
+    const l = scored("x", { trust_signals: [signal("T02", "Phone not in international format", -10), signal("T01", "Disposable email domain", -25)] });
+    expect(strongestSignal(l)).toBe("Disposable email domain");
+    expect(topSignals(l, 1).map((s) => s.code)).toEqual(["T01"]);
+    expect(topSignals(l).map((s) => s.code)).toEqual(["T01", "T02"]);
+  });
+});
+
+describe("trust meter", () => {
+  it("fills one of 20 segments per 5 points, in the band's colour", () => {
+    expect(TRUST_SEGMENTS).toBe(20);
+    expect(trustMeter(23, "high_risk")).toEqual({ filled: 5, tone: "coral" });
+    expect(trustMeter(50, "review")).toEqual({ filled: 10, tone: "amber" });
+    expect(trustMeter(100, "clear")).toEqual({ filled: 20, tone: "green" });
+    expect(trustMeter(60, "blocked")).toEqual({ filled: 12, tone: "coral" });
+  });
+  it("keeps a non-zero score visible, empties a zero, and shows nothing before scoring", () => {
+    expect(trustMeter(2, "high_risk")).toEqual({ filled: 1, tone: "coral" });
+    expect(trustMeter(0, "blocked")).toEqual({ filled: 0, tone: "coral" });
+    expect(trustMeter(null, null)).toEqual({ filled: 0, tone: "none" });
+    expect(trustMeter(140, "clear").filled).toBe(20);
+  });
+});
+
+describe("signal and lead wording", () => {
+  it("signs weights with a true minus", () => {
+    expect([signedWeight(-25), signedWeight(6), signedWeight(0)]).toEqual(["−25", "+6", "0"]);
+  });
+  it("names where a lead came from", () => {
+    expect([sourceLabel("web"), sourceLabel("referral"), sourceLabel("event"), sourceLabel("fax")]).toEqual(
+      ["Web enquiry", "Referral", "Event", "Fax"]);
+  });
+  it("says how long ago, reading the API's zone-less times as UTC", () => {
+    const now = new Date("2026-10-13T12:00:00Z");
+    expect(timeAgo("2026-10-13T11:59:40", now)).toBe("just now");
+    expect(timeAgo("2026-10-13T11:59:00", now)).toBe("1 minute ago");
+    expect(timeAgo("2026-10-13T11:35:00Z", now)).toBe("25 minutes ago");
+    expect(timeAgo("2026-10-13T10:00:00", now)).toBe("2 hours ago");
+    expect(timeAgo("2026-10-12T09:00:00", now)).toBe("yesterday");
+    expect(timeAgo("2026-10-09T12:00:00", now)).toBe("4 days ago");
+    expect(timeAgo("2026-09-01T12:00:00", now)).toBe("Sep 1, 2026");
   });
 });
