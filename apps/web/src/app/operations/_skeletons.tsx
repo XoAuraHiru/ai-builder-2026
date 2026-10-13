@@ -70,12 +70,13 @@ export function ChipsSkeleton({ count = 3 }: { count?: number }) {
 }
 
 /** A table card: its title and description, header cells and rows on hairlines. `widths` sets each column's share;
- *  `tile` puts a fund tile in the first column (or the column it names), and `chip` a status chip in the last. On a
- *  phone the rows become the stacked list the desks show there. */
+ *  `tile` puts a fund tile in the first column (or the column it names), and `chip` a status chip in the last (or the
+ *  column it names). On a phone the rows become the stacked list the desks show there. */
 export function TableCardSkeleton({ rows = 6, widths = [2, 1, 1, 1], tile = false, title = true, chip = false }:
-  { rows?: number; widths?: number[]; tile?: boolean | number; title?: boolean; chip?: boolean }) {
+  { rows?: number; widths?: number[]; tile?: boolean | number; title?: boolean; chip?: boolean | number }) {
   const columns = { gridTemplateColumns: widths.map((w) => `${w}fr`).join(" ") };
   const tileCol = tile === true ? 0 : tile === false ? -1 : tile;
+  const chipCol = chip === true ? widths.length - 1 : chip === false ? -1 : chip;
   const lead = (withTile: boolean) => (
     <span className="flex items-center gap-2.5">
       {withTile && <Skeleton className="h-7 w-11 shrink-0 rounded-tile" />}
@@ -98,7 +99,7 @@ export function TableCardSkeleton({ rows = 6, widths = [2, 1, 1, 1], tile = fals
           <div key={r} className="grid items-center gap-4 border-b border-sand-100 py-3.5 last:border-b-0" style={columns}>
             {widths.map((_, c) => (
               c === 0 || c === tileCol ? <span key={c}>{lead(c === tileCol)}</span>
-                : c === widths.length - 1 && chip ? <Skeleton key={c} className="h-[26px] w-24 rounded-full" />
+                : c === chipCol ? <Skeleton key={c} className="h-[26px] w-24 rounded-full" />
                   : <Skeleton key={c} className={`h-3.5 ${c % 2 ? "w-3/4" : "w-1/2"}`} />
             ))}
           </div>
@@ -111,7 +112,7 @@ export function TableCardSkeleton({ rows = 6, widths = [2, 1, 1, 1], tile = fals
             <span className="flex min-w-0 flex-1 flex-col gap-2">
               <span className="flex justify-between gap-3"><Skeleton className="h-3.5 w-2/5" /><Skeleton className="h-3.5 w-16" /></span>
               <Skeleton className="h-3 w-4/5" />
-              {chip && <Skeleton className="h-[26px] w-24 rounded-full" />}
+              {chipCol >= 0 && <Skeleton className="h-[26px] w-24 rounded-full" />}
             </span>
           </div>
         ))}
