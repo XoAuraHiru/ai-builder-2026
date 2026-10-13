@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.events import emit
 from app.ml.lead_features import PHONE_RE
-from app.models import IdentityCheck, Lead
+from app.models import IdentityCheck, Lead, Person, RingFlag
 
 DISPOSABLE_DOMAINS = frozenset({
     "mailinator.com", "guerrillamail.com", "10minutemail.com", "tempmail.com", "temp-mail.org", "yopmail.com",
@@ -104,8 +104,21 @@ def _identity_signals(identity: IdentityCheck | None) -> list[TrustSignal]:
             for f in identity.findings]
 
 
+def _ring_signals(db: Session, lead: Lead) -> list[TrustSignal]:
+    """T09: a compliance person flagged the lead as part of a fraud ring (one signal, however many rings)."""
+    flag = db.scalar(select(RingFlag).where(RingFlag.lead_id == lead.id).order_by(RingFlag.created_at).limit(1))
+    if flag is None:
+        return []
+    who = db.get(Person, flag.flagged_by)
+    day = flag.created_at
+    return [TrustSignal("T09", "Part of a fraud ring", -25,
+                        f"Flagged by {who.full_name if who else 'compliance'} on {day:%B} {day.day}, {day.year}",
+                        "rings", False)]
+
+
 def assess_trust(db: Session, lead: Lead, enrichment: dict | None, identity: IdentityCheck | None) -> TrustReport:
-    signals = _contact_signals(db, lead) + _enrichment_signals(enrichment) + _identity_signals(identity)
+    signals = (_contact_signals(db, lead) + _enrichment_signals(enrichment) + _identity_signals(identity)
+               + _ring_signals(db, lead))
     signals.sort(key=lambda s: (s.code[0] != "T", int(s.code[1:]), s.evidence))
     score = max(0, min(100, 100 + sum(s.weight for s in signals)))
     blocked = any(s.blocking for s in signals)

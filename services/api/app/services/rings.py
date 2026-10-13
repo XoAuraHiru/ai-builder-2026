@@ -22,16 +22,20 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.ai.decisions import record_decision
 from app.ai.figures import collect_figures, unsupported_figures
 from app.ai.llm import LLM
 from app.config import get_settings
+from app.events import emit
 from app.governance.breakers import ensure_closed
-from app.models import Account, AccountDevice, AmlAlert, IdentityCheck, Lead, LeadConversion, Person
+from app.models import Account, AccountDevice, AmlAlert, IdentityCheck, Lead, LeadConversion, Person, RingFlag
+from app.models.base import utcnow
 from app.services.blind_index import blind_index
 from app.services.devices import aware, device_hash
+from app.services.trust import apply_trust
 
 STRONG = ("bank", "device", "document", "phone", "email")
 WEAK = ("ip",)
@@ -41,6 +45,7 @@ RECENT_HOURS = 48
 STRONG_TRUST_WEIGHT = -20  # trust signals at least this heavy are listed among a lead's flags
 DOCUMENT_TYPES = {"passport": "passport", "drivers_license": "driver's license", "national_id": "national ID"}
 OPEN_ALERT_STATES = ("open", "escalated")
+SEVERITY_RANK = {"high": 0, "medium": 1, "low": 2}
 RING_SCENARIO = "ring"
 
 
@@ -260,10 +265,10 @@ def build_graph(db: Session) -> Graph:
         if lead.converted_person_id and lead.id not in converted:
             converted[lead.id] = lead.converted_person_id
     alerts: dict[str, list[AmlAlert]] = defaultdict(list)
-    for alert in db.scalars(select(AmlAlert).where(AmlAlert.state.in_(OPEN_ALERT_STATES),
-                                                   AmlAlert.scenario != RING_SCENARIO)
-                            .order_by(AmlAlert.created_at)).all():
-        alerts[alert.person_id].append(alert)
+    open_alerts = db.scalars(select(AmlAlert).where(AmlAlert.state.in_(OPEN_ALERT_STATES),
+                                                    AmlAlert.scenario != RING_SCENARIO)).all()
+    for alert in sorted(open_alerts, key=lambda a: (SEVERITY_RANK.get(a.severity, 3), aware(a.created_at), a.id)):
+        alerts[alert.person_id].append(alert)  # the most severe first: it is the flag the page leads with
 
     # Clients first, so each entity exists before the converted leads' identifiers attach to it.
     client_ids = {pid for pid in accounts} | {pid for pid in converted.values() if pid in people}
@@ -406,3 +411,103 @@ def narrate_ring(db: Session, llm: LLM, ring: Ring, graph: Graph | None = None) 
     text = " ".join([draft.summary, *(p.text for p in draft.parts), *draft.next_checks])
     return {"narrative": narrative, "dropped_citations": len(dropped), "model": result.model,
             "unsupported_figures": unsupported_figures(text, collect_figures(facts))}
+
+
+# ---- A person's actions: open a case, flag the leads ---------------------------------------------------------------
+
+class RingError(Exception):
+    def __init__(self, status: int, message: str):
+        super().__init__(message)
+        self.status = status
+
+
+NO_CLIENT = "This ring has no client, so there is no one to open a case on; flag the leads instead."
+NO_LEADS = "This ring has no leads to flag; open a case on its clients instead."
+VERB = {"bank": "pays from", "device": "used", "document": "showed", "phone": "gave", "email": "gave",
+        "ip": "applied from"}
+
+
+def ring_fingerprint(ring_id_: str) -> str:
+    return hashlib.sha256(f"{RING_SCENARIO}|{ring_id_}".encode()).hexdigest()
+
+
+def case_for(db: Session, ring_id_: str) -> AmlAlert | None:
+    return db.scalar(select(AmlAlert).where(AmlAlert.fingerprint == ring_fingerprint(ring_id_)))
+
+
+def flagged_lead_ids(db: Session, ring_id_: str) -> set[str]:
+    return set(db.scalars(select(RingFlag.lead_id).where(RingFlag.ring_id == ring_id_)).all())
+
+
+def _day(moment: datetime) -> str:
+    return f"{moment:%B} {moment.day}, {moment.year}"
+
+
+def link_detail(link: Link, graph: Graph) -> str:
+    entity, ident = graph.entities[link.entity], graph.identifiers[link.identifier]
+    weak = "" if link.strong else " (a weak link)"
+    return f"{entity.label} ({entity.kind}) {VERB.get(ident.kind, 'shares')} {ident.label}{weak}"
+
+
+def open_case(db: Session, ring: Ring, by: Person, graph: Graph | None = None) -> AmlAlert:
+    """An open AML alert of scenario `ring` on the client member with the most flags, with one evidence row per link.
+    One case per ring: a second request names the case already opened."""
+    graph = graph or build_graph(db)
+    clients = [graph.entities[m] for m in ring.members if graph.entities[m].kind == "client"]
+    if not clients:
+        raise RingError(409, NO_CLIENT)
+    existing = case_for(db, ring.id)
+    if existing is not None:
+        raise RingError(409, f"This ring already has a case: \"{existing.title}\", {existing.state}, raised "
+                             f"{_day(aware(existing.created_at))}.")
+    subject = sorted(clients, key=lambda e: (-len(e.flags), not e.flagged, e.label, e.id))[0]
+    person_id = subject.id.split(":", 1)[1]
+    account = db.scalar(select(Account).where(Account.person_id == person_id)
+                        .order_by(Account.opened_on, Account.number).limit(1))
+    now = utcnow()
+    sharing = len(ring.strongest_members)
+    lead_and_client = " across leads and clients" if ring.stages == ["lead", "client"] else ""
+    first = (f"{len(ring.members)} identities share {ring.strongest}" if sharing == len(ring.members)
+             else f"{sharing} of {len(ring.members)} identities share {ring.strongest}")
+    summary = (f"{first}{lead_and_client}, among {len(ring.identifiers)} shared "
+               f"identifier{'s' if len(ring.identifiers) != 1 else ''}. Ring score {ring.score} of 100. Opened from "
+               f"the fraud ring radar by {by.full_name}.")
+    evidence = [{"kind": "ring_link", "id": link.id, "date": aware(link.seen_at or now).date().isoformat(),
+                 "amount": None, "detail": link_detail(link, graph)} for link in ring.links]
+    alert = AmlAlert(scenario=RING_SCENARIO, title=f"Possible fraud ring of {len(ring.members)} identities",
+                     severity="high" if ring.score >= 70 else "medium", score=round(ring.score / 100, 2),
+                     person_id=person_id, account_id=account.id if account else None, summary=summary,
+                     evidence=evidence, fingerprint=ring_fingerprint(ring.id), state="open")
+    try:
+        with db.begin_nested():
+            db.add(alert)
+    except IntegrityError as e:  # someone opened it a moment ago
+        raise RingError(409, "This ring already has a case; reload it.") from e
+    db.flush()
+    emit("AlertRaised", {"alert_id": alert.id, "scenario": RING_SCENARIO, "severity": alert.severity,
+                         "person_id": person_id})
+    return alert
+
+
+def flag_leads(db: Session, ring: Ring, by: Person, graph: Graph | None = None) -> int:
+    """Flag every lead member not already flagged for this ring (trust signal T09), and rescore each one."""
+    graph = graph or build_graph(db)
+    lead_ids = [m.split(":", 1)[1] for m in ring.members if graph.entities[m].kind == "lead"]
+    if not lead_ids:
+        raise RingError(409, NO_LEADS)
+    done = flagged_lead_ids(db, ring.id)
+    newly = 0
+    for lead_id in lead_ids:
+        if lead_id in done:
+            continue
+        try:
+            with db.begin_nested():
+                db.add(RingFlag(lead_id=lead_id, ring_id=ring.id, flagged_by=by.id))
+        except IntegrityError:  # flagged by someone else a moment ago
+            continue
+        db.flush()
+        apply_trust(db, db.get(Lead, lead_id))
+        newly += 1
+    if newly:
+        emit("RingLeadsFlagged", {"ring_id": ring.id, "leads": newly, "by": by.id})
+    return newly
