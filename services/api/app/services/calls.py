@@ -225,23 +225,57 @@ def _ends(transcript: list[Segment]) -> list[tuple[Segment, float]]:
     return [(s, ordered[i + 1].start_s if i + 1 < len(ordered) else float("inf")) for i, s in enumerate(ordered)]
 
 
-def quote_found(quote: str, transcript: list[Segment], start_s: float, window_s: float = WINDOW_S) -> bool:
-    """True when the normalised quote is in, or at least 85% similar to a stretch of the same length of, what was said
-    in the segments that overlap the window_s seconds either side of start_s. A segment runs until the next starts."""
+# A sentence ends at . ! or ? followed by a space, but not after a title, and never inside "8.5".
+SENTENCE_END = re.compile(r"(?<!\bMr\.)(?<!\bMrs\.)(?<!\bMs\.)(?<!\bDr\.)(?<!\bSt\.)(?<=[.!?])\s+")
+NEGATIONS = {"not", "no", "never", "nothing", "none", "neither", "nor", "without", "cant", "cannot", "dont", "doesnt",
+             "didnt", "wont", "wouldnt", "shouldnt", "couldnt", "isnt", "arent", "wasnt", "werent", "aint", "havent",
+             "hasnt"}
+
+
+def sentences(text: str) -> list[str]:
+    return [s.strip() for s in SENTENCE_END.split(text or "") if s.strip()]
+
+
+def _sense(words: list[str]) -> tuple[list[str], list[str]]:
+    """What a stretch of words must keep to mean the same thing: its figures and its negations."""
+    return sorted(w for w in words if w[0].isdigit()), sorted(w for w in words if w in NEGATIONS)
+
+
+def quote_found(quote: str, transcript: list[Segment], start_s: float, window_s: float = WINDOW_S,
+                roles: set[str] | frozenset[str] | None = None) -> bool:
+    """True when the quote (normalised, at least two words) was said, by a speaker in `roles` if given, in a segment
+    that overlaps the window_s seconds either side of start_s; a segment runs until the next one starts. A stretch of
+    the same length (give or take a word) at least 85% similar also counts, but only if it has the same figures and
+    the same negations; and no match counts when a negation just before it, in the same sentence, flips its meaning."""
     wanted = normalise_text(quote).split()
-    if not wanted:
+    if len(wanted) < 2:
         return False
-    near = [normalise_text(s.text) for s, end in _ends(transcript)
-            if s.start_s <= start_s + window_s and end >= start_s - window_s]
-    said = " ".join(t for t in near if t).split()
-    if not said:
-        return False
-    target = " ".join(wanted)
-    if f" {target} " in f" {' '.join(said)} ":
-        return True
-    for size in {max(1, len(wanted) - 1), len(wanted), len(wanted) + 1}:
-        for i in range(0, max(0, len(said) - size) + 1):
-            if SequenceMatcher(None, target, " ".join(said[i:i + size]), autojunk=False).ratio() >= FUZZY:
+    said: list[tuple[str, int]] = []  # (word, sentence number)
+    for n, (s, end) in enumerate(_ends(transcript)):
+        if roles is not None and s.role not in roles:
+            continue
+        if s.start_s <= start_s + window_s and end >= start_s - window_s:
+            for k, sentence in enumerate(sentences(s.text)):
+                said += [(w, n * 1000 + k) for w in normalise_text(sentence).split()]
+    words = [w for w, _ in said]
+    target, sense = " ".join(wanted), _sense(wanted)
+    negated_quote = bool(sense[1])
+
+    def unflipped(i: int) -> bool:
+        if negated_quote:
+            return True
+        sentence = said[i][1]
+        return not any(w in NEGATIONS for w, k in said[max(0, i - 3):i] if k == sentence)
+
+    n = len(wanted)
+    for i in range(0, len(words) - n + 1):
+        if words[i:i + n] == wanted and unflipped(i):
+            return True
+    for size in {max(2, n - 1), n, n + 1}:
+        for i in range(0, len(words) - size + 1):
+            stretch = words[i:i + size]
+            if (_sense(stretch) == sense and unflipped(i)
+                    and SequenceMatcher(None, target, " ".join(stretch), autojunk=False).ratio() >= FUZZY):
                 return True
     return False
 
@@ -314,25 +348,43 @@ def _in_call(start_s: float, duration_s: float) -> bool:
     return 0 <= start_s <= duration_s
 
 
+# Whose words can ground what. A promise or a recommendation is the advisor's; confusion and the client's stated
+# changes are the client's; pressure and a third party's direction may come from anyone on the call. "unknown" is
+# always allowed, so a speaker Gemini could not place does not lose a real flag.
+FLAG_SPEAKERS: dict[str, frozenset[str] | None] = {
+    "promissory": frozenset({"advisor", "unknown"}), "unsuitable": frozenset({"advisor", "unknown"}),
+    "confusion": frozenset({"client", "unknown"}), "pressure": None, "third_party_direction": None}
+UPDATE_SPEAKERS = frozenset({"client", "unknown"})
+AMOUNTS = ("investable_usd", "monthly_usd")
+
+
+def _states_amount(quote: str, value: str) -> bool:
+    """An amount must be the one its quote states ("two thousand dollars a month" can only propose 2000)."""
+    return any(Decimal(w) == Decimal(value) for w in normalise_text(quote).split() if w[0].isdigit())
+
+
 def ground(reading: CallReading, lead: Lead) -> tuple[CallReading, dict]:
     """Keep only what the transcript supports. Returns the kept reading and how many items of each kind were dropped:
-    flags, updates and facts outside the call or whose quote is not found, and updates whose value is not valid."""
+    flags, updates and facts outside the call or whose quote is not found in the right speaker's words, and updates
+    whose value is not valid or, for an amount, is not the amount its quote states."""
     transcript = sorted(reading.transcript, key=lambda s: s.start_s)
     duration = max([reading.duration_s] + [s.start_s for s in transcript])
     dropped = {"flags": 0, "updates": 0, "facts": 0, "invalid_updates": 0}
     flags: list[Flag] = []
     for f in reading.flags:
-        if not _in_call(f.start_s, duration) or not quote_found(f.quote, transcript, f.start_s):
+        if not _in_call(f.start_s, duration) or not quote_found(f.quote, transcript, f.start_s,
+                                                                roles=FLAG_SPEAKERS[f.kind]):
             dropped["flags"] += 1
             continue
         flags.append(f.model_copy(update={"rule": RULE_NAMES[f.kind], "source": "gemini"}))
     updates: list[Update] = []
     for u in reading.updates:
-        if not _in_call(u.start_s, duration) or not quote_found(u.quote, transcript, u.start_s):
+        if not _in_call(u.start_s, duration) or not quote_found(u.quote, transcript, u.start_s,
+                                                                roles=UPDATE_SPEAKERS):
             dropped["updates"] += 1
             continue
         value = parse_value(u.field, u.proposed)
-        if value is None:
+        if value is None or (u.field in AMOUNTS and not _states_amount(u.quote, value)):
             dropped["invalid_updates"] += 1
             continue
         current = current_value(lead, u.field)
@@ -346,8 +398,7 @@ def ground(reading: CallReading, lead: Lead) -> tuple[CallReading, dict]:
     return kept, dropped
 
 
-SENTENCE = re.compile(r"[^.!?]+[.!?]*")
-RULE_KINDS = {"guarantee": ("promissory", "high"), "promissory": ("promissory", "high"),
+RULE_KINDS ={"guarantee": ("promissory", "high"), "promissory": ("promissory", "high"),
               "unbalanced_performance": ("promissory", "medium"), "urgency": ("pressure", "medium")}
 
 
@@ -358,7 +409,7 @@ def rule_flags(reading: CallReading) -> list[Flag]:
         if s.role != "advisor":
             continue
         text = s.text.replace("’", "'").replace("‘", "'")
-        for sentence in (m.group(0).strip() for m in SENTENCE.finditer(text)):
+        for sentence in sentences(text):
             findings = [f for f in _rule_findings(sentence) if f.rule in RULE_KINDS]
             if not findings:
                 continue

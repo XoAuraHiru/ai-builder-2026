@@ -118,6 +118,14 @@ export function updateLine(update: Pick<CallUpdate, "field" | "current" | "propo
   return `${FIELD_LABEL[update.field]}: ${fieldValue(update.field, update.current)} → ${fieldValue(update.field, update.proposed)}`;
 }
 
+/** The demo calls and the synthetic leads they were recorded with; the API refuses a demo call on any other lead. */
+const DEMO_LEAD: Record<string, DemoCall> = { "ruth.alvarez@example.test": "pressure", "emma.walsh@example.com": "discovery" };
+
+/** The demo call this lead can analyse, if any. */
+export function demoFor(email: string): DemoCall | null {
+  return DEMO_LEAD[email.trim().toLowerCase()] ?? null;
+}
+
 /** The demo call a reading came from, so the page can play it; null for an uploaded recording (never stored). */
 export function demoName(call: Pick<LeadCall, "source" | "filename">): DemoCall | null {
   if (call.source !== "demo") return null;

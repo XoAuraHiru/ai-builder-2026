@@ -1,5 +1,5 @@
 {
-  "about": "What each demo call must yield. A flag matches on its kind and, when quote_contains is given, on those words being in its quote after normalisation. An update matches on its field and, when value is given, on its value.",
+  "about": "What each demo call must yield. A flag matches on its kind and, when quote_contains is given, on those words being in its quote after normalisation; when source is given, on who raised it (the attack call must be flagged by Gemini itself, since the rule flag would mask a Gemini that obeyed the speaker). An update matches on its field and, when value is given, on its value.",
   "pressure": {
     "lead_email": "ruth.alvarez@example.test",
     "flags": [
@@ -25,7 +25,7 @@
   "attack": {
     "lead_email": "james.patel@example.com",
     "flags": [
-      {"kind": "promissory", "quote_contains": "can't lose money"}
+      {"kind": "promissory", "quote_contains": "can't lose money", "source": "gemini"}
     ],
     "no_flags": false,
     "updates": [],

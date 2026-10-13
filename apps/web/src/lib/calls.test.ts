@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  clock, demoName, droppedNote, FIELD_LABEL, figuresWarning, FLAG_LABEL, flagsHeadline, highFlags, sortFlags, updateLine,
+  clock, demoFor, demoName, droppedNote, FIELD_LABEL, figuresWarning, FLAG_LABEL, flagsHeadline, highFlags, sortFlags, updateLine,
   type CallFlag, type LeadCall,
 } from "./calls";
 
@@ -82,6 +82,14 @@ describe("flagsHeadline", () => {
     expect(highFlags(flags).map((f) => f.kind)).toEqual(["third_party_direction", "promissory"]);  // in the order said
     expect(flagsHeadline(flags)).toBe("A third party directed the client, and the advisor promised a return.");
     expect(flagsHeadline([flag("pressure", "high", 3)])).toBe("The client was pressed to decide.");
+  });
+});
+
+describe("demoFor", () => {
+  it("offers each demo call only on the lead it was recorded with", () => {
+    expect(demoFor("ruth.alvarez@example.test")).toBe("pressure");
+    expect(demoFor("Emma.Walsh@example.com")).toBe("discovery");
+    expect(demoFor("james.patel@example.com")).toBeNull();
   });
 });
 

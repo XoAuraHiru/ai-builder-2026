@@ -1,5 +1,5 @@
 {
-  "about": "A recorded reading of the pressure call with one real flag, quoted with digits where the transcript has words, and one fabricated flag whose words were never said. Grounding must keep the first and drop the second.",
+  "about": "A recorded reading of the pressure call with one real flag, quoted with digits where the transcript has words; one fabricated flag whose words were never said; and one near miss that flips what was said (\"usually\" became \"never\"). Grounding must keep the first and drop the other two.",
   "lead": {
     "source": "referral",
     "full_name": "Ruth Alvarez",
@@ -157,11 +157,19 @@
         "start_s": 78.11,
         "rule": "FINRA Rule 2210",
         "why": "It promises a doubled return."
+      },
+      {
+        "kind": "unsuitable",
+        "severity": "high",
+        "quote": "We never go through the documents with the client directly",
+        "start_s": 75.11,
+        "rule": "Regulation Best Interest",
+        "why": "The advisor says the client never sees the documents."
       }
     ]
   },
   "kept": [
     "the growth fund basically guarantees 8% a year"
   ],
-  "dropped": 1
+  "dropped": 2
 }

@@ -7,17 +7,17 @@ from typing import Literal
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.ai.llm import LLM, LLMError, get_llm
 from app.auth import CurrentUser, require_roles
 from app.db import get_db
 from app.governance.breakers import BreakerOpen
-from app.models import LeadCall, Person
+from app.models import Lead, LeadCall, Person
 from app.routers.leads import lead_or_404
 from app.schemas.leads import LeadOut
-from app.seed.calls import DEMO_CALLS, demo_audio
+from app.seed.calls import DEMO_CALLS, demo_audio, demo_script
 from app.services.calls import MAX_BYTES, TOO_LARGE, CallError, UpdateField, analyze_call, apply_updates
 
 log = logging.getLogger(__name__)
@@ -95,6 +95,13 @@ def upload_call(lead_id: str, file: UploadFile = File(...), db: Session = Depend
 @router.post("/leads/{lead_id}/calls/demo", response_model=CallOut, status_code=201)
 def analyse_demo_call(lead_id: str, body: DemoIn, db: Session = Depends(get_db), llm: LLM = Depends(get_llm),
                       user: CurrentUser = Depends(staff)):
+    # A demo call belongs to the lead it was recorded with: read on any other lead it would put another person's
+    # words, flags and trust signal on that lead's record.
+    owner_email = demo_script(body.name)["lead_email"]
+    if lead_or_404(db, lead_id).email.lower() != owner_email:
+        owner = db.scalar(select(Lead.full_name).where(func.lower(Lead.email) == owner_email)) or "another lead"
+        raise HTTPException(status_code=422, detail=f"The {body.name} demo call was recorded with {owner}; "
+                                                    "open that lead to analyse it.")
     return _analyse(db, llm, lead_id, user, data=demo_audio(body.name).read_bytes(), mime_type="audio/mpeg",
                     filename=f"{body.name}.mp3", source="demo")
 

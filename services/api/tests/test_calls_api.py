@@ -114,6 +114,16 @@ def test_the_attack_call_is_not_offered_as_a_demo(client, ruth):
     assert client.post(f"/leads/{ruth.id}/calls/demo", json={"name": "attack"}, headers=STAFF).status_code == 422
 
 
+def test_a_demo_call_is_analysed_only_on_its_own_lead(client, db, ruth, emma):
+    llm = answer(client, PRESSURE)
+    wrong = client.post(f"/leads/{emma.id}/calls/demo", json={"name": "pressure"}, headers=STAFF)
+    assert wrong.status_code == 422 and "Ruth Alvarez" in wrong.json()["detail"]
+    other = client.post(f"/leads/{ruth.id}/calls/demo", json={"name": "discovery"}, headers=STAFF)
+    assert other.status_code == 422 and "Emma Walsh" in other.json()["detail"]
+    assert llm.calls == [] and db.query(LeadCall).count() == 0
+    assert "T08" not in [s["code"] for s in client.get(f"/leads/{emma.id}", headers=STAFF).json()["trust_signals"] or []]
+
+
 def test_calls_list_newest_first(client, ruth):
     answer(client, PRESSURE)
     first = client.post(f"/leads/{ruth.id}/calls/demo", json={"name": "pressure"}, headers=STAFF).json()

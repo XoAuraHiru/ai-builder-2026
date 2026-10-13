@@ -17,7 +17,8 @@ type Busy = "" | DemoCall | "upload";
 
 /** The Calls section of a lead: analyse a recording, see the conduct flags at the second they were said, apply the
  * updates the client stated, and read the transcript. Gemini proposes; the advisor decides. */
-export function CallsSection({ leadId, onChange }: { leadId: string; onChange: () => Promise<void> }) {
+export function CallsSection({ leadId, demoCall, onChange }:
+  { leadId: string; demoCall: DemoCall | null; onChange: () => Promise<void> }) {
   const [calls, setCalls] = useState<LeadCall[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState<Busy>("");
@@ -88,19 +89,20 @@ export function CallsSection({ leadId, onChange }: { leadId: string; onChange: (
     <Section id="calls" title="Calls"
       description="Gemini listens to a recorded call and proposes; you decide. A flag or update whose words are not in the transcript is dropped. The audio is never stored, only the reading.">
       <div className="flex flex-wrap items-center gap-2.5">
-        <Button busy={busy === "pressure"} disabled={Boolean(busy)} onClick={() => runDemo("pressure")}>
-          {busy === "pressure" ? LISTENING : "Analyse the pressure call"}
-        </Button>
-        <Button variant="secondary" busy={busy === "discovery"} disabled={Boolean(busy)} onClick={() => runDemo("discovery")}>
-          {busy === "discovery" ? LISTENING : "Analyse the discovery call"}
-        </Button>
-        <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full border border-line-strong bg-surface px-5 text-sm font-semibold text-ink hover:border-ink focus-within:border-ink ${busy ? "pointer-events-none opacity-60" : ""}`}>
+        {demoCall && (
+          <Button busy={busy === demoCall} disabled={Boolean(busy)} onClick={() => runDemo(demoCall)}>
+            {busy === demoCall ? LISTENING : `Analyse the ${demoCall} call`}
+          </Button>
+        )}
+        <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold ${demoCall ? "border border-line-strong bg-surface text-ink hover:border-ink focus-within:border-ink" : "bg-ink text-white hover:bg-[#26343f]"} ${busy ? "pointer-events-none opacity-60" : ""}`}>
           {busy === "upload" ? LISTENING : "Upload a recording"}
           <input type="file" accept={ACCEPT} className="sr-only" disabled={Boolean(busy)}
             onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ""; }} />
         </label>
       </div>
-      <p className="mt-2 text-xs text-muted">MP3, WAV, M4A or OGG, up to 20 MB. The demo calls are synthetic voices reading a script.</p>
+      <p className="mt-2 text-xs text-muted">
+        MP3, WAV, M4A or OGG, up to 20 MB.{demoCall && ` The ${demoCall} call is a demo recorded for this lead: synthetic voices reading a script.`}
+      </p>
       {busy && <p role="status" className="mt-3 text-sm text-daylight-ink">{LISTENING} A three-minute call takes about half a minute.</p>}
       {error && <div className="mt-4"><Notice tone="error" title="The call could not be analysed">{error}</Notice></div>}
       {calls === null ? <p role="status" className="mt-6 text-sm text-muted">Loading the calls…</p>
