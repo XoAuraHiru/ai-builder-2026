@@ -98,7 +98,67 @@ export function attentionHeadline(attention: Lead[]): string {
   return `${attention.length} leads need a look before anyone calls them.`;
 }
 
+/** A lead's trust signals, the largest deduction first (the API sends deductions as negative weights). */
+export function topSignals(lead: Pick<Lead, "trust_signals">, limit?: number): TrustSignal[] {
+  const sorted = [...(lead.trust_signals ?? [])].sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight));
+  return limit === undefined ? sorted : sorted.slice(0, limit);
+}
+
 export function strongestSignal(lead: Lead): string | null {
-  const signals = [...(lead.trust_signals ?? [])].sort((a, b) => b.weight - a.weight);
-  return signals[0]?.label ?? null;
+  return topSignals(lead, 1)[0]?.label ?? null;
+}
+
+export const TRUST_SEGMENTS = 20;
+export type MeterTone = "coral" | "amber" | "green" | "none";
+
+/** The Trust Score as a 20-segment meter: one segment per 5 points (a non-zero score always shows one), coral for high
+ *  risk or blocked, amber for review, green for clear. Before scoring, nothing is filled. */
+export function trustMeter(score: number | null, band: TrustBand | null): { filled: number; tone: MeterTone } {
+  if (score === null || score === undefined || band === null) return { filled: 0, tone: "none" };
+  const capped = Math.max(0, Math.min(100, score));
+  const filled = capped > 0 ? Math.max(1, Math.round(capped / (100 / TRUST_SEGMENTS))) : 0;
+  return { filled, tone: band === "clear" ? "green" : band === "review" ? "amber" : "coral" };
+}
+
+/** A signal's weight as signed text with a true minus: "−25", "+6". */
+export function signedWeight(weight: number): string {
+  return weight > 0 ? `+${weight}` : weight < 0 ? `−${Math.abs(weight)}` : "0";
+}
+
+const SOURCE_LABEL: Record<string, string> = {
+  web: "Web enquiry", referral: "Referral", email: "Email reply", event: "Event", chat: "Chat",
+};
+
+export function sourceLabel(source: string): string {
+  return SOURCE_LABEL[source] ?? (source ? source[0].toUpperCase() + source.slice(1).replaceAll("_", " ") : "Unknown source");
+}
+
+export type ApplicationField = "full_name" | "email" | "goals" | "horizon_years" | "investable_usd";
+
+/** The prospect form's checks, one sentence per field to fix; empty when it can be sent. Phone stays optional and
+ *  unchecked here: its format is a trust signal for the advisor, not a reason to turn a prospect away. */
+export function applicationErrors(form: Record<ApplicationField, string>): Partial<Record<ApplicationField, string>> {
+  const out: Partial<Record<ApplicationField, string>> = {};
+  if (form.full_name.trim().length < 2) out.full_name = "Enter your full name.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) out.email = "Enter an email address, like name@example.com.";
+  if (form.goals.trim().length < 3) out.goals = "Tell us what you are investing for, in a few words.";
+  const years = Number(form.horizon_years);
+  if (form.horizon_years.trim() === "" || !Number.isInteger(years) || years < 0 || years > 50) out.horizon_years = "Choose between 0 and 50 years.";
+  if (!(Number(form.investable_usd) > 0)) out.investable_usd = "Enter how much you would invest now.";
+  return out;
+}
+
+/** How long ago, in words; past a week, the date. The API's times carry no zone and are UTC. */
+export function timeAgo(iso: string, now: Date = new Date()): string {
+  const utc = /(?:[zZ]|[+-]\d\d:?\d\d)$/.test(iso) ? iso : `${iso}Z`;
+  const then = new Date(utc);
+  const minutes = Math.floor((now.getTime() - then.getTime()) / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return minutes === 1 ? "1 minute ago" : `${minutes} minutes ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
+  if (hours < 48) return "yesterday";
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} days ago`;
+  return then.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 }

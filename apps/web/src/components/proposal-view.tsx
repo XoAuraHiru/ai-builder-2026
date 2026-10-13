@@ -1,5 +1,5 @@
 import { AiProse } from "@/components/ai-prose";
-import { Badge, RiskBand } from "@/components/ui";
+import { Badge, RiskBand, Sparkle } from "@/components/ui";
 
 export type Proposal = {
   id: string; created_at: string; created_by: string; band: number; allocation: Record<string, number>; model: string;
@@ -39,9 +39,14 @@ export function ProposalSections({ proposal }: { proposal: Proposal }) {
           <section key={s.key}>
             <h3 className="font-sans text-[15px] font-semibold">{s.heading}</h3>
             <p className="mt-1">{s.body}</p>
-            <p className="mt-1.5 flex flex-wrap gap-1 font-sans">
+            {/* Sources as white chips on the violet block; long titles wrap rather than run out of it. */}
+            <p className="mt-2 flex flex-wrap gap-1.5 font-sans">
               {s.citations.length === 0 && <Badge tone="caution">No source cited</Badge>}
-              {s.citations.map((c) => <Badge key={c} tone="ai">{c === "projection" ? "Simulation" : titles[c] ?? c}</Badge>)}
+              {s.citations.map((c) => (
+                <span key={c} className="inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-[14px] bg-white px-3 py-1 text-xs font-medium leading-4 text-ai-700">
+                  <span className="shrink-0"><Sparkle size={10} /></span>{c === "projection" ? "Simulation" : titles[c] ?? c}
+                </span>
+              ))}
             </p>
           </section>
         ))}
