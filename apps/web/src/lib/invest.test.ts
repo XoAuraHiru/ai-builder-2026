@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { riskState, type RiskReport } from "./invest";
 import { currentMix, parseMoney, scenarioKey, toggleScenario, verdictText } from "./invest";
-import { copilotHref, findingCard, heat, overlapLine, questionFrom, scaleMarks, sectorRows, shortName, topExposures,
+import { copilotHref, findingCard, findingCards, heat, overlapLine, questionFrom, scaleMarks, sectorRows, shortName, topExposures,
   type XRay } from "./invest";
 
 const SECTORS = [
@@ -77,6 +77,18 @@ describe("findingCard", () => {
     expect(findingCard({ code: "ONE_FUND", severity: "info", title: "All of your money is in one fund",
       message: "Everything is in Atrium Growth. That keeps things simple." }, X))
       .toMatchObject({ figure: "100%", sentence: "of your money is in Atrium Growth. That keeps things simple." });
+  });
+  it("folds several large companies into one card, keeping the other findings in order", () => {
+    const big = (name: string, pct: string) => ({ code: "CONC_COMPANY", severity: "caution" as const, title: "One company is a large share",
+      message: `${name} is ${pct}% of your portfolio, held through QQQ.` });
+    const cards = findingCards({ ...X, warnings: [big("Apple Inc.", "14.5"), big("NVIDIA Corp", "14.7"),
+      { code: "HOME_BIAS", severity: "info", title: "Mostly in the US", message: "95.0% of your money is in US stocks, bonds and T-bills." }] });
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toMatchObject({ title: "Two companies are each a large share", figure: "14.7%",
+      sentence: "of your portfolio is NVIDIA Corp, the largest of them" });
+    expect(cards[0].chips.map((c) => c.text)).toEqual(["Apple", "NVIDIA"]);
+    expect(cards[1].title).toBe("Mostly in the US");
+    expect(findingCards({ ...X, warnings: [big("Apple Inc.", "14.5")] })[0].figure).toBe("14.5%");
   });
   it("falls back to the message when it cannot find a figure", () => {
     expect(findingCard({ code: "NEW_RULE", severity: "info", title: "Something", message: "Plain words." }, X))

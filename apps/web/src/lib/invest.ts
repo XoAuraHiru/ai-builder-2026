@@ -169,6 +169,30 @@ export function findingCard(w: XRay["warnings"][number], x: Pick<XRay, "overlaps
   return { ...base, figure: null, sentence: w.message, chips: [] };
 }
 
+const COUNT_WORD = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
+
+/** The X-ray's findings as cards. Several "one company is a large share" warnings become one card naming the
+ *  companies, so the findings stay one row and the companies and sectors stay above the fold. */
+export function findingCards(x: Pick<XRay, "warnings" | "overlaps" | "companies">): Finding[] {
+  const big = x.warnings.filter((w) => w.code === "CONC_COMPANY");
+  if (big.length < 2) return x.warnings.map((w) => findingCard(w, x));
+  const cards = big.map((w) => ({ w, card: findingCard(w, x) }));
+  const pcts = cards.map(({ card }) => Number.parseFloat(card.figure ?? "0"));
+  const top = cards[pcts.indexOf(Math.max(...pcts))];
+  const name = (w: XRay["warnings"][number]) => w.message.split(" is ")[0];
+  const merged: Finding = {
+    key: "CONC_COMPANY-merged", title: `${COUNT_WORD[big.length] ?? big.length} companies are each a large share`, tone: "look",
+    figure: top.card.figure, sentence: `of your portfolio is ${name(top.w)}, the largest of them`,
+    chips: big.map((w) => ({ text: shortName(name(w)), mono: false })),
+  };
+  const out: Finding[] = [];
+  for (const w of x.warnings) {
+    if (w.code !== "CONC_COMPANY") out.push(findingCard(w, x));
+    else if (w === big[0]) out.push(merged);
+  }
+  return out;
+}
+
 /** The copilot link with a question waiting in the box, and the question read back from the page's address. */
 export function copilotHref(question: string): string {
   return `/investor/copilot?q=${encodeURIComponent(question)}`;

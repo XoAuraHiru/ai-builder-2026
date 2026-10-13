@@ -235,8 +235,8 @@ export default function InvestorHome() {
 
       <Section title="How it is spread">
         <div className="grid gap-4 lg:grid-cols-2">
-          <Panel className="p-6"><AllocationBar title="By asset class" slices={slices(portfolio.by_asset_class, ASSET)} total={total} /></Panel>
-          <Panel className="p-6"><AllocationBar title="By region" slices={slices(portfolio.by_region, REGION)} total={total} /></Panel>
+          <Panel className="min-w-0 p-6"><AllocationBar title="By asset class" slices={slices(portfolio.by_asset_class, ASSET)} total={total} /></Panel>
+          <Panel className="min-w-0 p-6"><AllocationBar title="By region" slices={slices(portfolio.by_region, REGION)} total={total} /></Panel>
         </div>
       </Section>
 
