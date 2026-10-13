@@ -102,7 +102,8 @@ def summarise(report: RunReport) -> dict:
     return {"passed": report.passed,
             "counts": {"suites": len(report.suites), "passed": sum(s.passed for s in report.suites)},
             "suites": [{"model_key": s.model_key, "kind": s.kind, "tier": s.tier, "bar": s.bar, "metric": s.metric,
-                        "passed": s.passed, "counts": s.counts, "cost_usd": s.cost_usd} for s in report.suites]}
+                        "passed": s.passed, "counts": s.counts, "cost_usd": s.cost_usd,
+                        "case_ids": [c.case_id[:80] for c in s.cases]} for s in report.suites]}
 
 
 def _jsonable(value):

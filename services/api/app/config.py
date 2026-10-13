@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     fund_search_location: str = "global"
     lead_capture_limit_per_hour: int = 20   # per device and per IP hash, checked before any AI call
     lead_capture_global_per_hour: int = 60  # all public submissions together: caps AI spend if identifiers are forged
+    evals_job: str = ""                     # projects/<p>/locations/<r>/jobs/atrium-evals; empty runs the free tier here
 
     market_data_provider: str = "fake"      # fake | yfinance | alpaca
     market_cache_dir: str = "data/cache"
