@@ -41,6 +41,7 @@ MODELS: dict[str, ModelSpec] = {m.key: m for m in (
               "Ranks new leads by how likely they are to become clients, with the factors for and against.",
               "An advisor decides whom to call.", None,
               ("Trained on synthetic lead history, not on real outcomes.",
+               "BigQuery ML reported AUC 0.79 on its training split; on held-out leads it is about 0.76.",
                "Goal fit comes from Gemini's reading of the lead, so the enrichment's errors reach the score."),
               ("file:ml/lead_model.json", "attr:app.ml.lead_features:features_for")),
     ModelSpec("lead_enrichment", "Lead enrichment", "gemini_prompt", "medium", DANIEL,
