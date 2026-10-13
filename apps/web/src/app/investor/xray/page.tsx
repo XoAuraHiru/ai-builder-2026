@@ -3,14 +3,18 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { formatDate, formatPct, formatUsd } from "@/lib/format";
-import { ASSET_COLOR, CATEGORY, findingCards, sectorRows, type Finding, type Narrative, type XRay } from "@/lib/invest";
+import { ASSET_COLOR, CATEGORY, findingCards, sectorRows, THINKING, type Finding, type Narrative, type XRay } from "@/lib/invest";
 import { useMe } from "@/lib/session-context";
 import { AllocationBar } from "@/components/allocation-bar";
 import { NarrativeView } from "@/components/ai-prose";
+import { AiThinking } from "@/components/ai-thinking";
 import { TickerTile } from "@/components/market-bits";
+import { CountUp, GrowBar, Stagger, StaggerItem } from "@/components/motion";
+import { Skeleton, SkeletonText } from "@/components/skeleton";
 import { WhyPanel } from "@/components/why-panel";
-import { Badge, Button, ButtonLink, EmptyState, Figure, Loading, Notice, PageHeader, Panel, Section, Sparkle,
+import { Badge, Button, ButtonLink, EmptyState, Figure, Notice, PageHeader, Panel, Section, Sparkle,
   tableStyles } from "@/components/ui";
+import { LoadingRegion } from "../_parts/shapes";
 
 const COMPANIES_SHOWN = 5;
 const VIA_SHOWN = 3;
@@ -29,12 +33,12 @@ function FindingCard({ f }: { f: Finding }) {
     </span>
   );
   return (
-    <Panel className="flex flex-col gap-3.5 p-6">
+    <Panel className="flex h-full flex-col gap-3.5 p-6">
       <div className="flex items-start justify-between gap-3">
         <h3 className="min-w-0 pt-1 text-[15px] font-semibold leading-5">{f.title}</h3>
         <Badge tone={f.tone === "look" ? "caution" : "neutral"}>{f.tone === "look" ? "Worth a look" : "Note"}</Badge>
       </div>
-      {f.figure && <p className="num text-[40px] font-medium leading-[44px] tracking-[-0.03em] sm:text-[44px] sm:leading-[46px]">{f.figure}</p>}
+      {f.figure && <p className="num text-[40px] font-medium leading-[44px] tracking-[-0.03em] sm:text-[44px] sm:leading-[46px]"><CountUp text={f.figure} /></p>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm leading-[21px] text-ink-700">{f.sentence}</p>
         {chips}
@@ -62,7 +66,7 @@ function Companies({ xray }: { xray: XRay }) {
             <span role="columnheader">Share of your money</span>
             <span role="columnheader" className="hidden sm:block">Held through</span>
           </div>
-          {rows.map((c) => (
+          {rows.map((c, i) => (
             <div role="row" key={c.symbol} className={`${cols} items-center gap-y-2 border-b border-sand-100 py-3 last:border-b-0`}>
               <span role="cell" className="flex min-w-0 items-center gap-2.5">
                 <TickerTile size="sm" symbol={c.symbol} />
@@ -70,7 +74,7 @@ function Companies({ xray }: { xray: XRay }) {
               </span>
               <span role="cell" className="flex items-center gap-2.5">
                 <span aria-hidden="true" className="h-1.5 flex-1 rounded-[3px] bg-sand-100">
-                  <span className="block h-1.5 rounded-[3px] bg-green-400" style={{ width: `${(c.pct / widest) * 100}%` }} />
+                  <GrowBar pct={(c.pct / widest) * 100} delay={0.04 * (i % COMPANIES_SHOWN)} className="bg-green-400" />
                 </span>
                 <span className="num w-11 text-right text-[13px]">{formatPct(c.pct)}</span>
               </span>
@@ -105,18 +109,66 @@ function Sectors({ xray }: { xray: XRay }) {
     <Panel className="flex flex-col gap-4 p-6">
       <h2 className="text-base font-semibold">Sectors</h2>
       <ul className="flex flex-col gap-3.5">
-        {sectorRows(xray.sectors).map((s) => (
+        {sectorRows(xray.sectors).map((s, i) => (
           <li key={s.name} className="flex flex-col gap-1.5">
             <span className={`flex justify-between gap-3 text-[13px] ${s.other ? "text-ink-500" : ""}`}>
               <span className="min-w-0 truncate">{s.name}</span><span className="num">{formatPct(s.pct)}</span>
             </span>
             <span aria-hidden="true" className="h-2 rounded-[4px] bg-sand-100">
-              <span className={`block h-2 rounded-[4px] ${s.other ? "bg-green-300" : "bg-green-400"}`} style={{ width: `${s.width}%` }} />
+              <GrowBar pct={s.width} delay={0.05 * i} className={s.other ? "bg-green-300" : "bg-green-400"} />
             </span>
           </li>
         ))}
       </ul>
     </Panel>
+  );
+}
+
+/** The X-ray while it looks through the funds: the findings, the companies table and the sector bars. */
+function XRaySkeleton() {
+  const five = [0, 1, 2, 3, 4];
+  return (
+    <LoadingRegion label="Looking through your funds" className="space-y-6">
+      <div className="flex flex-col gap-3">
+        <span className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 px-1 sm:px-2">
+          <Skeleton className="h-4 w-36" /><Skeleton className="h-3 w-[min(440px,85%)]" />
+        </span>
+        <div className="grid gap-4 md:grid-cols-2">
+          {[0, 1].map((i) => (
+            <div key={i} className="flex flex-col gap-3.5 rounded-panel border border-sand-200 bg-white p-6">
+              <span className="flex items-start justify-between gap-3"><Skeleton className="mt-1 h-4 w-3/5" /><Skeleton className="h-7 w-24 rounded-full" /></span>
+              <Skeleton className="h-11 w-32 rounded-[10px]" />
+              <SkeletonText lines={2} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-3.5 rounded-panel border border-sand-200 bg-white p-6">
+          <span className="flex flex-col gap-2"><Skeleton className="h-4 w-52" /><Skeleton className="h-3 w-4/5" /></span>
+          <div>
+            {five.map((i) => (
+              <span key={i} className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-center gap-x-4 border-b border-sand-100 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_170px]">
+                <span className="flex min-w-0 items-center gap-2.5"><Skeleton className="h-7 w-10 shrink-0 rounded-tile" /><Skeleton className="h-3.5 w-3/4" /></span>
+                <span className="flex items-center gap-2.5"><Skeleton className="h-1.5 flex-1 rounded-[3px]" /><Skeleton className="h-3 w-10" /></span>
+                <span className="hidden gap-1 sm:flex"><Skeleton className="h-[22px] w-11 rounded-full" /><Skeleton className="h-[22px] w-11 rounded-full" /></span>
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-4 rounded-panel border border-sand-200 bg-white p-6">
+          <Skeleton className="h-4 w-20" />
+          <div className="flex flex-col gap-3.5">
+            {five.map((i) => (
+              <span key={i} className="flex flex-col gap-1.5">
+                <span className="flex justify-between gap-3"><Skeleton className="h-3 w-28" /><Skeleton className="h-3 w-10" /></span>
+                <Skeleton className="h-2 rounded-[4px]" />
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </LoadingRegion>
   );
 }
 
@@ -153,7 +205,7 @@ export default function XRayPage() {
   const header = <PageHeader title="Portfolio X-ray" description="Your funds hold ETFs, and the ETFs hold companies. This is what you own underneath." />;
   if (!account || empty) return <>{header}<EmptyState title="Nothing to look through yet" action={<ButtonLink href="/investor/orders">Make your first investment</ButtonLink>}>{empty || "Choose an investor persona to see an X-ray."}</EmptyState></>;
   if (error) return <>{header}<Notice tone="error" title="Could not load your X-ray">{error}</Notice></>;
-  if (!xray) return <>{header}<Loading label="Looking through your funds" /></>;
+  if (!xray) return <>{header}<XRaySkeleton /></>;
 
   const regions = xray.regions.map((r, i) => ({ key: r.name, label: r.name, value: r.value_usd, color: CATEGORY[i % CATEGORY.length] }));
   const assets = xray.asset_classes.map((r, i) => ({ key: r.name, label: r.name, value: r.value_usd, color: ASSET_COLOR[r.name] ?? CATEGORY[i % CATEGORY.length] }));
@@ -169,9 +221,9 @@ export default function XRayPage() {
                 <h2 id="findings" className="text-base font-semibold">Things to look at</h2>
                 <p className="text-[13px] text-ink-500">Fixed rules applied to what you own underneath. None of them is an instruction to sell.</p>
               </div>
-              <div className={`grid gap-4 md:grid-cols-2 ${findings.length >= 3 ? "xl:grid-cols-3" : ""}`}>
-                {findings.map((f) => <FindingCard key={f.key} f={f} />)}
-              </div>
+              <Stagger className={`grid gap-4 md:grid-cols-2 ${findings.length >= 3 ? "xl:grid-cols-3" : ""}`}>
+                {findings.map((f) => <StaggerItem key={f.key}><FindingCard f={f} /></StaggerItem>)}
+              </Stagger>
             </section>
           )}
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
@@ -242,8 +294,8 @@ export default function XRayPage() {
         </Section>
 
         <Section title="What this means for you" description="Gemini reads the X-ray and explains it. It cannot change the figures.">
-          {narrative ? <NarrativeView narrative={narrative} /> : (
-            <Button variant="ai" busy={busy} onClick={explain}>{!busy && <Sparkle />}{busy ? "Gemini is reading your X-ray" : "Explain my X-ray"}</Button>
+          {narrative ? <NarrativeView narrative={narrative} /> : busy ? <AiThinking {...THINKING.xray} /> : (
+            <Button variant="ai" onClick={explain}><Sparkle />Explain my X-ray</Button>
           )}
           {explainError && <div className="mt-3"><Notice tone="caution">{explainError}</Notice></div>}
         </Section>
