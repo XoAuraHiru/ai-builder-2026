@@ -19,7 +19,7 @@ export function CodeField({ value, onChange, label = "Six-digit code from your a
         return (
           <span key={i} aria-hidden="true"
             className={`flex h-11 w-10 items-center justify-center rounded-[10px] font-mono text-[18px] text-ink-900 transition-shadow ${on ? "bg-white shadow-[0_0_0_2px_var(--color-green-600)]" : "bg-fill"}`}>
-            {value[i] ?? (on ? <span className="h-5 w-[1.5px] animate-pulse bg-ink-900 motion-reduce:animate-none" /> : "")}
+            {value[i] ?? (on ? <span className="h-5 w-[1.5px] animate-pulse bg-green-600 motion-reduce:animate-none" /> : "")}
           </span>
         );
       })}

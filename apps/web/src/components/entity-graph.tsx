@@ -12,7 +12,7 @@ const C = {
   sand100: "var(--color-sand-100)", sand200: "var(--color-sand-200)", ink400: "var(--color-ink-400)",
   ink500: "var(--color-ink-500)", ink700: "var(--color-ink-700)", ink900: "var(--color-ink-900)",
   coral50: "var(--color-coral-50)", coral500: "var(--color-coral-500)", coral700: "var(--color-coral-700)",
-  ai500: "var(--color-ai-500)", ai700: "var(--color-ai-700)", white: "#ffffff",
+  ai500: "var(--color-ai-500)", ai700: "var(--color-ai-700)", white: "var(--color-canvas)",
 };
 
 type MarkKind = GraphNode["kind"];
