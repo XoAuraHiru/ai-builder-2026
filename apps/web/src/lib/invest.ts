@@ -49,9 +49,11 @@ export type XRay = {
 };
 
 /** The one place raw colours live: chart series need concrete values for SVG and inline styles. */
-export const BAND_COLOR: Record<number, string> = { 1: "#4d7f95", 2: "#4f8f7a", 3: "#8f9a45", 4: "#c58a2c", 5: "#b5502f" };
-export const SERIES = ["#17202a", "#4d7f95", "#c58a2c"];
-export const CATEGORY = ["#17202a", "#4d7f95", "#8f9a45", "#c58a2c", "#b5502f", "#6d6390", "#9aa3aa", "#5f8f86"];
+// Design system 0.2: calm bands in the green family, Growth in amber, Adventurous in coral.
+export const BAND_COLOR: Record<number, string> = { 1: "#95c0a5", 2: "#649e7d", 3: "#3f8160", 4: "#e2b23e", 5: "#e8705f" };
+// Chart series, in order; highlight one series at a time, the rest stay quiet.
+export const SERIES = ["#3f8160", "#e2b23e", "#e8705f"];
+export const CATEGORY = ["#3f8160", "#f4d27c", "#e8705f", "#95c0a5", "#dcdad1", "#255740", "#e2b23e", "#649e7d"];
 
 /** Correlation cell shading: graphite at a strength that follows |value|. */
 export function heat(value: number): string {

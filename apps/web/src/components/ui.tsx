@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { useId, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { createContext, useContext, useId, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 export const BAND_LABEL: Record<number, string> = { 1: "Preserve", 2: "Cautious", 3: "Balanced", 4: "Growth", 5: "Adventurous" };
-const BAND_BG: Record<number, string> = { 1: "bg-band-1", 2: "bg-band-2", 3: "bg-band-3", 4: "bg-band-4", 5: "bg-band-5" };
 
 export function Spinner() {
   return (
@@ -16,19 +15,32 @@ export function Spinner() {
   );
 }
 
-type Variant = "primary" | "secondary" | "quiet" | "danger";
+/** Gemini's mark: a four-point sparkle, used only where the AI wrote or answers something. */
+export function Sparkle({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" />
+    </svg>
+  );
+}
+
+// Solid green for the main action (one per view), tonal green for entering a journey, outlined white for the rest,
+// a text button for "View all", tonal coral for destructive actions, and violet only for asking Gemini.
+type Variant = "primary" | "tonal" | "secondary" | "quiet" | "danger" | "ai";
 type Size = "md" | "sm";
 const VARIANT: Record<Variant, string> = {
-  primary: "bg-ink text-white hover:bg-[#26343f] disabled:bg-line-strong",
-  secondary: "border border-line-strong bg-surface text-ink hover:border-ink disabled:border-line disabled:text-muted",
-  quiet: "text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink disabled:text-muted",
-  danger: "bg-loss text-white hover:bg-[#962f1e] disabled:opacity-50",
+  primary: "bg-green-500 font-semibold text-white hover:bg-green-600 disabled:bg-sand-100 disabled:text-ink-400",
+  tonal: "bg-green-100 font-semibold text-green-800 hover:bg-green-200 disabled:bg-sand-100 disabled:text-ink-400",
+  secondary: "border border-sand-200 bg-white font-medium text-ink-900 hover:bg-fill disabled:text-ink-400",
+  quiet: "font-semibold text-green-600 hover:bg-green-50 disabled:text-ink-400",
+  danger: "bg-coral-50 font-semibold text-coral-700 hover:bg-coral-100 disabled:bg-sand-100 disabled:text-ink-400",
+  ai: "bg-ai-50 font-semibold text-ai-700 hover:bg-ai-100 disabled:text-ink-400",
 };
-const BASE = "inline-flex items-center justify-center gap-2 font-semibold transition-colors duration-150 disabled:cursor-not-allowed";
-const SIZE: Record<Size, string> = { md: "min-h-11 rounded-full px-5 text-sm", sm: "min-h-9 rounded-full px-4 text-[13px]" };
+const BASE = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full transition-colors duration-150 disabled:cursor-not-allowed";
+const SIZE: Record<Size, string> = { md: "min-h-11 px-5 text-sm", sm: "min-h-9 px-4 text-[13px]" };
 
 function classes(variant: Variant, size: Size, className: string) {
-  return `${BASE} ${variant === "quiet" ? "text-sm" : SIZE[size]} ${VARIANT[variant]} ${className}`;
+  return `${BASE} ${variant === "quiet" ? (size === "sm" ? "min-h-9 px-3 text-[13px]" : "min-h-10 px-3.5 text-sm") : SIZE[size]} ${VARIANT[variant]} ${className}`;
 }
 
 export function Button({ variant = "primary", size = "md", busy = false, className = "", children, ...rest }:
@@ -46,17 +58,18 @@ export function ButtonLink({ href, variant = "primary", size = "md", className =
   return <Link href={href} className={classes(variant, size, className)}>{children}</Link>;
 }
 
+/** Fields are filled sand, 44px tall, with the label above; focus shows the green ring. */
 export const inputClass =
-  "w-full rounded-control border border-line-strong bg-surface px-3.5 py-2.5 text-[15px] text-ink placeholder:text-muted transition-colors focus:border-ink focus:outline-none disabled:bg-ground";
+  "w-full min-h-11 rounded-control border-0 bg-fill px-3.5 py-2.5 text-[15px] text-ink-900 placeholder:text-ink-400 transition-shadow focus:outline-none focus:ring-[3px] focus:ring-green-200 aria-[invalid=true]:ring-[3px] aria-[invalid=true]:ring-coral-100 disabled:text-ink-400";
 
 export function Field({ label, hint, error, className = "", children }:
   { label: string; hint?: string; error?: string; className?: string; children: ReactNode }) {
   return (
     <label className={`block ${className}`}>
-      <span className="block text-sm font-semibold text-ink">{label}</span>
-      {hint && <span className="mt-0.5 block text-xs text-muted">{hint}</span>}
+      <span className="block text-[13px] font-medium leading-[18px] text-ink-900">{label}</span>
+      {hint && <span className="mt-0.5 block text-xs text-ink-500">{hint}</span>}
       <span className="mt-1.5 block">{children}</span>
-      {error && <span role="alert" className="mt-1 block text-xs text-loss">{error}</span>}
+      {error && <span role="alert" className="mt-1.5 block text-[13px] text-coral-700">{error}</span>}
     </label>
   );
 }
@@ -73,61 +86,71 @@ export function MoneyInput({ value, onChange, placeholder, label, id }:
   { value: string; onChange: (v: string) => void; placeholder?: string; label?: string; id?: string }) {
   return (
     <span className="relative block">
-      <span aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">$</span>
+      <span aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-500">$</span>
       <input id={id} inputMode="decimal" aria-label={label} className={`${inputClass} num pl-8`} value={groupDigits(value)}
         placeholder={placeholder} onChange={(e) => onChange(e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1"))} />
     </span>
   );
 }
 
+/** The section's pages (X-ray, Risk, Scenarios…), set by the shell and shown in the page header as a segmented control. */
+export const PageTabsContext = createContext<ReactNode>(null);
+
 export function PageHeader({ title, description, actions, back }:
   { title: string; description?: ReactNode; actions?: ReactNode; back?: { href: string; label: string } }) {
+  const tabs = useContext(PageTabsContext);
   return (
     <header className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-      <div className="min-w-0 max-w-3xl">
+      <div className="min-w-0 max-w-[720px]">
         {back && (
-          <Link href={back.href} className="mb-2 inline-flex min-h-8 items-center gap-1.5 text-sm text-muted hover:text-ink">
+          <Link href={back.href} className="mb-2 inline-flex min-h-8 items-center gap-1.5 text-[13px] font-medium text-ink-500 hover:text-ink-900">
             <span aria-hidden="true">‹</span>{back.label}
           </Link>
         )}
-        <h1 className="wide text-[30px] font-semibold leading-[1.12] tracking-[-0.015em] sm:text-[34px]">{title}</h1>
-        {description && <p className="mt-2 max-w-[62ch] text-[15px] leading-relaxed text-ink-2">{description}</p>}
+        <h1 className="text-[30px] font-semibold leading-9 tracking-[-0.02em] sm:text-[36px] sm:leading-[42px] sm:tracking-[-0.025em]">{title}</h1>
+        {description && <p className="mt-2 max-w-[64ch] text-[15px] leading-[22px] text-ink-700">{description}</p>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {(tabs || actions) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {actions}
+          {tabs}
+        </div>
+      )}
     </header>
   );
 }
 
+/** A figure from an engine: Schibsted Grotesk, medium weight, proportional numerals. */
 export function Figure({ label, value, detail, tone, size = "md" }:
   { label: string; value: string; detail?: ReactNode; tone?: "gain" | "loss"; size?: "md" | "lg" }) {
-  const color = tone === "gain" ? "text-gain" : tone === "loss" ? "text-loss" : "text-ink";
-  const scale = size === "lg" ? "text-[40px] leading-none sm:text-[52px]" : "text-[26px] leading-tight";
+  const color = tone === "gain" ? "text-green-700" : tone === "loss" ? "text-coral-700" : "text-ink-900";
+  const scale = size === "lg" ? "text-[44px] leading-[48px] tracking-[-0.03em] sm:text-[60px] sm:leading-[60px] sm:tracking-[-0.035em]"
+    : "text-[30px] leading-[34px] tracking-[-0.02em]";
   return (
     <div className="min-w-0">
-      <div className="text-sm text-muted">{label}</div>
-      <div className={`num wide mt-1 font-semibold tracking-[-0.02em] ${scale} ${color}`}>{value}</div>
-      {detail && <div className="mt-1.5 text-sm text-ink-2">{detail}</div>}
+      <div className="text-sm font-medium text-ink-700">{label}</div>
+      <div className={`mt-1.5 font-medium ${scale} ${color}`}>{value}</div>
+      {detail && <div className="mt-2 text-sm text-ink-700">{detail}</div>}
     </div>
   );
 }
 
 type Tone = "info" | "caution" | "error" | "success";
-const NOTICE: Record<Tone, string> = {
-  info: "border-line bg-surface", caution: "border-caution/25 bg-caution-wash",
-  error: "border-loss/25 bg-danger-wash", success: "border-gain/25 bg-gain-wash",
+const NOTICE: Record<Tone, { box: string; dot: string }> = {
+  info: { box: "bg-fill", dot: "bg-ink-400" }, caution: { box: "bg-amber-50", dot: "bg-amber-400" },
+  error: { box: "bg-coral-50", dot: "bg-coral-500" }, success: { box: "bg-green-50", dot: "bg-green-500" },
 };
-const NOTICE_DOT: Record<Tone, string> = { info: "bg-ink-2", caution: "bg-caution", error: "bg-loss", success: "bg-gain" };
 
 export function Notice({ tone = "info", title, action, children }:
   { tone?: Tone; title?: string; action?: ReactNode; children?: ReactNode }) {
   return (
     <div role={tone === "error" ? "alert" : undefined}
-      className={`flex flex-wrap items-start justify-between gap-3 rounded-panel border px-5 py-4 text-sm ${NOTICE[tone]}`}>
+      className={`flex flex-wrap items-start justify-between gap-3 rounded-panel px-5 py-4 text-sm ${NOTICE[tone].box}`}>
       <div className="flex min-w-0 flex-1 gap-3">
-        <span aria-hidden="true" className={`mt-[6px] h-2 w-2 shrink-0 rounded-[2px] ${NOTICE_DOT[tone]}`} />
+        <span aria-hidden="true" className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${NOTICE[tone].dot}`} />
         <div className="min-w-0">
-          {title && <p className="font-semibold text-ink">{title}</p>}
-          {children && <div className="text-ink-2">{children}</div>}
+          {title && <p className="font-semibold text-ink-900">{title}</p>}
+          {children && <div className="text-ink-700">{children}</div>}
         </div>
       </div>
       {action}
@@ -135,34 +158,49 @@ export function Notice({ tone = "info", title, action, children }:
   );
 }
 
+// Status chips carry a dot so colour is never the only signal.
 type BadgeTone = "neutral" | "gain" | "caution" | "loss" | "strong" | "ai";
-const BADGE: Record<BadgeTone, string> = {
-  neutral: "border-line-strong bg-surface text-ink-2", gain: "border-gain/25 bg-gain-wash text-gain",
-  caution: "border-caution/25 bg-caution-wash text-caution", loss: "border-loss/25 bg-danger-wash text-loss",
-  strong: "border-loss bg-loss text-white", ai: "border-daylight/50 bg-daylight-wash text-daylight-ink",
+const BADGE: Record<BadgeTone, { chip: string; dot: string }> = {
+  neutral: { chip: "bg-fill text-ink-700", dot: "bg-ink-400" },
+  gain: { chip: "bg-green-50 text-green-700", dot: "bg-green-500" },
+  caution: { chip: "bg-amber-50 text-amber-800", dot: "bg-amber-400" },
+  loss: { chip: "bg-coral-50 text-coral-700", dot: "bg-coral-500" },
+  strong: { chip: "bg-coral-700 text-white", dot: "bg-white" },
+  ai: { chip: "bg-ai-50 text-ai-700", dot: "" },
 };
 
 export function Badge({ tone = "neutral", children }: { tone?: BadgeTone; children: ReactNode }) {
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold ${BADGE[tone]}`}>
+    <span className={`inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-[13px] font-medium ${BADGE[tone].chip}`}>
+      {tone === "ai" ? <Sparkle size={12} /> : <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${BADGE[tone].dot}`} />}
       {children}
     </span>
   );
 }
 
-/** A risk band as five cells, filled up to the band in the band's colour. */
-export function RiskBand({ band, size = "sm", showLabel = true }: { band: number | null; size?: "sm" | "lg"; showLabel?: boolean }) {
+/** A change chip: always with an arrow or a sign, so the direction never rests on colour. */
+export function ChangeChip({ value, tone, children }: { value?: number; tone?: "gain" | "loss" | "caution"; children: ReactNode }) {
+  const t = tone ?? (value === undefined || value === 0 ? "caution" : value > 0 ? "gain" : "loss");
+  const cls = t === "gain" ? "bg-green-50 text-green-700" : t === "loss" ? "bg-coral-50 text-coral-700" : "bg-amber-50 text-amber-800";
+  return <span className={`num inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-full px-2 text-xs font-semibold ${cls}`}>{children}</span>;
+}
+
+/** A risk band as a five-step meter: green at or within the profile, amber above it. */
+export function RiskBand({ band, size = "sm", showLabel = true, profile = 3 }:
+  { band: number | null; size?: "sm" | "lg"; showLabel?: boolean; profile?: number | null }) {
   const cell = size === "lg" ? "h-3 w-7" : "h-2 w-3.5";
+  const above = band !== null && profile !== null && band > (profile ?? 3);
+  const fill = above ? "bg-amber-400" : "bg-green-500";
   return (
-    <span className="inline-flex items-center gap-2" role="img" aria-label={band ? `Risk band ${band} of 5, ${BAND_LABEL[band]}` : "No risk band yet"}>
+    <span className="inline-flex items-center gap-2.5" role="img" aria-label={band ? `Risk band ${band} of 5, ${BAND_LABEL[band]}${above ? ", above the profile" : ""}` : "No risk band yet"}>
       <span className="flex gap-[3px]" aria-hidden="true">
         {[1, 2, 3, 4, 5].map((i) => (
-          <span key={i} className={`${cell} rounded-[2px] ${band && i <= band ? BAND_BG[band] : "bg-line"}`} />
+          <span key={i} className={`${cell} rounded-[3px] ${band && i <= band ? fill : "bg-sand-200"}`} />
         ))}
       </span>
       {showLabel && (
-        <span aria-hidden="true" className={`${size === "lg" ? "text-base" : "text-xs"} whitespace-nowrap font-medium text-ink-2`}>
-          {band ? `Band ${band}, ${BAND_LABEL[band]}` : "Not set"}
+        <span aria-hidden="true" className={`${size === "lg" ? "text-base" : "text-[13px]"} whitespace-nowrap font-medium ${band ? (above ? "text-amber-800" : "text-green-700") : "text-ink-500"}`}>
+          {band ? `${band} ${BAND_LABEL[band]}` : "Not set"}
         </span>
       )}
     </span>
@@ -173,10 +211,10 @@ export function Section({ title, description, actions, id, children }:
   { title: string; description?: ReactNode; actions?: ReactNode; id?: string; children: ReactNode }) {
   return (
     <section id={id} className="scroll-mt-24">
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3 px-1">
         <div className="min-w-0">
-          <h2 className="text-[18px] font-semibold tracking-[-0.005em]">{title}</h2>
-          {description && <p className="mt-1 max-w-[68ch] text-sm text-muted">{description}</p>}
+          <h2 className="text-[20px] font-semibold leading-7 tracking-[-0.01em]">{title}</h2>
+          {description && <p className="mt-1 max-w-[72ch] text-[13px] leading-5 text-ink-500">{description}</p>}
         </div>
         {actions}
       </div>
@@ -185,56 +223,53 @@ export function Section({ title, description, actions, id, children }:
   );
 }
 
+/** A card: white, outlined with the sand hairline, 20px corners. Shadows are kept for things that float. */
 export function Panel({ className = "", children }: { className?: string; children: ReactNode }) {
-  return <div className={`rounded-panel border border-line bg-surface ${className}`}>{children}</div>;
+  return <div className={`rounded-panel border border-sand-200 bg-white ${className}`}>{children}</div>;
 }
 
 type MomentTone = "attention" | "alert" | "good" | "info";
-const MOMENT: Record<MomentTone, { dot: string; text: string }> = {
-  attention: { dot: "bg-daylight", text: "text-daylight-ink" }, alert: { dot: "bg-loss", text: "text-loss" },
-  good: { dot: "bg-gain", text: "text-gain" }, info: { dot: "bg-ink-2", text: "text-ink-2" },
-};
+const MOMENT: Record<MomentTone, BadgeTone> = { attention: "caution", alert: "loss", good: "gain", info: "neutral" };
 
-/** The panel a page opens with: what matters on this page, said as one sentence, with the proof and the next action. */
+/** The card a page opens with: what matters on this page, said as one sentence, with the proof and the next action. */
 export function KeyMoment({ tone = "attention", label, title, children, actions }:
   { tone?: MomentTone; label: string; title: ReactNode; children?: ReactNode; actions?: ReactNode }) {
   const id = useId();
   return (
-    <section aria-labelledby={id} className="rounded-panel border border-line bg-surface p-6 sm:p-7">
-      <p className={`flex items-center gap-2.5 text-[13px] font-semibold ${MOMENT[tone].text}`}>
-        <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-[2px] ${MOMENT[tone].dot}`} />{label}
-      </p>
-      <h2 id={id} className="wide mt-3 max-w-[30ch] text-[24px] font-semibold leading-[1.18] tracking-[-0.015em] sm:text-[29px]">{title}</h2>
-      {children && <div className="mt-5 space-y-5">{children}</div>}
-      {actions && <div className="mt-6 flex flex-wrap gap-2.5">{actions}</div>}
+    <section aria-labelledby={id} className="flex flex-col gap-6 rounded-panel border border-sand-200 bg-white p-6 sm:p-7">
+      <span className="self-start"><Badge tone={MOMENT[tone]}>{label}</Badge></span>
+      <h2 id={id} className="max-w-[620px] text-[26px] font-semibold leading-8 tracking-[-0.02em] sm:text-[32px] sm:leading-[38px]">{title}</h2>
+      {children && <div className="space-y-5">{children}</div>}
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </section>
   );
 }
 
 export function Loading({ label }: { label: string }) {
-  return <p role="status" className="py-10 text-sm text-muted">{label}…</p>;
+  return <p role="status" className="py-10 text-sm text-ink-500">{label}…</p>;
 }
 
 export function EmptyState({ title, action, children }: { title: string; action?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="rounded-panel border border-dashed border-line-strong bg-surface px-6 py-12 text-center">
+    <div className="rounded-panel border border-dashed border-sand-300 bg-white px-6 py-12 text-center">
       <p className="font-semibold">{title}</p>
-      {children && <div className="mx-auto mt-1 max-w-[52ch] text-sm text-ink-2">{children}</div>}
+      {children && <div className="mx-auto mt-1 max-w-[52ch] text-sm text-ink-700">{children}</div>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }
 
+/** An input-style segmented control: sand fill, the chosen option raised in white. */
 export function Segmented<T extends string>({ value, options, onChange, label }:
   { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap rounded-full border border-line-strong bg-surface p-1">
+    <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap gap-1 rounded-full bg-fill p-1">
       {options.map((o) => {
         const on = o.value === value;
         return (
           <button key={o.value} type="button" role="radio" aria-checked={on} onClick={() => onChange(o.value)}
-            className={`relative min-h-9 rounded-full px-4 text-sm ${on ? "text-white" : "text-ink-2 hover:text-ink"}`}>
-            {on && <motion.span layoutId={`segmented-${label}`} className="absolute inset-0 rounded-full bg-ink" />}
+            className={`relative min-h-9 rounded-full px-4 text-[13px] ${on ? "font-semibold text-ink-900" : "font-medium text-ink-700 hover:text-ink-900"}`}>
+            {on && <motion.span layoutId={`segmented-${label}`} className="absolute inset-0 rounded-full bg-white shadow-pressed" />}
             <span className="relative">{o.label}</span>
           </button>
         );
@@ -243,11 +278,25 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
   );
 }
 
+/** Navigation as a segmented pill (the section's pages): white with a hairline, the current page in tonal green. */
+export function NavSegmented({ label, items }: { label: string; items: { href: string; label: string; on: boolean }[] }) {
+  return (
+    <nav aria-label={label} className="no-print inline-flex max-w-full gap-1 overflow-x-auto rounded-full border border-sand-200 bg-white p-1">
+      {items.map((t) => (
+        <Link key={t.href} href={t.href} aria-current={t.on ? "page" : undefined}
+          className={`whitespace-nowrap rounded-full px-[18px] py-[9px] text-sm font-medium ${t.on ? "bg-green-100 text-green-800" : "text-ink-700 hover:bg-fill"}`}>
+          {t.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 export const tableStyles = {
   wrap: "overflow-x-auto",
   table: "w-full text-sm",
-  head: "border-b border-line text-left text-xs text-muted",
+  head: "border-b border-sand-100 text-left text-xs text-ink-500",
   th: "px-3 py-2.5 font-medium first:pl-0 last:pr-0",
-  row: "border-b border-line last:border-b-0",
+  row: "border-b border-sand-100 last:border-b-0",
   td: "px-3 py-3 first:pl-0 last:pr-0",
 };
