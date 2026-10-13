@@ -3,7 +3,7 @@
 export type FigureSpec = { prefix: string; value: number; decimals: number; suffix: string; grouped: boolean };
 
 // An optional sign and currency, one number, then a short unit (%, " / 10", " pts"). Anything else is not one figure.
-const FIGURE = /^([−-]?\$?)(\d[\d,]*)(?:\.(\d+))?(%|\s*\/\s*\d+|\s*pts?)?$/;
+const FIGURE = /^([+−-]?\$?)(\d[\d,]*)(?:\.(\d+))?(%|\s*\/\s*\d+|\s*pts?)?$/;
 
 export function parseFigure(text: string): FigureSpec | null {
   const m = FIGURE.exec((text ?? "").trim());

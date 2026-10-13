@@ -7,6 +7,7 @@ describe("parseFigure", () => {
     expect(parseFigure("7.78%")).toEqual({ prefix: "", value: 7.78, decimals: 2, suffix: "%", grouped: false });
     expect(parseFigure("−$10,493")).toEqual({ prefix: "−$", value: 10493, decimals: 0, suffix: "", grouped: true });
     expect(parseFigure("6.2 / 10")).toEqual({ prefix: "", value: 6.2, decimals: 1, suffix: " / 10", grouped: false });
+    expect(parseFigure("+$3,508.13")).toEqual({ prefix: "+$", value: 3508.13, decimals: 2, suffix: "", grouped: true });
   });
   it("returns null for text that is not one figure", () => {
     expect(parseFigure("Not scored")).toBeNull();

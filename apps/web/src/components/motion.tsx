@@ -80,7 +80,7 @@ export function CountUp({ text, duration = 0.9, className = "" }: { text: string
 
   if (!spec) return <span className={className}>{text}</span>;
   return (
-    <span className={`inline-grid ${className}`}>
+    <span className={`relative inline-grid ${className}`}>
       <span aria-hidden="true" className="invisible col-start-1 row-start-1">{text}</span>
       <span aria-hidden="true" ref={node} className="col-start-1 row-start-1">{text}</span>
       <span className="sr-only">{text}</span>
@@ -91,8 +91,9 @@ export function CountUp({ text, duration = 0.9, className = "" }: { text: string
 /** The fill of a bar, growing from nothing to its share when it appears. The caller draws the track. */
 export function GrowBar({ pct, className = "", delay = 0 }: { pct: number; className?: string; delay?: number }) {
   const width = `${Math.max(0, Math.min(100, pct))}%`;
+  const reduce = useReducedMotion();
   return (
-    <motion.span aria-hidden="true" className={`block h-full rounded-[inherit] ${className}`} initial={{ width: 0 }}
+    <motion.span aria-hidden="true" className={`block h-full rounded-[inherit] ${className}`} initial={reduce ? false : { width: 0 }}
       animate={{ width }} transition={{ duration: 0.6, delay, ease: EASE }} />
   );
 }
@@ -125,10 +126,12 @@ export function PageEnter({ id, children }: { id: string; children: ReactNode })
 
 /** A check that draws itself, for a decision that just went through (approved, matched, applied). */
 export function DrawnCheck({ size = 20, className = "" }: { size?: number; className?: string }) {
+  const reduce = useReducedMotion();
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"
       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
-      <motion.path d="M20 6 9 17l-5-5" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.4, ease: EASE }} />
+      <motion.path d="M20 6 9 17l-5-5" initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }}
+        transition={{ duration: 0.4, ease: EASE }} />
     </svg>
   );
 }
