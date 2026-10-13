@@ -139,6 +139,32 @@
   }
 }
 
+/* Loading: sand shapes with a slow sheen moving across; violet for what Gemini is writing. */
+@keyframes atrium-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@utility skeleton {
+  background: linear-gradient(90deg, var(--color-sand-100) 30%, #f8f7f3 50%, var(--color-sand-100) 70%);
+  background-size: 300% 100%;
+  animation: atrium-shimmer 1.6s ease-in-out infinite;
+}
+@utility skeleton-ai {
+  background: linear-gradient(90deg, var(--color-ai-100) 30%, #ece9fb 50%, var(--color-ai-100) 70%);
+  background-size: 300% 100%;
+  animation: atrium-shimmer 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .skeleton-ai {
+    animation: none;
+  }
+}
+
 @media print {
   .no-print {
     display: none !important;

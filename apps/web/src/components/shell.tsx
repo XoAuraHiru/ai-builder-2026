@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import type { Me } from "@/lib/api";
 import { addVisit, guideState, journeyFor, loadGuideHidden, loadVisits, progress, saveGuideHidden, saveVisits } from "@/lib/journeys";
 import { routeKind, sectionFor, tabFor, workspaceFor, type NavSection, type Workspace } from "@/lib/nav";
 import { ACTS, actFor, initials } from "@/lib/personas";
 import { useSession } from "@/lib/session-context";
 import { Icon } from "@/components/icons";
+import { EASE, PageEnter } from "@/components/motion";
+import { PageSkeleton, Skeleton } from "@/components/skeleton";
 import { ButtonLink, Loading, NavSegmented, Notice, PageTabsContext, Sparkle } from "@/components/ui";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -109,7 +112,9 @@ function StoryBar({ email, path, hidden, onHide, onShow }:
         <span className="hidden whitespace-nowrap text-[13px] font-semibold md:inline">{journey.title}</span>
         <span aria-hidden="true" className="flex gap-[3px]">
           {journey.steps.map((s, i) => (
-            <span key={s.title} className={`h-1.5 w-4 rounded-[3px] ${done[i] ? "bg-green-500" : current === i ? "bg-green-300" : "bg-sand-200"}`} />
+            <motion.span key={s.title} className="h-1.5 w-4 rounded-[3px]" initial={false}
+              animate={{ backgroundColor: done[i] ? "#3f8160" : current === i ? "#95c0a5" : "#ebeae4" }}
+              transition={{ duration: 0.4, delay: 0.05 * i }} />
           ))}
         </span>
         <span className="num whitespace-nowrap text-xs text-ink-500">{count} of {journey.steps.length}</span>
@@ -128,8 +133,11 @@ function StoryBar({ email, path, hidden, onHide, onShow }:
             className={`transition-transform ${open ? "rotate-180" : ""}`}><path d="m6 9 6 6 6-6" /></svg>
         </button>
       </div>
+      <AnimatePresence>
       {open && (
-        <div className="absolute left-0 right-0 top-[60px] z-40 rounded-panel border border-sand-200 bg-white p-2 shadow-float sm:right-auto sm:w-[420px]">
+        <motion.div initial={{ opacity: 0, y: -6, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -6, scale: 0.98 }} transition={{ duration: 0.18, ease: EASE }}
+          className="absolute left-0 right-0 top-[60px] z-40 origin-top-left rounded-panel border border-sand-200 bg-white p-2 shadow-float sm:right-auto sm:w-[420px]">
           <p className="px-3 pb-1 pt-2 text-[13px] text-ink-700">{journey.intro}</p>
           <ol>
             {journey.steps.map((s, i) => (
@@ -150,8 +158,9 @@ function StoryBar({ email, path, hidden, onHide, onShow }:
             <Link href="/#journeys" className="text-[13px] font-semibold text-green-600">Try another person</Link>
             <button type="button" onClick={onHide} className="text-[13px] text-ink-500 hover:text-ink-900">Hide the story</button>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -159,8 +168,9 @@ function StoryBar({ email, path, hidden, onHide, onShow }:
 function RailItem({ section, on }: { section: NavSection; on: boolean }) {
   return (
     <Link href={section.href} aria-current={on ? "page" : undefined} className="group flex w-[76px] flex-col items-center gap-1">
-      <span className={`flex h-9 w-12 items-center justify-center rounded-control ${on ? "bg-green-100 text-green-700" : "text-ink-700 group-hover:bg-fill"}`}>
-        <Icon name={section.icon} size={19} />
+      <span className={`relative flex h-9 w-12 items-center justify-center rounded-control ${on ? "text-green-700" : "text-ink-700 group-hover:bg-fill"}`}>
+        {on && <motion.span layoutId="rail-current" className="absolute inset-0 rounded-control bg-green-100" transition={{ duration: 0.32, ease: EASE }} />}
+        <span className="relative"><Icon name={section.icon} size={19} /></span>
       </span>
       <span className={`text-center text-[11px] leading-[13px] ${on ? "font-semibold text-ink-900" : "font-medium text-ink-500"}`}>{section.label}</span>
     </Link>
@@ -172,9 +182,11 @@ function IconRail({ space, active }: { space: Workspace; active: NavSection | nu
   return (
     <aside className="no-print sticky top-4 hidden h-[calc(100vh-32px)] w-[84px] shrink-0 flex-col items-center gap-2 rounded-panel border border-sand-200 bg-white py-[18px] lg:flex">
       <Link href={space.home} aria-label="Atrium, workspace home" className="mb-5"><AtriumMark size={38} /></Link>
-      <nav aria-label={`${space.label} workspace`} className="flex flex-col items-center gap-2">
-        {space.sections.map((s) => <RailItem key={s.key} section={s} on={active?.key === s.key} />)}
-      </nav>
+      <LayoutGroup id="rail">
+        <nav aria-label={`${space.label} workspace`} className="flex flex-col items-center gap-2">
+          {space.sections.map((s) => <RailItem key={s.key} section={s} on={active?.key === s.key} />)}
+        </nav>
+      </LayoutGroup>
     </aside>
   );
 }
@@ -193,6 +205,32 @@ function StripNav({ space, active }: { space: Workspace; active: NavSection | nu
         );
       })}
     </nav>
+  );
+}
+
+/** The workspace while the session opens: the rail, the top bar and a page, in sand. */
+function ShellSkeleton() {
+  return (
+    <div role="status" aria-live="polite" className="flex min-h-screen gap-4 p-3 sm:p-4">
+      <span className="sr-only">Opening your workspace…</span>
+      <aside aria-hidden="true" className="sticky top-4 hidden h-[calc(100vh-32px)] w-[84px] shrink-0 flex-col items-center gap-5 rounded-panel border border-sand-200 bg-white py-[18px] lg:flex">
+        <AtriumMark size={38} />
+        {Array.from({ length: 5 }, (_, i) => (
+          <span key={i} className="flex flex-col items-center gap-1.5"><Skeleton className="h-9 w-12 rounded-control" /><Skeleton className="h-2.5 w-10" /></span>
+        ))}
+      </aside>
+      <div aria-hidden="true" className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center gap-3">
+          <span className="lg:hidden"><AtriumMark /></span>
+          <Skeleton className="h-[52px] flex-1 rounded-full lg:max-w-[760px]" />
+          <span className="flex-1" />
+          <Skeleton className="h-[52px] w-[52px] rounded-full sm:w-52" />
+        </div>
+        <div className="mx-auto w-full max-w-[1440px] px-1 pt-6 sm:px-2 lg:pt-8">
+          <PageSkeleton label="Opening your workspace" shape="dashboard" />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -216,6 +254,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }
 
   if (kind === "front") return <>{children}</>;
+  if (kind === "app" && status === "loading") return <ShellSkeleton />;
   const space = me ? workspaceFor(me.roles) : null;
 
   if (kind === "public" || !me || !space) {
@@ -268,7 +307,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <StripNav space={space} active={section} />
           </header>
           <main className="mx-auto w-full min-w-0 max-w-[1440px] flex-1 px-1 pb-12 pt-6 sm:px-2 lg:pt-8">
-            <PageTabsContext.Provider value={tabs}>{children}</PageTabsContext.Provider>
+            <PageTabsContext.Provider value={tabs}><PageEnter id={path}>{children}</PageEnter></PageTabsContext.Provider>
           </main>
         </div>
       </div>
