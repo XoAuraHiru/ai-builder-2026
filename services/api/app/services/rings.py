@@ -35,7 +35,7 @@ from app.models import Account, AccountDevice, AmlAlert, IdentityCheck, Lead, Le
 from app.models.base import utcnow
 from app.services.blind_index import blind_index
 from app.services.devices import aware, device_hash
-from app.services.trust import apply_trust
+from app.services.trust import apply_trust, band_without
 
 STRONG = ("bank", "device", "document", "phone", "email")
 WEAK = ("ip",)
@@ -44,6 +44,8 @@ HUB_LIMIT = 8  # an identifier shared by more than this many entities is a hub a
 RECENT_HOURS = 48
 STRONG_TRUST_WEIGHT = -20  # trust signals at least this heavy are listed among a lead's flags
 DOCUMENT_TYPES = {"passport": "passport", "drivers_license": "driver's license", "national_id": "national ID"}
+RING_SIGNAL = "T09"  # the trust signal a person's ring flag adds (app/services/trust.py)
+SEED_NETWORK = "seed"  # the placeholder the demo seeds give leads with no recorded network (capture_guard skips it)
 OPEN_ALERT_STATES = ("open", "escalated")
 SEVERITY_RANK = {"high": 0, "medium": 1, "low": 2}
 RING_SCENARIO = "ring"
@@ -201,15 +203,21 @@ def _first_lower(text: str) -> str:
 
 
 def _lead_flags(lead: Lead) -> tuple[bool, tuple[str, ...]]:
+    """Why a lead is flagged. A person's own ring flag (T09) is a decision about a ring, not evidence for one, so it
+    neither counts as a flag nor moves the band the ring's score reads."""
+    signals = [s for s in lead.trust_signals or [] if s.get("code") != RING_SIGNAL]
+    band = lead.trust_band
+    if band and len(signals) != len(lead.trust_signals or []):
+        band = band_without(lead.trust_signals, {RING_SIGNAL})
     flags: list[str] = []
-    if lead.trust_band == "blocked":
+    if band == "blocked":
         flags.append("Trust: blocked")
-    elif lead.trust_band == "high_risk":
+    elif band == "high_risk":
         flags.append("Trust: high risk")
-    for signal in lead.trust_signals or []:
+    for signal in signals:
         if int(signal.get("weight", 0)) <= STRONG_TRUST_WEIGHT or signal.get("blocking"):
             flags.append(f"Trust: {_first_lower(signal['label'])}")
-    return lead.trust_band in ("high_risk", "blocked"), tuple(dict.fromkeys(flags))
+    return band in ("high_risk", "blocked"), tuple(dict.fromkeys(flags))
 
 
 class _Builder:
@@ -303,7 +311,7 @@ def build_graph(db: Session) -> Graph:
         raw = (lead.device_id or "").strip()
         if raw:
             b.link(entity, b.identifier("device", device_hash(raw), _device_label(raw)), seen)
-        if lead.ip_hash:  # already a hash of the address; the label shows a few characters of Atrium's own key
+        if lead.ip_hash and lead.ip_hash != SEED_NETWORK:  # already a hash; the label shows a little of Atrium's key
             b.link(entity, b.identifier("ip", lead.ip_hash, f"Network …{_digest('ip', lead.ip_hash)[-4:]}"), seen)
         for check in documents.get(lead.id, []):
             number = ((check.extracted or {}).get("document_number") or "").strip().upper()

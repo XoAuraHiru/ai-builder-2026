@@ -20,7 +20,8 @@ from app.seed.leads import DEMO_LEADS, seed_demo_leads
 from app.services.blind_index import blind_index
 from app.services.devices import device_hash
 from app.services.rings import (HUB_LIMIT, STRONG, Entity, Graph, Identifier, Link, RingNarrative, build_graph,
-                                detect_rings, narrate_ring, ring_by_id, ring_score, rings)
+                                detect_rings, flag_leads, narrate_ring, ring_by_id, ring_score, rings)
+from app.services.trust import apply_trust
 
 T0 = datetime(2026, 10, 12, 9, tzinfo=timezone.utc)
 
@@ -179,6 +180,35 @@ def test_flags_say_why_a_member_is_flagged(db, make_lead):
     assert graph.entities[f"lead:{risky.id}"].flagged is True
     assert graph.entities[f"lead:{risky.id}"].flags == ("Trust: high risk", "Trust: disposable email domain")
     assert graph.entities[f"lead:{calm.id}"].flagged is False and graph.entities[f"lead:{calm.id}"].flags == ()
+
+
+def test_flagging_a_rings_leads_does_not_raise_that_rings_score(db, make_lead, staff):
+    pair = [make_lead(full_name=name, email=email, phone=phone, device_id="dev-pair-0001")
+            for name, email, phone in (("Quinn Avery", "qa@mailinator.com", "5551234"),
+                                       ("Reese Blake", "rb@mailinator.com", "5559876"))]
+    for lead in pair:
+        apply_trust(db, lead)
+    assert [lead.trust_band for lead in pair] == ["review", "review"]  # T01 -25 and T02 -10: 65
+    [ring] = detect_rings(build_graph(db))
+    # 15 * 1 + 12 * 1 (the device; their shared test network is weak) + 0 flagged + 10 (created together) + 0 = 37
+    assert ring.score == 37
+    assert flag_leads(db, ring, staff["omar"]) == 2
+    assert [lead.trust_band for lead in pair] == ["high_risk", "high_risk"]  # T09 takes them to 40
+    graph = build_graph(db)
+    [after] = detect_rings(graph)
+    # A person's flag is a decision about the ring, not evidence for it: the score and the flags stay as they were.
+    assert after.id == ring.id and after.score == 37
+    assert [graph.entities[m].flags for m in after.members] == [("Trust: disposable email domain",)] * 2
+    assert not any(graph.entities[m].flagged for m in after.members)
+
+
+def test_the_seeded_placeholder_network_is_no_network(db, make_lead):
+    make_lead(full_name="Sky Morrow", email="sky@example.test", phone=None, device_id="dev-seed-pair", ip_hash="seed")
+    make_lead(full_name="Ari Lane", email="ari@example.test", phone=None, device_id="dev-seed-pair", ip_hash="seed")
+    graph = build_graph(db)
+    assert [i for i in graph.identifiers.values() if i.kind == "ip"] == []
+    [ring] = detect_rings(graph)
+    assert [graph.identifiers[i].kind for i in ring.identifiers] == ["device"]
 
 
 def test_a_converted_lead_and_its_client_are_one_entity(db, make_lead):

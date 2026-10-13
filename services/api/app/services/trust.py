@@ -122,8 +122,18 @@ def assess_trust(db: Session, lead: Lead, enrichment: dict | None, identity: Ide
     signals.sort(key=lambda s: (s.code[0] != "T", int(s.code[1:]), s.evidence))
     score = max(0, min(100, 100 + sum(s.weight for s in signals)))
     blocked = any(s.blocking for s in signals)
-    band = "blocked" if blocked else "clear" if score >= 80 else "review" if score >= 50 else "high_risk"
-    return TrustReport(score=score, band=band, signals=signals, blocked=blocked)
+    return TrustReport(score=score, band=band_for(score, blocked), signals=signals, blocked=blocked)
+
+
+def band_for(score: int, blocked: bool) -> str:
+    return "blocked" if blocked else "clear" if score >= 80 else "review" if score >= 50 else "high_risk"
+
+
+def band_without(signals: list[dict], codes: set[str]) -> str:
+    """The band a lead's stored signals would give without some of them (the ring radar leaves out its own T09)."""
+    kept = [s for s in signals if s.get("code") not in codes]
+    score = max(0, min(100, 100 + sum(int(s.get("weight", 0)) for s in kept)))
+    return band_for(score, any(s.get("blocking") for s in kept))
 
 
 def latest_identity_check(db: Session, lead: Lead) -> IdentityCheck | None:
