@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
+import { CountUp, FillSegments, Stagger, StaggerItem } from "@/components/motion";
 import { Badge } from "@/components/ui";
 import {
-  scoreTone, signedWeight, TRUST_LABEL, TRUST_SEGMENTS, trustMeter, trustTone, type MeterTone, type TrustBand, type TrustSignal,
+  meterSegments, scoreTone, signedWeight, TRUST_LABEL, TRUST_SEGMENTS, trustMeter, trustTone, type MeterTone, type TrustBand,
+  type TrustSignal,
 } from "@/lib/leads";
 import { initials } from "@/lib/personas";
 
@@ -25,15 +27,23 @@ export function ScoreBadge({ score }: { score: number | null }) {
   return <Badge tone={tone === "high" ? "gain" : "neutral"}>{FIT_LABEL[tone]}</Badge>;
 }
 
-/** The Trust Score as 20 segments: coral for high risk and blocked, amber for review, green for clear. */
+/** The Trust Score as 20 segments: coral for high risk and blocked, amber for review, green for clear. On a card the
+ *  segments fill one after another when it appears (the score's proportion, built up); in a list row they are drawn
+ *  as they are, since the rows themselves arrive in order. */
 export function TrustMeter({ score, band, size = "md" }: { score: number | null; band: TrustBand | null; size?: "md" | "sm" }) {
   const { filled, tone } = trustMeter(score, band);
   const label = score === null ? "Trust Score not scored yet" : `Trust Score ${score} of 100, ${TRUST_LABEL[trustTone(band)]}`;
+  if (size === "md") {
+    return (
+      <span role="img" aria-label={label} className="flex w-full">
+        <FillSegments className="w-full" fills={meterSegments(score, band).map((t) => (t ? METER_FILL[t] : null))} />
+      </span>
+    );
+  }
   return (
-    <span role="img" aria-label={label} className={`flex w-full ${size === "md" ? "gap-[3px]" : "gap-[2px]"}`}>
+    <span role="img" aria-label={label} className="flex w-full gap-[2px]">
       {Array.from({ length: TRUST_SEGMENTS }, (_, i) => (
-        <span key={i} aria-hidden="true"
-          className={`flex-1 ${size === "md" ? "h-4 rounded-[4px]" : "h-2 rounded-[2px]"} ${i < filled ? METER_FILL[tone] : "bg-sand-100"}`} />
+        <span key={i} aria-hidden="true" className={`h-2 flex-1 rounded-[2px] ${i < filled ? METER_FILL[tone] : "bg-sand-100"}`} />
       ))}
     </span>
   );
@@ -43,9 +53,10 @@ export function TrustMeter({ score, band, size = "md" }: { score: number | null;
 /** A signal as the lead and the order checks both send it; only a lead's signals can block. */
 export type SignalLike = Pick<TrustSignal, "code" | "label" | "weight" | "evidence"> & { blocking?: boolean };
 
+/** Inside a Stagger the rows arrive one after another, each with its weight; anywhere else it simply shows. */
 export function SignalRow({ signal, evidence = false }: { signal: SignalLike; evidence?: boolean }) {
   return (
-    <li className="flex justify-between gap-3 border-t border-sand-100 py-2.5 text-[13px] leading-[18px]">
+    <StaggerItem as="li" className="flex justify-between gap-3 border-t border-sand-100 py-2.5 text-[13px] leading-[18px]">
       <span className="min-w-0">
         <span className="text-ink-900">{signal.label}</span>
         {evidence && signal.evidence && (
@@ -57,7 +68,7 @@ export function SignalRow({ signal, evidence = false }: { signal: SignalLike; ev
       <span className={`num shrink-0 font-semibold ${signal.weight < 0 ? "text-coral-700" : signal.weight > 0 ? "text-green-700" : "text-ink-500"}`}>
         {signedWeight(signal.weight)}
       </span>
-    </li>
+    </StaggerItem>
   );
 }
 
@@ -87,16 +98,20 @@ export function TrustScoreCard({ score, band, signals, fit, person, title = "Tru
       </div>
       <div className="flex flex-col gap-2">
         <div className="flex items-baseline gap-1.5">
-          <span className="num text-[32px] font-medium leading-9 tracking-[-0.02em]">{score ?? "–"}</span>
+          <span className="num text-[32px] font-medium leading-9 tracking-[-0.02em]">{score === null ? "–" : <CountUp text={String(score)} />}</span>
           <span className="num text-[13px] text-ink-500">/ 100{fit !== undefined && fit !== null ? ` · fit ${fit}` : ""}</span>
         </div>
         <TrustMeter score={score} band={band} />
       </div>
       {signals && (shown.length > 0 ? (
-        <ul>
+        <Stagger as="ul">
           {shown.map((s, i) => <SignalRow key={`${s.code}-${i}`} signal={s} evidence={evidence} />)}
-          {hidden > 0 && <li className="border-t border-sand-100 pt-2.5 text-xs text-ink-500">and {hidden} more signal{hidden === 1 ? "" : "s"}</li>}
-        </ul>
+          {hidden > 0 && (
+            <StaggerItem as="li" className="border-t border-sand-100 pt-2.5 text-xs text-ink-500">
+              and {hidden} more signal{hidden === 1 ? "" : "s"}
+            </StaggerItem>
+          )}
+        </Stagger>
       ) : (
         <p className="border-t border-sand-100 pt-2.5 text-[13px] text-ink-700">No risk signals: nothing in the form, the history or the documents raised a flag.</p>
       ))}
@@ -122,7 +137,7 @@ export function LeadScoreStat({ score, probability, children }: { score: number 
       </div>
       <div className="flex flex-col gap-2">
         <div className="flex items-baseline gap-1.5">
-          <span className="num text-[32px] font-medium leading-9 tracking-[-0.02em]">{score ?? "–"}</span>
+          <span className="num text-[32px] font-medium leading-9 tracking-[-0.02em]">{score === null ? "–" : <CountUp text={String(score)} />}</span>
           <span className="num text-[13px] text-ink-500">/ 100</span>
         </div>
         <span className="text-xs text-ink-500">

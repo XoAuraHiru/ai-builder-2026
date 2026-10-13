@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { CountUp, DrawnCheck, EASE } from "@/components/motion";
+import { BlockSkeleton, PageSkeleton, type PageShape } from "@/components/skeleton";
 import { createContext, useContext, useId, type ButtonHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
 
 export const BAND_LABEL: Record<number, string> = { 1: "Preserve", 2: "Cautious", 3: "Balanced", 4: "Growth", 5: "Adventurous" };
@@ -36,7 +38,8 @@ const VARIANT: Record<Variant, string> = {
   danger: "bg-coral-50 font-semibold text-coral-700 hover:bg-coral-100 disabled:bg-sand-100 disabled:text-ink-400",
   ai: "bg-ai-50 font-semibold text-ai-700 hover:bg-ai-100 disabled:text-ink-400",
 };
-const BASE = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full transition-colors duration-150 disabled:cursor-not-allowed";
+// A press settles the button 2% (a felt click); a disabled button never moves.
+const BASE = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full transition-[background-color,color,box-shadow,transform] duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100";
 const SIZE: Record<Size, string> = { md: "min-h-11 px-5 text-sm", sm: "min-h-9 px-4 text-[13px]" };
 
 function classes(variant: Variant, size: Size, className: string) {
@@ -69,7 +72,14 @@ export function Field({ label, hint, error, className = "", children }:
       <span className="block text-[13px] font-medium leading-[18px] text-ink-900">{label}</span>
       {hint && <span className="mt-0.5 block text-xs text-ink-500">{hint}</span>}
       <span className="mt-1.5 block">{children}</span>
-      {error && <span role="alert" className="mt-1.5 block text-[13px] text-coral-700">{error}</span>}
+      <AnimatePresence initial={false}>
+        {error && (
+          <motion.span key="error" className="block overflow-hidden" initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: EASE }}>
+            <span role="alert" className="block pt-1.5 text-[13px] text-coral-700">{error}</span>
+          </motion.span>
+        )}
+      </AnimatePresence>
     </label>
   );
 }
@@ -145,7 +155,7 @@ export function Figure({ label, value, detail, tone, size = "md" }:
   return (
     <div className="min-w-0">
       <div className="text-sm font-medium text-ink-700">{label}</div>
-      <div className={`mt-1.5 font-medium ${scale} ${color}`}>{value}</div>
+      <div className={`mt-1.5 font-medium ${scale} ${color}`}><CountUp text={value} /></div>
       {detail && <div className="mt-2 text-sm text-ink-700">{detail}</div>}
     </div>
   );
@@ -157,20 +167,23 @@ const NOTICE: Record<Tone, { box: string; dot: string }> = {
   error: { box: "bg-coral-50", dot: "bg-coral-500" }, success: { box: "bg-green-50", dot: "bg-green-500" },
 };
 
-export function Notice({ tone = "info", title, action, children }:
-  { tone?: Tone; title?: string; action?: ReactNode; children?: ReactNode }) {
+export function Notice({ tone = "info", title, action, children, confirmed = false }:
+  { tone?: Tone; title?: string; action?: ReactNode; children?: ReactNode; confirmed?: boolean }) {
   return (
-    <div role={tone === "error" ? "alert" : undefined}
+    <motion.div role={tone === "error" ? "alert" : undefined} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.24, ease: EASE }}
       className={`flex flex-wrap items-start justify-between gap-3 rounded-panel px-5 py-4 text-sm ${NOTICE[tone].box}`}>
       <div className="flex min-w-0 flex-1 gap-3">
-        <span aria-hidden="true" className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${NOTICE[tone].dot}`} />
+        {confirmed && tone === "success"
+          ? <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-green-600"><DrawnCheck size={16} /></span>
+          : <span aria-hidden="true" className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${NOTICE[tone].dot}`} />}
         <div className="min-w-0">
           {title && <p className="font-semibold text-ink-900">{title}</p>}
           {children && <div className="text-ink-700">{children}</div>}
         </div>
       </div>
       {action}
-    </div>
+    </motion.div>
   );
 }
 
@@ -256,26 +269,32 @@ export function KeyMoment({ tone = "attention", label, title, children, actions 
   { tone?: MomentTone; label: string; title: ReactNode; children?: ReactNode; actions?: ReactNode }) {
   const id = useId();
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-6 rounded-panel border border-sand-200 bg-white p-6 sm:p-7">
+    <motion.section aria-labelledby={id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.32, ease: EASE }}
+      className="flex flex-col gap-6 rounded-panel border border-sand-200 bg-white p-6 sm:p-7">
       <span className="self-start"><Badge tone={MOMENT[tone]}>{label}</Badge></span>
       <h2 id={id} className="max-w-[620px] text-[26px] font-semibold leading-8 tracking-[-0.02em] sm:text-[32px] sm:leading-[38px]">{title}</h2>
       {children && <div className="space-y-5">{children}</div>}
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
-    </section>
+    </motion.section>
   );
 }
 
-export function Loading({ label }: { label: string }) {
-  return <p role="status" className="py-10 text-sm text-ink-500">{label}…</p>;
+/** While data loads: a skeleton shaped like what is coming. `page` for a whole page (dashboard, table, detail,
+ *  cards), otherwise `shape` for a part of one (a card, a table, a few lines, a row of stats). */
+export function Loading({ label, shape = "card", page }:
+  { label: string; shape?: "card" | "table" | "lines" | "stats"; page?: PageShape }) {
+  return page ? <PageSkeleton label={label} shape={page} /> : <BlockSkeleton label={label} shape={shape} />;
 }
 
 export function EmptyState({ title, action, children }: { title: string; action?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="rounded-panel border border-dashed border-sand-300 bg-white px-6 py-12 text-center">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}
+      className="rounded-panel border border-dashed border-sand-300 bg-white px-6 py-12 text-center">
       <p className="font-semibold">{title}</p>
       {children && <div className="mx-auto mt-1 max-w-[52ch] text-sm text-ink-700">{children}</div>}
       {action && <div className="mt-5">{action}</div>}
-    </div>
+    </motion.div>
   );
 }
 
@@ -304,8 +323,9 @@ export function NavSegmented({ label, items }: { label: string; items: { href: s
     <nav aria-label={label} className="no-print inline-flex max-w-full gap-1 overflow-x-auto rounded-full border border-sand-200 bg-white p-1">
       {items.map((t) => (
         <Link key={t.href} href={t.href} aria-current={t.on ? "page" : undefined}
-          className={`whitespace-nowrap rounded-full px-[18px] py-[9px] text-sm font-medium ${t.on ? "bg-green-100 text-green-800" : "text-ink-700 hover:bg-fill"}`}>
-          {t.label}
+          className={`relative whitespace-nowrap rounded-full px-[18px] py-[9px] text-sm font-medium ${t.on ? "text-green-800" : "text-ink-700 hover:bg-fill"}`}>
+          {t.on && <motion.span layoutId={`nav-${label}`} className="absolute inset-0 rounded-full bg-green-100" transition={{ duration: 0.3, ease: EASE }} />}
+          <span className="relative">{t.label}</span>
         </Link>
       ))}
     </nav>

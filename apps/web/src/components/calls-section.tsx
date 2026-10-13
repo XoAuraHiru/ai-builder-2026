@@ -1,18 +1,32 @@
 "use client";
 
+import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, apiDownload, apiUpload } from "@/lib/api";
 import {
-  clock, demoName, droppedNote, FIELD_LABEL, figuresWarning, FLAG_LABEL, flagsHeadline, highFlags, ROLE_LABEL, SEVERITY_LABEL, sortFlags,
-  updateLine, type CallFlag, type DemoCall, type LeadCall, type UpdateField,
+  callMarks, clock, demoName, droppedNote, FIELD_LABEL, figuresWarning, FLAG_LABEL, flagsHeadline, highFlags, ROLE_LABEL, SEVERITY_LABEL,
+  sortFlags, sweepDelay, updateLine, type CallFlag, type DemoCall, type LeadCall, type UpdateField,
 } from "@/lib/calls";
 import { formatDate } from "@/lib/format";
 import { AiProse } from "@/components/ai-prose";
+import { AiThinking } from "@/components/ai-thinking";
 import { CardSection } from "@/components/card-section";
+import { ConfirmedLine } from "@/components/form-feedback";
+import { EASE, GrowBar } from "@/components/motion";
+import { BlockSkeleton } from "@/components/skeleton";
 import { Badge, Button, Notice, Sparkle } from "@/components/ui";
 
 const ACCEPT = "audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,audio/ogg,.mp3,.wav,.m4a,.ogg";
-const LISTENING = "Gemini is listening…";
+// One Gemini call listens, transcribes, flags and proposes; then every quote is checked against the transcript.
+const LISTENING_STEPS = [
+  "Gemini is listening to the recording",
+  "Gemini is writing the transcript, speaker by speaker",
+  "Gemini is looking for promises, pressure and a third party directing the client",
+  "Gemini is noting what the client asked to change",
+  "Checking every quote against the transcript",
+];
+// The reading lands as a sweep along the call: the timeline fills in this long, and each flag arrives as it is passed.
+const SWEEP = 0.6;
 const message = (e: unknown) => (e instanceof ApiError ? e.message : String(e));
 type Busy = "" | DemoCall | "upload";
 
@@ -97,12 +111,12 @@ export function CallsSection({ leadId, demoCall, onChange }:
       description="Gemini listens to a recorded call and proposes; you decide. A flag or update whose words are not in the transcript is dropped. The audio is never stored, only the reading.">
       <div className="flex flex-wrap items-center gap-2.5">
         {demoCall && (
-          <Button variant="ai" busy={busy === demoCall} disabled={Boolean(busy) || Boolean(paused)} onClick={() => runDemo(demoCall)}>
-            {busy !== demoCall && <Sparkle />}{busy === demoCall ? LISTENING : `Analyse the ${demoCall} call`}
+          <Button variant="ai" disabled={Boolean(busy) || Boolean(paused)} onClick={() => runDemo(demoCall)}>
+            <Sparkle />{`Analyse the ${demoCall} call`}
           </Button>
         )}
-        <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full border border-sand-200 bg-white px-5 text-sm font-medium text-ink-900 hover:bg-fill focus-within:shadow-[0_0_0_3px_var(--color-green-200)] ${busy || paused ? "pointer-events-none text-ink-400" : ""}`} aria-disabled={Boolean(paused) || undefined}>
-          {busy === "upload" ? LISTENING : "Upload a recording"}
+        <label className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full border border-sand-200 bg-white px-5 text-sm font-medium text-ink-900 hover:bg-fill focus-within:shadow-[0_0_0_3px_var(--color-green-200)] ${busy || paused ? "pointer-events-none text-ink-400" : ""}`} aria-disabled={Boolean(busy) || Boolean(paused) || undefined}>
+          Upload a recording
           <input type="file" accept={ACCEPT} className="sr-only" disabled={Boolean(busy) || Boolean(paused)}
             onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ""; }} />
         </label>
@@ -117,9 +131,9 @@ export function CallsSection({ leadId, demoCall, onChange }:
           </Notice>
         </div>
       )}
-      {busy && <p role="status" className="mt-3 flex items-center gap-1.5 text-[13px] font-medium text-ai-700"><Sparkle size={12} />{LISTENING} A three-minute call takes about half a minute.</p>}
       {error && <div className="mt-4"><Notice tone="error" title="The call could not be analysed">{error}</Notice></div>}
-      {calls === null ? <p role="status" className="mt-6 text-sm text-ink-500">Loading the calls…</p>
+      {busy && <div className="mt-6"><AiThinking steps={LISTENING_STEPS} usually="about 17 s" /></div>}
+      {calls === null ? <div className="mt-6"><BlockSkeleton label="Loading the calls" shape="lines" /></div>
         : current ? (
           <div className="mt-6">
             <CallView key={current.id} call={current} leadId={leadId} audioUrl={audioUrl}
@@ -128,7 +142,7 @@ export function CallsSection({ leadId, demoCall, onChange }:
                 await onChange();
               }} />
           </div>
-        ) : <p className="mt-6 text-sm text-ink-500">No calls analysed for this lead yet.</p>}
+        ) : !busy && <p className="mt-6 text-sm text-ink-500">No calls analysed for this lead yet.</p>}
       {earlier.length > 0 && (
         <div className="mt-8">
           <h3 className="text-sm font-semibold">Earlier calls</h3>
@@ -163,13 +177,51 @@ function TimeButton({ at, onPlay }: { at: number; onPlay?: (at: number) => void 
 }
 
 const SEVERITY_TONE = { high: "loss", medium: "caution", low: "neutral" } as const;
+const MARK_FILL = { high: "bg-coral-500", medium: "bg-amber-400", low: "bg-ink-400" } as const;
 
-/** Each flag as a status chip (coral for high, amber for medium) at the second it was said, the words quoted, and why. */
-function FlagList({ flags, onPlay }: { flags: CallFlag[]; onPlay?: (at: number) => void }) {
+/** The call as a line from its start to its end, with a mark at each flag (coral high, amber medium). When the reading
+ *  lands, the line fills from the start and each mark appears as the fill passes it: the flags in the order they were
+ *  said. With the recording at hand, a mark plays the call from that second. */
+function CallTimeline({ flags, duration, onPlay }: { flags: CallFlag[]; duration: number; onPlay?: (at: number) => void }) {
+  const marks = callMarks(flags, duration);
+  const end = duration > 0 ? duration : Math.max(...flags.map((f) => f.start_s));
+  return (
+    <div className="mt-4 max-w-xl" role={onPlay ? "group" : undefined} aria-label={onPlay ? "Flags along the call" : undefined} aria-hidden={onPlay ? undefined : true}>
+      <div className="relative h-6">
+        <span aria-hidden="true" className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-sand-100">
+          <GrowBar pct={100} className="bg-sand-300" />
+        </span>
+        <div className="absolute inset-x-1.5 inset-y-0">
+          {marks.map(({ flag, share }, i) => {
+            const dot = (
+              <motion.span aria-hidden="true" className={`block h-3 w-3 rounded-full ring-2 ring-fill ${MARK_FILL[flag.severity]}`}
+                initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.2, delay: share * SWEEP, ease: EASE }} />
+            );
+            const place = "absolute top-1/2 flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full";
+            return onPlay ? (
+              <button key={`${flag.kind}-${flag.start_s}-${i}`} type="button" style={{ left: `${share * 100}%` }} onClick={() => onPlay(flag.start_s)}
+                aria-label={`Play from ${clock(flag.start_s)}: ${SEVERITY_LABEL[flag.severity]}, ${FLAG_LABEL[flag.kind]}`}
+                className={`${place} hover:bg-white focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-green-200`}>{dot}</button>
+            ) : <span key={`${flag.kind}-${flag.start_s}-${i}`} style={{ left: `${share * 100}%` }} className={place}>{dot}</span>;
+          })}
+        </div>
+      </div>
+      <div aria-hidden="true" className="num mt-0.5 flex justify-between text-xs text-ink-500"><span>0:00</span><span>{clock(end)}</span></div>
+    </div>
+  );
+}
+
+/** Each flag as a status chip (coral for high, amber for medium) at the second it was said, the words quoted, and why.
+ *  Listed by severity, they arrive in the order they were said, each as the timeline's fill reaches it. */
+function FlagList({ flags, duration, onPlay }: { flags: CallFlag[]; duration: number; onPlay?: (at: number) => void }) {
+  const last = Math.max(0, ...flags.map((f) => f.start_s));
   return (
     <ul>
       {flags.map((f, i) => (
-        <li key={`${f.kind}-${f.start_s}-${i}`} className="border-t border-sand-100 py-4 first:border-t-0 first:pt-0 last:pb-0">
+        <motion.li key={`${f.kind}-${f.start_s}-${i}`} className="border-t border-sand-100 py-4 first:border-t-0 first:pt-0 last:pb-0"
+          initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, delay: 0.05 + sweepDelay(f.start_s, duration, SWEEP, last), ease: EASE }}>
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={SEVERITY_TONE[f.severity]}>{SEVERITY_LABEL[f.severity]} · {FLAG_LABEL[f.kind]}</Badge>
             <TimeButton at={f.start_s} onPlay={onPlay} />
@@ -179,7 +231,7 @@ function FlagList({ flags, onPlay }: { flags: CallFlag[]; onPlay?: (at: number) 
           {f.source === "gemini" ? (
             <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-ai-700"><Sparkle size={12} />Flagged by Gemini</p>
           ) : <p className="mt-2 text-xs text-ink-500">Flagged by the promise rules that also check advisors&rsquo; drafts</p>}
-        </li>
+        </motion.li>
       ))}
     </ul>
   );
@@ -189,6 +241,7 @@ function CallView({ call, leadId, audioUrl, onApplied }:
   { call: LeadCall; leadId: string; audioUrl?: string; onApplied: (call: LeadCall) => Promise<void> }) {
   const player = useRef<HTMLAudioElement>(null);
   const [ticked, setTicked] = useState<Set<UpdateField>>(new Set());
+  const [justApplied, setJustApplied] = useState<Set<UpdateField>>(new Set());  // confirmed with a drawn check
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const { reading } = call;
@@ -219,6 +272,7 @@ function CallView({ call, leadId, audioUrl, onApplied }:
       const out = await api<{ call: LeadCall; applied: UpdateField[] }>(`/leads/${leadId}/calls/${call.id}/apply`,
         { method: "POST", body: JSON.stringify({ fields: [...ticked] }) });
       setTicked(new Set());
+      setJustApplied(new Set(out.applied));
       await onApplied(out.call);
     } catch (e) {
       setError(message(e));
@@ -236,6 +290,7 @@ function CallView({ call, leadId, audioUrl, onApplied }:
         </p>
         {audioUrl ? <audio ref={player} controls preload="metadata" src={audioUrl} className="mt-3 w-full max-w-xl" />
           : <p className="mt-2 text-sm text-ink-700">{call.source === "demo" ? "Loading the recording…" : "The recording is not kept, so only its reading can be shown."}</p>}
+        {flags.length > 0 && <CallTimeline flags={flags} duration={call.duration_s} onPlay={onPlay} />}
       </div>
 
       {flags.length > 0 ? (
@@ -246,7 +301,7 @@ function CallView({ call, leadId, audioUrl, onApplied }:
             </Badge>
             {high.length > 0 && <h3 className="max-w-[620px] text-[20px] font-semibold leading-7 tracking-[-0.01em]">{flagsHeadline(flags)}</h3>}
           </div>
-          <FlagList flags={flags} onPlay={onPlay} />
+          <FlagList flags={flags} duration={call.duration_s} onPlay={onPlay} />
         </section>
       ) : (
         <Notice tone="success" title="No conduct flags">Neither Gemini nor the promise rules found anything to flag on this call.</Notice>
@@ -287,14 +342,16 @@ function CallView({ call, leadId, audioUrl, onApplied }:
                       <span>&ldquo;{u.quote}&rdquo;</span>
                       <TimeButton at={u.start_s} onPlay={onPlay} />
                     </div>
-                    {done && <p className="mt-1.5 text-xs font-medium text-green-700">Applied by {done.by} on {formatDate(done.at)}.</p>}
+                    {done && (justApplied.has(u.field)
+                      ? <ConfirmedLine className="mt-1.5">Applied by {done.by} on {formatDate(done.at)}.</ConfirmedLine>
+                      : <p className="mt-1.5 text-xs font-medium text-green-700">Applied by {done.by} on {formatDate(done.at)}.</p>)}
                   </div>
                 </li>
               );
             })}
           </ul>
           <div className="flex flex-wrap items-center gap-3 pt-1">
-            <Button variant="tonal" busy={busy} disabled={ticked.size === 0} onClick={apply}>Apply selected</Button>
+            <Button variant="tonal" busy={busy} disabled={ticked.size === 0} onClick={apply}>{busy ? "Applying" : "Apply selected"}</Button>
             {ticked.size > 0 && <span className="text-[13px] text-ink-500">{[...ticked].map((f) => FIELD_LABEL[f]).join(", ")}</span>}
           </div>
           {error && <Notice tone="error">{error}</Notice>}

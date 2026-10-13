@@ -6,7 +6,35 @@ import { api, ApiError } from "@/lib/api";
 import { formatMonth, formatPct } from "@/lib/format";
 import type { Fund } from "@/lib/invest";
 import { TickerTile } from "@/components/market-bits";
-import { Loading, Notice, PageHeader, Panel, RiskBand } from "@/components/ui";
+import { Stagger, StaggerItem } from "@/components/motion";
+import { Skeleton } from "@/components/skeleton";
+import { Notice, PageHeader, Panel, RiskBand } from "@/components/ui";
+import { LoadingRegion } from "../_parts/shapes";
+
+/** The funds while they load: seven rows of tile, name and objective, risk meter and three figures. */
+function FundsSkeleton() {
+  return (
+    <LoadingRegion label="Loading the funds">
+      <div className="rounded-panel border border-sand-200 bg-white px-3 py-2 sm:px-4">
+        {Array.from({ length: 7 }, (_, i) => (
+          <div key={i} className="flex flex-col gap-3 border-b border-sand-100 px-3 py-4 last:border-b-0 xl:grid xl:grid-cols-[minmax(0,1fr)_11.5rem_7.5rem_8.5rem_6.5rem] xl:items-center xl:gap-x-8">
+            <span className="flex min-w-0 items-center gap-3">
+              <Skeleton className="h-8 w-11 shrink-0 rounded-tile" />
+              <span className="flex min-w-0 flex-1 flex-col gap-2"><Skeleton className="h-4 w-44" /><Skeleton className="h-3.5 w-[min(420px,90%)]" /></span>
+            </span>
+            <span className="flex items-center gap-2.5">
+              <span className="flex gap-[3px]">{[0, 1, 2, 3, 4].map((j) => <Skeleton key={j} className="h-2 w-3.5 rounded-[3px]" />)}</span>
+              <Skeleton className="h-3 w-20" />
+            </span>
+            <span className="grid grid-cols-3 gap-4 xl:contents">
+              {[0, 1, 2].map((j) => <span key={j} className="flex flex-col gap-1.5"><Skeleton className="h-3 w-16" /><Skeleton className="h-3.5 w-14" /></span>)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </LoadingRegion>
+  );
+}
 
 type Stats = {
   code: string; name: string; risk_band: number; annual_return_pct: number; annual_volatility_pct: number;
@@ -31,11 +59,11 @@ export default function FundsPage() {
     <>
       <PageHeader title="Funds" description="Seven house funds, each a fixed mix of low-cost US-listed ETFs, from a Treasury-bill reserve to a technology fund." />
       {error && <Notice tone="error">{error}</Notice>}
-      {!stats ? !error && <Loading label="Loading the funds" /> : (
+      {!stats ? !error && <FundsSkeleton /> : (
         <Panel className="px-3 py-2 sm:px-4">
-        <ul>
+        <Stagger as="ul">
           {stats.map((s) => (
-            <li key={s.code} className="relative before:absolute before:inset-x-3 before:bottom-0 before:h-px before:bg-sand-100 last:before:hidden">
+            <StaggerItem as="li" key={s.code} className="relative before:absolute before:inset-x-3 before:bottom-0 before:h-px before:bg-sand-100 last:before:hidden">
               <Link href={`/investor/funds/${s.code}`}
                 className="group flex flex-col gap-3 rounded-control px-3 py-4 hover:bg-fill xl:grid xl:grid-cols-[minmax(0,1fr)_11.5rem_7.5rem_8.5rem_6.5rem] xl:items-center xl:gap-x-8">
                 <span className="flex flex-col gap-2 xl:contents">
@@ -55,9 +83,9 @@ export default function FundsPage() {
                   <span className="num text-sm"><span className="block text-xs text-ink-500">Yearly cost</span>{formatPct(s.total_fee_pct, 2)}</span>
                 </span>
               </Link>
-            </li>
+            </StaggerItem>
           ))}
-        </ul>
+        </Stagger>
         </Panel>
       )}
       {stats && stats.length > 0 && (

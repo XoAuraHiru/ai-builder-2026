@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  acceptMany, approvalAmount, approvalStatus, balanceNote, codeDigits, confidenceWords, describeInstruction, diffMarks, matchStatus,
+  acceptMany, approvalAmount, arriveDelay, codeArrival, confirmPause, statementSteps, statementUsually, approvalStatus, balanceNote, codeDigits, confidenceWords, describeInstruction, diffMarks, matchStatus,
   matchTotals, meterCells, priceStatus, proposerLabel, resultWords, runCounts, shortId, shortWhen, sinceRun, splitProposals,
   statementFlow, writtenByModel,
 } from "./operations";
@@ -118,5 +118,46 @@ describe("acceptMany", () => {
     });
     expect(seen).toEqual(["a", "b", "c"]);
     expect(await acceptMany([], accept)).toEqual({ accepted: [], failed: [] });
+  });
+});
+
+describe("arriveDelay", () => {
+  it("brings rows in 45 ms apart, the first dozen only", () => {
+    expect(arriveDelay(0)).toBeCloseTo(0.04);
+    expect(arriveDelay(1)).toBeCloseTo(0.085);
+    expect(arriveDelay(11)).toBeCloseTo(0.535);
+    expect(arriveDelay(40)).toBeCloseTo(arriveDelay(11));
+    expect(arriveDelay(-3)).toBeCloseTo(0.04);
+    expect(arriveDelay(5, { cap: 3, step: 0.1, start: 0 })).toBeCloseTo(0.2);
+  });
+});
+
+describe("codeArrival", () => {
+  it("finds where the new digits of a code begin", () => {
+    expect(codeArrival("12", "123")).toBe(2);
+    expect(codeArrival("", "482913")).toBe(0);
+    expect(codeArrival("123", "12")).toBe(2);
+    expect(codeArrival("111111", "482913")).toBe(0);
+    expect(codeArrival("4829", "4829")).toBe(4);
+  });
+});
+
+describe("confirmPause", () => {
+  it("waits for the check to draw, unless motion is reduced", () => {
+    expect(confirmPause(false)).toBeGreaterThan(400);
+    expect(confirmPause(null)).toBeGreaterThan(400);
+    expect(confirmPause(true)).toBe(0);
+    expect(confirmPause(false, true)).toBeLessThan(confirmPause(false));
+    expect(confirmPause(true, true)).toBe(0);
+  });
+});
+
+describe("statementSteps", () => {
+  it("says who reads the file before Gemini reads the narrations", () => {
+    expect(statementSteps("pdf")[0]).toMatch(/Document AI/);
+    expect(statementSteps("csv")[0]).toMatch(/CSV/);
+    expect(statementSteps("csv")[1]).toMatch(/^Gemini/);
+    expect(statementUsually("csv")).toBe("a few seconds");
+    expect(statementUsually("pdf")).toMatch(/s$/);
   });
 });

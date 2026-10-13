@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { layoutGraph, type GraphNode } from "./compliance";
 import {
-  canFlagLeads, canOpenCase, flaggedMessage, PATTERN_LABEL, RING_COLUMNS, ringHeadline, scoreTone, stageLabel, type Ring,
+  canFlagLeads, canOpenCase, citedLinks, flaggedMessage, PATTERN_LABEL, RING_COLUMNS, ringHeadline, scoreTone, stageLabel, type Ring,
 } from "./rings";
 
 const member = (id: string, kind: "lead" | "client", label: string, flags: string[] = []) =>
@@ -85,5 +85,12 @@ describe("the ring layout", () => {
     ];
     const { at } = layoutGraph(nodes, 600, 80, RING_COLUMNS);
     expect([at["lead:a"].x, at["device:x"].x, at["ip:y"].x, at["person:s"].x]).toEqual([100, 300, 300, 500]);
+  });
+});
+
+describe("citedLinks", () => {
+  it("lists every cited link once, in the order the reading first cites it", () => {
+    expect(citedLinks({ parts: [{ text: "a", links: ["L2", "L1"] }, { text: "b", links: ["L1", "L4"] }] })).toEqual(["L2", "L1", "L4"]);
+    expect(citedLinks({ parts: [{ text: "a", links: [] }] })).toEqual([]);
   });
 });

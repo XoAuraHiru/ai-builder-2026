@@ -1,5 +1,9 @@
+"use client";
+
+import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { figureSpans } from "@/lib/ai-figures";
+import { EASE } from "@/components/motion";
 import { Sparkle } from "@/components/ui";
 
 export type Narrative = {
@@ -16,7 +20,8 @@ export type Narrative = {
 export function AiProse({ children, caption, warning, model, actions }:
   { children: ReactNode; caption: string; warning?: string; model?: string; actions?: ReactNode }) {
   return (
-    <figure className="flex max-w-[860px] flex-col gap-4 rounded-[16px] bg-ai-50 px-6 py-[22px]">
+    <motion.figure initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.36, ease: EASE }}
+      className="flex max-w-[860px] flex-col gap-4 rounded-[16px] bg-ai-50 px-6 py-[22px]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-ai-700"><Sparkle />Written by Gemini</span>
         {model && <span className="code text-[11px] text-ai-700">{model}</span>}
@@ -29,7 +34,7 @@ export function AiProse({ children, caption, warning, model, actions }:
         <span>{caption}</span>
         {actions && <span className="flex gap-2">{actions}</span>}
       </figcaption>
-    </figure>
+    </motion.figure>
   );
 }
 

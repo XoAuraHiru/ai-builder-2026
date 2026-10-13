@@ -67,7 +67,15 @@ export function deviceId(storage: KeyValueStore): string {
   return id;
 }
 
-export type Triage = { attention: Lead[]; call: Lead[]; clients: Lead[]; unscored: Lead[]; closed: Lead[] };
+/** What scoring a lead does, in order, for the panel that waits on it: Gemini reads the form, the Lead Score model
+ *  scores fit, and the fixed trust rules weigh the contact details, the device and any documents. */
+export const SCORING_STEPS = [
+  "Gemini is reading the lead's answers",
+  "Scoring fit with the Lead Score model",
+  "Weighing contacts, devices and documents for the Trust Score",
+];
+
+export type Triage ={ attention: Lead[]; call: Lead[]; clients: Lead[]; unscored: Lead[]; closed: Lead[] };
 
 /** Leads in the order an advisor should see them: the risky ones first, then the ones worth a call by fit. */
 export function triage(leads: Lead[]): Triage {
@@ -118,6 +126,12 @@ export function trustMeter(score: number | null, band: TrustBand | null): { fill
   const capped = Math.max(0, Math.min(100, score));
   const filled = capped > 0 ? Math.max(1, Math.round(capped / (100 / TRUST_SEGMENTS))) : 0;
   return { filled, tone: band === "clear" ? "green" : band === "review" ? "amber" : "coral" };
+}
+
+/** The meter segment by segment, in the order they fill: the band's tone for a filled one, null for an empty one. */
+export function meterSegments(score: number | null, band: TrustBand | null): (Exclude<MeterTone, "none"> | null)[] {
+  const { filled, tone } = trustMeter(score, band);
+  return Array.from({ length: TRUST_SEGMENTS }, (_, i) => (i < filled && tone !== "none" ? tone : null));
 }
 
 /** A signal's weight as signed text with a true minus: "−25", "+6". */

@@ -5,11 +5,14 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatDate, formatPct } from "@/lib/format";
 import {
-  priceStatus, runCounts, sinceRun, writtenByModel, type Approval, type OpsRun, type Overview,
+  DAY_END_STEPS, priceStatus, runCounts, sinceRun, writtenByModel, type Approval, type OpsRun, type Overview,
 } from "@/lib/operations";
 import { AiProse } from "@/components/ai-prose";
-import { Button, ChangeChip, EmptyState, Field, inputClass, Loading, Notice, PageHeader, Section } from "@/components/ui";
-import { StatCard, StatusChip, TableCard, tbl, type GlyphName } from "./_parts";
+import { AiThinking } from "@/components/ai-thinking";
+import { Skeleton, SkeletonText } from "@/components/skeleton";
+import { Button, ChangeChip, EmptyState, Field, inputClass, Notice, PageHeader, Section } from "@/components/ui";
+import { Arrive, StatCard, StatusChip, TableCard, tbl, type GlyphName } from "./_parts";
+import { LoadingRegion, SectionTitleSkeleton, StatsSkeleton, TableCardSkeleton } from "./_skeletons";
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 const runStatus = (r: OpsRun) => (r.status === "ok"
@@ -23,14 +26,15 @@ function StepLog({ run }: { run: OpsRun }) {
         <table className={tbl.table}>
           <thead className={tbl.head}><tr><th className={tbl.th}>Step</th><th className={tbl.th}>What happened</th><th className={`${tbl.th} hidden text-right sm:table-cell`}>Outcome</th></tr></thead>
           <tbody>
-            {run.steps.map((s) => {
+            {/* The steps arrive in the order the run took them. */}
+            {run.steps.map((s, i) => {
               const chip = <StatusChip tone={s.ok ? "gain" : "caution"}>{s.ok ? "Done" : "Needs a look"}</StatusChip>;
               return (
-                <tr key={s.step} className={`${tbl.row} align-top sm:align-middle`}>
+                <Arrive as="tr" index={i} key={s.step} className={`${tbl.row} align-top sm:align-middle`}>
                   <td className={`${tbl.td} font-medium sm:whitespace-nowrap`}>{s.step}<span className="mt-1.5 block sm:hidden">{chip}</span></td>
                   <td className={`${tbl.td} text-ink-700`}>{s.detail}</td>
                   <td className={`${tbl.td} hidden text-right sm:table-cell`}>{chip}</td>
-                </tr>
+                </Arrive>
               );
             })}
           </tbody>
@@ -71,6 +75,39 @@ function MorningBrief({ run }: { run: OpsRun }) {
       warning={b.verified ? undefined : `Check before relying on this: ${b.unsupported_figures.join(", ")} did not come from the run.`}>
       {body}
     </AiProse>
+  );
+}
+
+/** The brief's place while the page loads: a sand panel with a headline and its points. */
+function BriefSkeleton() {
+  return (
+    <div className="flex flex-col gap-4 rounded-[16px] bg-fill px-6 py-[22px]">
+      <span className="flex items-center justify-between gap-3"><Skeleton className="h-3.5 w-32" /><Skeleton className="h-3 w-24" /></span>
+      <Skeleton className="h-6 w-4/5 rounded-[10px]" />
+      <SkeletonText lines={4} />
+    </div>
+  );
+}
+
+/** Today while it loads: the four queues, the run's brief beside its step log, then the draft prices. */
+function TodaySkeleton() {
+  return (
+    <LoadingRegion label="Loading the day-end">
+      <StatsSkeleton className="mb-12" />
+      <div className="space-y-12">
+        <div>
+          <SectionTitleSkeleton width="w-64" />
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] xl:items-start">
+            <BriefSkeleton />
+            <TableCardSkeleton rows={7} widths={[1, 3, 1]} chip />
+          </div>
+        </div>
+        <div>
+          <SectionTitleSkeleton width="w-52" />
+          <TableCardSkeleton rows={4} widths={[2, 1, 1, 1, 2, 1]} tile chip />
+        </div>
+      </div>
+    </LoadingRegion>
   );
 }
 
@@ -121,8 +158,9 @@ export default function DayEndPage() {
       description="Each weekday evening the day-end drafts fund prices from the market's closes, turns due monthly plans into orders, deals what it can, runs transaction monitoring and writes a brief. Prices wait for a second person before anything is dealt."
       actions={<Button variant={drafts.length > 0 ? "secondary" : "primary"} busy={busy === "run"} onClick={runNow}>Run the day-end now</Button>} />
   );
-  if (!data) return <>{header}{error ? <Notice tone="error">{error}</Notice> : <Loading label="Loading the day-end" />}</>;
+  if (!data) return <>{header}{error ? <Notice tone="error">{error}</Notice> : <TodaySkeleton />}</>;
   const run = data.latest_run;
+  const running = busy === "run";
   const then = runCounts(run);
   const cards: { title: string; value: number; then?: number; icon: GlyphName; href: string; idle: string; busy: string }[] = [
     { title: "Waiting for money", value: data.waiting_for_money, then: then.waiting, icon: "money", href: "/operations/reconciliation",
@@ -150,10 +188,17 @@ export default function DayEndPage() {
         })}
       </div>
       <div className="space-y-12">
-        <Section title={run ? `The run for ${formatDate(run.as_of ?? run.started_at)}` : "No run yet"}
-          description={run ? `Started by ${run.triggered_by} on ${formatDate(run.started_at)}.` : "Cloud Scheduler starts the day-end at 5:15 pm New York time on weekdays; you can also run it now."}
-          actions={run && <StatusChip tone={runStatus(run).tone}>{runStatus(run).label}</StatusChip>}>
-          {run ? (
+        <Section title={running ? "The day-end is running" : run ? `The run for ${formatDate(run.as_of ?? run.started_at)}` : "No run yet"}
+          description={running ? "Each step is recorded as it finishes; Gemini writes the brief from them last."
+            : run ? `Started by ${run.triggered_by} on ${formatDate(run.started_at)}.` : "Cloud Scheduler starts the day-end at 5:15 pm New York time on weekdays; you can also run it now."}
+          actions={running ? <StatusChip>Running</StatusChip> : run && <StatusChip tone={runStatus(run).tone}>{runStatus(run).label}</StatusChip>}>
+          {running ? (
+            // Where the new brief and step log will be: Gemini's panel says what the run is doing meanwhile.
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] xl:items-start [&>*]:min-w-0">
+              <AiThinking steps={DAY_END_STEPS} usually="a few seconds" />
+              <LoadingRegion label="Recording the run's steps"><TableCardSkeleton rows={7} widths={[1, 3, 1]} chip /></LoadingRegion>
+            </div>
+          ) : run ? (
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] xl:items-start [&>*]:min-w-0">
               <MorningBrief run={run} />
               <StepLog run={run} />

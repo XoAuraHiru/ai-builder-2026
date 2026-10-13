@@ -238,3 +238,35 @@ export function riskState(result: PromiseSettledResult<RiskReport>): { report: R
   if (result.status === "fulfilled") return { report: result.value };
   return { error: result.reason instanceof Error && result.reason.message ? result.reason.message : "Atrium could not check your mix right now." };
 }
+
+export type Thinking = { steps: string[]; usually?: string };
+
+/** What happens while an investor waits for Gemini, call by call, in the order the API does it, and how long it
+ *  usually takes. AiThinking moves to the next step every four seconds and stops at the last, so the first step names
+ *  the part that takes longest. */
+export const THINKING = {
+  xray: { usually: "about 3 s", steps: ["Gemini is reading your X-ray's figures", "Writing what they mean for you",
+    "Checking every figure in the text against the engine"] },
+  risk: { usually: "about 3 s", steps: ["Gemini is reading your risk report's figures", "Writing what they mean for you",
+    "Checking every figure in the text against the engine"] },
+  whatIf: { usually: "about 3 s", steps: ["Gemini is reading the simulation's results", "Writing what they mean for you",
+    "Checking every figure in the text against the engine"] },
+  scenarioMap: { usually: "about 17 s", steps: ["Gemini is searching Google for context on your scenario",
+    "Proposing shocks from what it found", "Holding each shock within Atrium's limits", "Applying the shocks to what you hold"] },
+  scenarioExplain: { usually: "about 3 s", steps: ["Gemini is reading the scenario's figures", "Writing what they mean for you",
+    "Checking every figure in the text against the engine"] },
+  fundFit: { usually: "about 5 s", steps: ["Searching this fund's documents", "Gemini is weighing them against your risk profile",
+    "Keeping only the points that cite a passage", "Checking every figure against the documents"] },
+  order: { usually: "about 3 s", steps: ["Gemini is reading the Guardian's checks", "Writing what this order does and costs",
+    "Checking every figure in the text against the Guardian's"] },
+  profileChat: { steps: ["Gemini is reading your answer", "Noting what it tells Atrium about the five questions",
+    "Writing the next question"] },
+  copilot: { usually: "a few seconds", steps: ["Gemini is deciding what to look up", "Looking up your figures and the fund documents",
+    "Writing the answer from what it found"] },
+} satisfies Record<string, Thinking>;
+
+/** A leading plus split from a figure, so "+$1,240" can count up like "−$1,240" does (the counter reads a minus sign,
+ *  not a plus). Anything else comes back whole. */
+export function splitSign(text: string): { sign: string; figure: string } {
+  return text.startsWith("+") ? { sign: "+", figure: text.slice(1) } : { sign: "", figure: text };
+}

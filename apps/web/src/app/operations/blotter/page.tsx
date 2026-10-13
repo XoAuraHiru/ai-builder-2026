@@ -5,8 +5,9 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { formatDate, formatUsd } from "@/lib/format";
 import { INSTRUCTION_STATE, shortWhen, STEP_LABEL, type Approval, type BlotterRow } from "@/lib/operations";
-import { Button, EmptyState, Field, inputClass, Loading, Notice, PageHeader, Segmented } from "@/components/ui";
-import { StatusChip, TableCard, tbl } from "../_parts";
+import { Button, EmptyState, Field, inputClass, Notice, PageHeader, Segmented } from "@/components/ui";
+import { Arrive, StatusChip, TableCard, tbl } from "../_parts";
+import { LoadingRegion, TableCardSkeleton } from "../_skeletons";
 
 const msg = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 const FILTERS = [
@@ -46,10 +47,11 @@ function Detail({ row, reason, setReason, busy, onAsk }:
         <p className="text-[13px] font-medium">Timeline</p>
         {row.steps.length === 0 ? <p className="mt-1 text-sm text-ink-500">No timeline was recorded for this instruction.</p> : (
           <ol className="mt-3 space-y-3">
+            {/* The instruction's steps arrive in the order they happened. */}
             {row.steps.map((s, i) => {
               const bad = s.state === "rejected" || s.state === "reversed";
               return (
-                <li key={i} className="flex gap-3 text-sm">
+                <Arrive as="li" index={i} key={i} className="flex gap-3 text-sm">
                   <span aria-hidden="true" className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] text-white ${bad ? "bg-coral-500" : "bg-green-500"}`}>
                     {bad ? "!" : "✓"}
                   </span>
@@ -57,7 +59,7 @@ function Detail({ row, reason, setReason, busy, onAsk }:
                     <span className="font-medium">{STEP_LABEL[s.state] ?? s.state}</span> <span className="text-xs text-ink-500">{shortWhen(s.at)}</span>
                     <span className="block text-ink-700">{s.note}</span>
                   </span>
-                </li>
+                </Arrive>
               );
             })}
           </ol>
@@ -122,7 +124,7 @@ export default function BlotterPage() {
       <div className="mb-6"><Segmented label="Show" value={filter} options={[...FILTERS]} onChange={(f) => { setFilter(f); setRows(null); setOpen(null); }} /></div>
       {asked && <div className="mb-6"><Notice tone="success" title="Sent for approval">{asked.summary}. A second person approves it in <Link href="/operations/approvals" className="font-semibold text-green-600 underline-offset-4 hover:underline">Approvals</Link>.</Notice></div>}
       {error && <div className="mb-6"><Notice tone="error">{error}</Notice></div>}
-      {!rows ? <Loading label="Loading the blotter" /> : rows.length === 0 ? <EmptyState title="No instructions here">Instructions appear as clients place them.</EmptyState> : (
+      {!rows ? <LoadingRegion label="Loading the blotter"><TableCardSkeleton rows={8} widths={[1.2, 1, 1.3, 2, 1, 1.3]} tile={3} chip /></LoadingRegion> : rows.length === 0 ? <EmptyState title="No instructions here">Instructions appear as clients place them.</EmptyState> : (
         <TableCard title={`${rows.length} instruction${rows.length === 1 ? "" : "s"}`} description="Newest first. Open one to see its timeline.">
           <div className={`${tbl.wrap} hidden md:block`}>
             <table className={`${tbl.table} min-w-[820px]`}>
@@ -133,12 +135,12 @@ export default function BlotterPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => {
+                {rows.map((r, i) => {
                   const s = state(r);
                   const isOpen = open === r.id;
                   return (
                     <Fragment key={r.id}>
-                      <tr className={`${tbl.row} ${isOpen ? "border-b-0 bg-fill" : ""}`}>
+                      <Arrive as="tr" index={i} className={`${tbl.row} ${isOpen ? "border-b-0 bg-fill" : ""}`}>
                         <td className={`${tbl.td} ${tbl.id}`}>{r.reference ?? <span className="text-ink-400">None</span>}</td>
                         <td className={`${tbl.td} whitespace-nowrap text-ink-700`}>{formatDate(r.requested_at)}</td>
                         <td className={tbl.td}><span className="font-medium">{r.holder}</span><span className={`block ${tbl.id} text-[11px]! text-ink-500`}>{r.account_number}</span></td>
@@ -157,7 +159,7 @@ export default function BlotterPage() {
                           <StatusChip tone={s.tone}>{s.label}</StatusChip>
                           {waitingForMoney(r) && <span className="mt-1 block text-xs font-medium text-amber-800">Waiting for money</span>}
                         </td>
-                      </tr>
+                      </Arrive>
                       {isOpen && (
                         <tr className={tbl.row}>
                           <td colSpan={6} className="bg-fill px-4 pb-5 pt-2">{detail(r)}</td>
@@ -170,11 +172,11 @@ export default function BlotterPage() {
             </table>
           </div>
           <ul className="divide-y divide-sand-100 md:hidden">
-            {rows.map((r) => {
+            {rows.map((r, i) => {
               const s = state(r);
               const isOpen = open === r.id;
               return (
-                <li key={r.id} className="py-3.5">
+                <Arrive as="li" index={i} key={r.id} className="py-3.5">
                   <button type="button" aria-expanded={isOpen} onClick={() => toggle(r.id)} className="flex w-full items-start gap-3 text-left">
                     <FundTile code={r.fund_code} />
                     <span className="min-w-0 flex-1">
@@ -193,7 +195,7 @@ export default function BlotterPage() {
                     </span>
                   </button>
                   {isOpen && <div className="mt-3 rounded-control bg-fill p-4">{detail(r)}</div>}
-                </li>
+                </Arrive>
               );
             })}
           </ul>

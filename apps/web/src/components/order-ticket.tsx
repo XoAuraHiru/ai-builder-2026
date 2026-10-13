@@ -4,13 +4,18 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { formatUsd } from "@/lib/format";
+import { THINKING } from "@/lib/invest";
 import { actionLabel, canPlace, estimateCost, orderBody, type Draft, type GuardianReport, type TradeOrder } from "@/lib/trading";
 import { NarrativeView, type Narrative } from "@/components/ai-prose";
+import { AiThinking } from "@/components/ai-thinking";
 import { GuardianPanel } from "@/components/guardian-panel";
-import { Button, Field, inputClass, Notice, Panel, Segmented, Sparkle } from "@/components/ui";
+import { Button, Field, inputClass, Notice, Panel, Segmented } from "@/components/ui";
+import { Confirmed } from "@/app/investor/_parts/confirmed";
 
 const message = (e: unknown, fallback: string) => (e instanceof ApiError ? e.message : fallback);
 
+/** The order's outcome. One that went through (filled, waiting for its price, or with an advisor) confirms with a
+ *  drawn check; one that was not placed is an error, without one. */
 function Placed({ order }: { order: TradeOrder }) {
   const last = order.timeline[order.timeline.length - 1]?.note ?? "";
   const view = order.state === "filled" ? { tone: "success" as const, title: `Filled at ${formatUsd(order.fill_price ?? 0)} a share`, text: last }
@@ -18,12 +23,9 @@ function Placed({ order }: { order: TradeOrder }) {
       text: "Nothing is bought or sold until an advisor decides. They see every check the Guardian made." }
     : order.state === "open" ? { tone: "info" as const, title: "Waiting to fill", text: last }
     : { tone: "error" as const, title: "Not placed", text: last };
-  return (
-    <Notice tone={view.tone} title={view.title}
-      action={<Link href="/investor/trades" className="whitespace-nowrap text-sm font-semibold text-green-600 hover:text-green-800 hover:underline">See it in Trades</Link>}>
-      {view.text}
-    </Notice>
-  );
+  const action = <Link href="/investor/trades" className="whitespace-nowrap text-sm font-semibold text-green-600 hover:text-green-800 hover:underline">See it in Trades</Link>;
+  if (view.tone === "error") return <Notice tone="error" title={view.title} action={action}>{view.text}</Notice>;
+  return <Confirmed tone={view.tone} title={view.title} action={action}>{view.text}</Confirmed>;
 }
 
 /** `initialQuantity` and `analysisId` come from the front-door analyzer: the purchase records the analysis, once. */
@@ -139,7 +141,7 @@ export function OrderTicket({ accountId, symbol, price, held, onPlaced, initialQ
         <GuardianPanel report={report}>
           {narrative ? <NarrativeView narrative={narrative} />
             : explainError ? <p className="text-sm text-ink-500">{explainError}</p>
-            : <p role="status" className="flex items-center gap-2 rounded-[16px] bg-ai-50 px-5 py-4 text-sm font-medium text-ai-700"><Sparkle />Gemini is writing an explanation of this verdict…</p>}
+            : <AiThinking {...THINKING.order} />}
           {report.verdict === "warn" && (
             <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" className="mt-1 accent-green-500" checked={ack} onChange={(e) => setAck(e.target.checked)} />
