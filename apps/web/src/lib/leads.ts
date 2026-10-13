@@ -120,6 +120,12 @@ export function trustMeter(score: number | null, band: TrustBand | null): { fill
   return { filled, tone: band === "clear" ? "green" : band === "review" ? "amber" : "coral" };
 }
 
+/** The meter segment by segment, in the order they fill: the band's tone for a filled one, null for an empty one. */
+export function meterSegments(score: number | null, band: TrustBand | null): (Exclude<MeterTone, "none"> | null)[] {
+  const { filled, tone } = trustMeter(score, band);
+  return Array.from({ length: TRUST_SEGMENTS }, (_, i) => (i < filled && tone !== "none" ? tone : null));
+}
+
 /** A signal's weight as signed text with a true minus: "−25", "+6". */
 export function signedWeight(weight: number): string {
   return weight > 0 ? `+${weight}` : weight < 0 ? `−${Math.abs(weight)}` : "0";
