@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.events import emit
 from app.ml.lead_features import PHONE_RE
-from app.models import IdentityCheck, Lead
+from app.models import IdentityCheck, Lead, LeadCall
 
 DISPOSABLE_DOMAINS = frozenset({
     "mailinator.com", "guerrillamail.com", "10minutemail.com", "tempmail.com", "temp-mail.org", "yopmail.com",
@@ -104,8 +104,23 @@ def _identity_signals(identity: IdentityCheck | None) -> list[TrustSignal]:
             for f in identity.findings]
 
 
+def _call_signals(db: Session, lead: Lead) -> list[TrustSignal]:
+    """T08: a recorded call in which a third party directed the client (a kept, high-severity flag)."""
+    from app.services.calls import clock, third_party_flag
+
+    calls = db.scalars(select(LeadCall).where(LeadCall.lead_id == lead.id)
+                       .order_by(LeadCall.created_at.desc())).all() if lead.id else []
+    for call in calls:
+        found = third_party_flag(call.reading)
+        if found:
+            return [TrustSignal("T08", "A third party directed the client on a call", -20,
+                                f"“{found['quote']}” at {clock(found['start_s'])} in {call.filename}", "call")]
+    return []
+
+
 def assess_trust(db: Session, lead: Lead, enrichment: dict | None, identity: IdentityCheck | None) -> TrustReport:
-    signals = _contact_signals(db, lead) + _enrichment_signals(enrichment) + _identity_signals(identity)
+    signals = (_contact_signals(db, lead) + _enrichment_signals(enrichment) + _identity_signals(identity)
+               + _call_signals(db, lead))
     signals.sort(key=lambda s: (s.code[0] != "T", int(s.code[1:]), s.evidence))
     score = max(0, min(100, 100 + sum(s.weight for s in signals)))
     blocked = any(s.blocking for s in signals)
