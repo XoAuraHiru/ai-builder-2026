@@ -37,6 +37,7 @@ A rule that runs everywhere: **AI explains and proposes; engines and rules count
 | 13 | Operate | Four-eyes approvals (prices, manual match, reversal) | Operations, second approver, Core API, ledger |
 | 14 | Operate | AML monitoring and case decision | Day-end job, AML rules, k-means model, Gemini Pro, MLRO |
 | 15 | Platform | AI decision log and event stream | Every AI call, Core API, Pub/Sub, BigQuery |
+| 16 | Acquire / Invest | Return analyzer and turning an analysis into an investment | Visitor or Investor, What-if engine, Gemini Flash, Advisor |
 
 ---
 
@@ -621,6 +622,51 @@ flowchart LR
 
 ---
 
+## 16. Return analyzer and turning an analysis into an investment
+
+Code: `routers/analyzer.py` (`GET /analyzer/options`, `POST /analyzer`, `POST /analyzer/{id}/explain`), `services/analyzer.py`, `services/unit_history.py` (`GET /funds/{code}/unit-history`), `services/analysis_links.py`; web `components/analyzer.tsx`, `lib/analyzer.ts`. Spec: `docs/superpowers/specs/2026-10-13-atrium-analyzer-design.md`.
+
+```mermaid
+flowchart TD
+    A["<b>Visitor or Investor</b><br/>Opens 'See what your money could become'<br/>on the front door (no sign-in needed)"]:::person --> B{"<b>Visitor or Investor</b><br/>Unit trust or shares?"}:::person
+    B -- "unit trust" --> C["<b>Visitor or Investor</b><br/>Picks an Atrium fund; one-time amount<br/>(at least the fund minimum), optional<br/>monthly amount (from $50), 1-40 years"]:::person
+    B -- "shares" --> D["<b>Visitor or Investor</b><br/>Picks one of 46 stocks and ETFs with ten years<br/>of prices; one-time amount only, 1-40 years"]:::person
+    C --> E["<b>Web</b><br/>Checks the same rules as the API, in the same words"]:::web
+    D --> E
+    E --> F{"<b>Core API</b><br/>Rate limit: 30 an hour per device or<br/>network, 600 an hour in all"}:::system
+    F -- "over" --> X["<b>Stop</b><br/>429, try again later"]:::stop
+    F -- "ok" --> G["<b>What-if engine</b><br/>10,000 paths of real monthly returns since 2007;<br/>a share runs fee-free with the S&P 500<br/>on the same drawn months"]:::system
+    G --> H["<b>Core API</b><br/>Saves the analysis (inputs, headline figures,<br/>device, hashed IP, person if signed in)"]:::system
+    H --> I["<b>Web</b><br/>Middle outcome, range, paid in, fan chart,<br/>history window and worst 12 months, disclosure"]:::web
+    H -- "unit trust" --> J["<b>Core API</b><br/>Unit price: published prices from launch,<br/>backtest chained to it before (flagged)"]:::system
+    J --> K["<b>Web</b><br/>Unit price line chart: 1Y, 2Y, since 2007"]:::web
+    I --> L{"<b>Web</b><br/>Who is looking?"}:::web
+    L -- "signed in" --> M["<b>Gemini Flash</b><br/>Explains on request; figures checked"]:::ai
+    L -- "visitor or staff" --> N["<b>Visitor</b><br/>'Talk to an advisor about this plan'<br/>→ application filled in"]:::person
+    N --> O["<b>Core API</b><br/>Lead keeps the analysis (recent, unclaimed;<br/>a bad link is dropped, never fatal)"]:::system
+    O --> P["<b>Advisor</b><br/>Sees 'Their analysis' on the lead (module 3)"]:::person
+    L -- "investor, unit trust" --> Q["<b>Investor</b><br/>Fund orders filled in: fund, amount,<br/>monthly plan; usual checks (module 7)"]:::person
+    L -- "investor, shares" --> R["<b>Investor</b><br/>Order ticket filled in with the whole shares<br/>the amount buys at the live price (module 9)"]:::person
+    Q --> S{"<b>Core API</b><br/>Same kind, same fund or symbol, and the<br/>investor's own or an anonymous analysis?"}:::system
+    R --> S
+    S -- "no" --> Y["<b>Stop</b><br/>422 with the reason; nothing is created"]:::stop
+    S -- "yes" --> T["<b>Core API</b><br/>Fund order, monthly plan or share order<br/>records the analysis it came from"]:::system
+
+    classDef person fill:#DCEBFF,stroke:#1F5FAD,color:#0F1B24
+    classDef web fill:#EEF0F2,stroke:#6B7680,color:#0F1B24
+    classDef system fill:#E3F4EA,stroke:#157347,color:#0F1B24
+    classDef ai fill:#FCEFD2,stroke:#E3A72F,color:#0F1B24
+    classDef ext fill:#EFE4F8,stroke:#7A4BA8,color:#0F1B24
+    classDef stop fill:#F8E1DC,stroke:#B23A26,color:#0F1B24
+```
+
+**Notes**
+- Visitors get no AI, so anonymous use costs nothing beyond the simulation; the rate limit bounds that.
+- The shares on offer are today's large companies, so their histories flatter them. The S&P 500 line and the disclosure (FINRA Rule 2214 style: method, limits, results vary, selection effect, hypothetical) keep that in view.
+- An analysis can lead only to a purchase or an investment, never to a sale or a redemption.
+
+---
+
 ## Summary: where the code differs from the blueprint
 
 | Area | Blueprint says | Code does | Module |
@@ -638,5 +684,6 @@ flowchart LR
 | Compliance copilot (D8) | ADK agent | Single Gemini Pro call, no tools | 14 |
 | Four-eyes actions (D6) | Prices, manual match, bank-detail change, large redemption | Prices, manual match, ledger reversal | 13 |
 | Admin workspace (P1) | Separate workspace | Admin uses the Advisor workspace | 0 |
+| Return analyzer | Not in the blueprint (What-if Studio B6 was for investors only) | Public analyzer on the front door for funds and shares, linked to applications and orders | 16 |
 
 Most of these are deliberate: the Guardian and the Trust Score were made rule-based so the same input always gives the same verdict, which the blueprint's own principle ("AI never changes a fact; it proposes") favours. They are listed so the deck and the video describe what the product actually does.
