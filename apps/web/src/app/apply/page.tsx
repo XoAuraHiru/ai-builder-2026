@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { readApply } from "@/lib/analyzer";
 import { api, ApiError } from "@/lib/api";
 import { deviceId } from "@/lib/leads";
 import { Button, Field, inputClass, MoneyInput, Notice, Panel } from "@/components/ui";
@@ -15,6 +16,17 @@ export default function ApplyPage() {
     investable_usd: "", monthly_usd: "0", source_of_funds: "salary", source: "web", notes: "" });
   const [state, setState] = useState<"idle" | "sending" | "done">("idle");
   const [error, setError] = useState("");
+  // From the front-door analyzer: its amounts and years fill the form, and the application carries the analysis.
+  const [analysis, setAnalysis] = useState<string | null>(null);
+
+  useEffect(() => {
+    const plan = readApply(new URLSearchParams(window.location.search));
+    if (!plan) return;
+    setAnalysis(plan.analysis);
+    setForm((f) => ({ ...f, investable_usd: String(plan.amount), monthly_usd: String(plan.monthly ?? 0),
+      horizon_years: String(plan.years ?? f.horizon_years) }));
+  }, []);
+
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm({ ...form, [k]: e.target.value });
 
@@ -25,7 +37,8 @@ export default function ApplyPage() {
     try {
       await api("/leads", { method: "POST", body: JSON.stringify({
         ...form, phone: form.phone || null, notes: form.notes || null, country: "US", horizon_years: Number(form.horizon_years),
-        investable_usd: form.investable_usd || "0", monthly_usd: form.monthly_usd || "0", device_id: deviceId(localStorage) }) });
+        investable_usd: form.investable_usd || "0", monthly_usd: form.monthly_usd || "0", device_id: deviceId(localStorage),
+        ...(analysis ? { analysis_id: analysis } : {}) }) });
       setState("done");
     } catch (err) {
       setState("idle");
@@ -55,6 +68,11 @@ export default function ApplyPage() {
       ) : (
         <Panel className="p-6">
           <form onSubmit={submit} className="space-y-5">
+            {analysis && (
+              <Notice tone="info" title="Filled in from your analysis">
+                The amounts and years come from the analysis you ran. Your advisor sees it with your application.
+              </Notice>
+            )}
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Full name"><input required minLength={2} className={inputClass} value={form.full_name} onChange={set("full_name")} autoComplete="name" /></Field>
               <Field label="Email"><input required type="email" className={inputClass} value={form.email} onChange={set("email")} autoComplete="email" /></Field>

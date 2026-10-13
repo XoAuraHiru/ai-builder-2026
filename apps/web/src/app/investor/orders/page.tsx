@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { readFundOrder } from "@/lib/analyzer";
 import { api, ApiError, type Portfolio } from "@/lib/api";
 import { formatDate, formatSignedUsd, formatUsd } from "@/lib/format";
 import type { Fund } from "@/lib/invest";
@@ -70,6 +71,10 @@ export default function OrdersPage() {
   const [placed, setPlaced] = useState<Instruction | null>(null);
   const [monthly, setMonthly] = useState({ fund: "ATR-BAL", amount: "250", day: "5", ack: false });
   const [monthlyError, setMonthlyError] = useState("");
+  // From the front-door analyzer: the analysis each order and monthly plan links to, once, while its fund is chosen.
+  const [analysis, setAnalysis] = useState<{ id: string; fund: string } | null>(null);
+  const [linkOrder, setLinkOrder] = useState(false);
+  const [linkMonthly, setLinkMonthly] = useState(false);
 
   const load = useCallback(async () => {
     if (!account) return;
@@ -86,7 +91,21 @@ export default function OrdersPage() {
 
   useEffect(() => {
     load().catch((e) => setError(message(e)));
-    const preset = new URLSearchParams(window.location.search).get("fund");
+    const params = new URLSearchParams(window.location.search);
+    const fromAnalysis = readFundOrder(params);
+    if (fromAnalysis) {
+      setKind("subscribe");
+      setFund(fromAnalysis.fund);
+      setAmount(String(fromAnalysis.amount));
+      setAnalysis({ id: fromAnalysis.analysis, fund: fromAnalysis.fund });
+      setLinkOrder(true);
+      if (fromAnalysis.monthly) {
+        setMonthly((m) => ({ ...m, fund: fromAnalysis.fund, amount: String(fromAnalysis.monthly) }));
+        setLinkMonthly(true);
+      }
+      return;
+    }
+    const preset = params.get("fund");
     if (preset) setFund(preset);
   }, [load]);
 
@@ -110,7 +129,10 @@ export default function OrdersPage() {
 
   const byCode = Object.fromEntries(funds.map((f) => [f.code, f]));
   const sourceFunds = kind === "subscribe" ? funds : funds.filter((f) => f.code in held);
-  const body = () => ({ type: kind, fund_code: fund, ...(kind === "switch" ? { to_fund_code: toFund } : {}), amount_usd: amount || "0", acknowledge_risk: ack });
+  const orderLinked = Boolean(analysis && linkOrder && kind === "subscribe" && fund === analysis.fund);
+  const monthlyLinked = Boolean(analysis && linkMonthly && monthly.fund === analysis.fund);
+  const body = () => ({ type: kind, fund_code: fund, ...(kind === "switch" ? { to_fund_code: toFund } : {}), amount_usd: amount || "0",
+    acknowledge_risk: ack, ...(orderLinked ? { analysis_id: analysis!.id } : {}) });
 
   async function review() {
     setBusy("review");
@@ -130,6 +152,7 @@ export default function OrdersPage() {
     try {
       setPlaced(await api<Instruction>(`/accounts/${account!.id}/instructions`, { method: "POST", body: JSON.stringify(body()) }));
       setPlan(null);
+      if (orderLinked) setLinkOrder(false);
       await load();
     } catch (e) {
       setError(message(e));
@@ -143,7 +166,9 @@ export default function OrdersPage() {
     setMonthlyError("");
     try {
       await api(`/accounts/${account!.id}/recurring`, { method: "POST", body: JSON.stringify({
-        fund_code: monthly.fund, amount_usd: monthly.amount || "0", day_of_month: Number(monthly.day), acknowledge_risk: monthly.ack }) });
+        fund_code: monthly.fund, amount_usd: monthly.amount || "0", day_of_month: Number(monthly.day), acknowledge_risk: monthly.ack,
+        ...(monthlyLinked ? { analysis_id: analysis!.id } : {}) }) });
+      if (monthlyLinked) setLinkMonthly(false);
       await load();
     } catch (err) {
       setMonthlyError(message(err));
@@ -163,6 +188,14 @@ export default function OrdersPage() {
   return (
     <>
       <PageHeader title="Fund orders" description="Invest, withdraw or switch between funds. Atrium checks every instruction against your holdings and your risk profile before it is accepted, and shows you the checks first." />
+      {analysis && (orderLinked || monthlyLinked) && (
+        <div className="mb-8">
+          <Notice tone="info" title="Filled in from your analysis">
+            {byCode[analysis.fund]?.name ?? analysis.fund}, {formatUsd(amount || 0, 0)} now{monthlyLinked ? ` and a monthly plan of ${formatUsd(monthly.amount || 0, 0)} below` : ""}.
+            Review the checks before anything is placed; the order records the analysis it came from.
+          </Notice>
+        </div>
+      )}
       <div className="space-y-12">
         <div className="grid gap-8 lg:grid-cols-[340px_minmax(0,1fr)]">
           <Panel className="h-fit space-y-5 p-5">
