@@ -99,8 +99,13 @@ export function caseValue(v: unknown): string {
 const UTC_DAY = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 const UTC_TIME = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });
 
+/** The API writes run times as UTC without a zone ("2026-10-13T10:58:11"); read them as UTC, not as local time. */
+export function asUtc(iso: string): Date {
+  return new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(iso) ? iso : `${iso}Z`);
+}
+
 export function clockUtc(iso: string): string {
-  return `${UTC_TIME.format(new Date(iso))} UTC`;
+  return `${UTC_TIME.format(asUtc(iso))} UTC`;
 }
 
 const TRIGGER: Record<RunRow["trigger"], string> = {
@@ -122,7 +127,30 @@ export function runLine(run: RunRow): string {
   if (run.status === "failed") return `${what}, could not start or stopped early at ${clockUtc(run.started_at)}`;
   if (run.status === "did_not_finish") return `${what}, did not finish (started ${clockUtc(run.started_at)})`;
   const at = run.finished_at ?? run.started_at;
-  return `${what}, finished ${UTC_DAY.format(new Date(at))} at ${clockUtc(at)}, ${cost}`;
+  return `${what}, finished ${UTC_DAY.format(asUtc(at))} at ${clockUtc(at)}, ${cost}`;
+}
+
+/** The run as one Geist Mono line, the way model and cost are shown: tier · trigger · when · cost · commit. */
+export function runMeta(run: RunRow): string {
+  const at = run.finished_at ?? run.started_at;
+  const when = run.status === "running" ? `running since ${clockUtc(run.started_at)}`
+    : run.status === "finished" ? `${UTC_DAY.format(asUtc(at))} ${clockUtc(at)}`
+      : run.status === "did_not_finish" ? "did not finish" : "stopped early";
+  const parts = [`${run.tier} checks`, TRIGGER[run.trigger] ?? "run", when, `$${Number(run.cost_usd || 0).toFixed(4)}`];
+  if (run.git_sha) parts.push(run.git_sha.slice(0, 7));
+  return parts.join(" · ");
+}
+
+/** A suite's chip: meets its bar (green), misses it (coral), or no result when nothing could be scored (amber). */
+export function suiteStatus(suite: Pick<Suite, "passed" | "counts">): { label: string; tone: "gain" | "loss" | "caution" } {
+  if (suite.passed) return { label: "Meets its bar", tone: "gain" };
+  return suite.counts.pass + suite.counts.fail === 0 ? { label: "No result", tone: "caution" } : { label: "Misses its bar", tone: "loss" };
+}
+
+/** The share of a suite's cases that passed, for its bar. */
+export function passShare(counts: Counts): number {
+  const all = counts.pass + counts.fail + counts.error;
+  return all === 0 ? 0 : Math.round((counts.pass / all) * 100);
 }
 
 const AGREEMENT_COPY: Record<string, { name: string; line: (pct: number) => string }> = {
