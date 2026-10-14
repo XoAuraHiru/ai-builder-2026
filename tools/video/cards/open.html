@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atrium · opening</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --green-100: #e0ede4; --green-500: #3f8160; --green-700: #255740; --sand-200: #ebeae4; --sand-100: #f2f1ec;
+          --ink-900: #1c1b17; --ink-700: #3e3c35; --ink-500: #6f6c62; --coral-500: #e8705f; --ease: cubic-bezier(.22,1,.36,1); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #fff; color: var(--ink-900); font-family: 'Schibsted Grotesk', system-ui, sans-serif;
+               -webkit-font-smoothing: antialiased; overflow: hidden; }
+  .stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 46px; }
+  .kicker { font-family: 'Geist Mono', monospace; font-size: 13px; letter-spacing: .08em; color: var(--ink-500); text-transform: uppercase;
+            opacity: 0; animation: in .6s var(--ease) .2s forwards; }
+  .row { position: relative; width: 980px; height: 76px; }
+  .sys { position: absolute; top: 0; height: 76px; width: 200px; border: 1px solid var(--sand-200); border-radius: 20px; background: #fff;
+         display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 600;
+         opacity: 0; animation: in .5s var(--ease) forwards, gather 1.1s var(--ease) 3.4s forwards; }
+  .sys:nth-child(1) { left: 0;   animation-delay: .5s, 3.4s; --to: 390px; }
+  .sys:nth-child(2) { left: 260px; animation-delay: .62s, 3.4s; --to: 390px; }
+  .sys:nth-child(3) { left: 520px; animation-delay: .74s, 3.4s; --to: 390px; }
+  .sys:nth-child(4) { left: 780px; animation-delay: .86s, 3.4s; --to: 390px; }
+  .gap { position: absolute; top: 30px; width: 16px; height: 16px; border-radius: 999px; background: var(--coral-500);
+         opacity: 0; animation: slip 1.6s ease-in-out forwards; }
+  .gap:nth-of-type(5) { left: 222px; animation-delay: 1.4s; }
+  .gap:nth-of-type(6) { left: 482px; animation-delay: 1.75s; }
+  .gap:nth-of-type(7) { left: 742px; animation-delay: 2.1s; }
+  .one { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.9); display: flex; align-items: center; gap: 22px;
+         opacity: 0; animation: arrive .8s var(--ease) 4.25s forwards; }
+  .mark { width: 92px; height: 92px; border-radius: 26px; background: var(--green-100); color: var(--green-700); display: flex;
+          align-items: center; justify-content: center; font-family: 'Newsreader', serif; font-weight: 500; font-size: 58px; }
+  .word { font-size: 76px; font-weight: 600; letter-spacing: -.03em; }
+  .line { font-size: 24px; color: var(--ink-700); opacity: 0; animation: in .6s var(--ease) 5.0s forwards; }
+  .caption { height: 40px; }
+  @keyframes in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes gather { to { left: var(--to); opacity: 0; transform: scale(.92); } }
+  @keyframes slip { 0% { opacity: 0; transform: translateY(-40px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(120px); } }
+  @keyframes arrive { to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="kicker">Wealth management today</div>
+    <div class="row">
+      <div class="sys">Leads</div><div class="sys">Portfolios</div><div class="sys">Trading</div><div class="sys">The books</div>
+      <span class="gap"></span><span class="gap"></span><span class="gap"></span>
+      <div class="one"><span class="mark">A</span><span class="word">Atrium</span></div>
+    </div>
+    <div class="line">One AI-native platform, from the first enquiry to a reconciled ledger</div>
+    <div class="caption"></div>
+  </div>
+</body>
+</html>

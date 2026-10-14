@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atrium · close</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --green-50: #f0f6f2; --green-100: #e0ede4; --green-500: #3f8160; --green-700: #255740; --green-800: #1d4532;
+          --sand-200: #ebeae4; --fill: #fafaf7; --ink-900: #1c1b17; --ink-700: #3e3c35; --ink-500: #6f6c62;
+          --ai-50: #f2f1fc; --ai-700: #4b44a6; --ease: cubic-bezier(.22,1,.36,1); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #fff; color: var(--ink-900); font-family: 'Schibsted Grotesk', system-ui, sans-serif;
+               -webkit-font-smoothing: antialiased; overflow: hidden; }
+  .wrap { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; padding: 0 110px; }
+  .left { display: flex; flex-direction: column; gap: 22px; }
+  .brand { display: flex; align-items: center; gap: 16px; opacity: 0; animation: in .6s var(--ease) .2s forwards; }
+  .mark { width: 60px; height: 60px; border-radius: 18px; background: var(--green-100); color: var(--green-700); display: flex;
+          align-items: center; justify-content: center; font-family: 'Newsreader', serif; font-weight: 500; font-size: 38px; }
+  .word { font-size: 46px; font-weight: 600; letter-spacing: -.025em; }
+  h1 { margin: 0; font-size: 52px; line-height: 58px; font-weight: 600; letter-spacing: -.03em; opacity: 0; animation: in .7s var(--ease) .45s forwards; }
+  h1 em { font-family: 'Newsreader', serif; font-style: normal; font-weight: 400; color: var(--ai-700); }
+  .meta { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; opacity: 0; animation: in .6s var(--ease) 1.3s forwards; }
+  .url { font-family: 'Geist Mono', monospace; font-size: 18px; color: var(--green-700); }
+  .team { font-size: 17px; color: var(--ink-500); }
+  .right { display: flex; flex-direction: column; gap: 14px; }
+  .label { font-family: 'Geist Mono', monospace; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-500);
+           opacity: 0; animation: in .5s var(--ease) .5s forwards; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .svc { border: 1px solid var(--sand-200); border-radius: 18px; padding: 16px 18px; background: #fff; display: flex; flex-direction: column; gap: 4px;
+         opacity: 0; animation: in .45s var(--ease) forwards; }
+  .svc b { font-size: 18px; font-weight: 600; }
+  .svc span { font-size: 14px; color: var(--ink-500); line-height: 19px; }
+  .svc.ai { background: var(--ai-50); border-color: transparent; }
+  .svc.ai b { color: var(--ai-700); }
+  @keyframes in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="left">
+      <div class="brand"><span class="mark">A</span><span class="word">Atrium</span></div>
+      <h1>People decide.<br><em>The AI shows its working.</em></h1>
+      <div class="meta">
+        <span class="url">atrium-web-1070337126396.us-central1.run.app</span>
+        <span class="team">Team Ctrl+Alt+Hiru · Google Cloud AI Builder Cup 2026</span>
+      </div>
+    </div>
+    <div class="right">
+      <div class="label">Built on Google Cloud</div>
+      <div class="grid">
+        <div class="svc ai" style="animation-delay:.7s"><b>Gemini Pro and Flash</b><span>Readings, reviews, calls and explanations, every figure checked</span></div>
+        <div class="svc ai" style="animation-delay:.82s"><b>Agent Development Kit</b><span>The reconciliation agent, the copilots</span></div>
+        <div class="svc" style="animation-delay:.94s"><b>Google Search grounding</b><span>Scenario Studio's market context</span></div>
+        <div class="svc" style="animation-delay:1.06s"><b>Vertex AI Search</b><span>Answers cited from fund documents</span></div>
+        <div class="svc" style="animation-delay:1.18s"><b>Document AI</b><span>Bank statements and identity documents</span></div>
+        <div class="svc" style="animation-delay:1.30s"><b>BigQuery and BigQuery ML</b><span>Lead Score, AML anomaly model, events</span></div>
+        <div class="svc" style="animation-delay:1.42s"><b>Text-to-Speech</b><span>Gemini voices for the demo calls</span></div>
+        <div class="svc" style="animation-delay:1.54s"><b>Cloud Run, Cloud SQL, Pub/Sub</b><span>The app, its jobs and its event stream</span></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
