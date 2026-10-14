@@ -291,7 +291,7 @@ class Recorder:
             hit = await self.find(text=text, sel=sel, nth=nth, exact=exact)
         x, y = hit["x"] + dx, hit["y"] + dy
         x0, y0 = self.cursor
-        ms = int(min(1100, max(420, math.hypot(x - x0, y - y0) * 0.9)))
+        ms = int(min(1400, max(650, math.hypot(x - x0, y - y0) * 1.15)))  # an unhurried hand
         await self.c.js(f"__atr.move({x},{y},{ms})")
         await self.c.send("Input.dispatchMouseEvent", type="mouseMoved", x=x, y=y)
         self.cursor = (x, y)
@@ -308,6 +308,19 @@ class Recorder:
         await asyncio.sleep(0.07)
         await self.c.send("Input.dispatchMouseEvent", type="mouseReleased", x=x, y=y, button="left", clickCount=1)
         await asyncio.sleep(pause_after)
+
+    async def select(self, sel: str, value: str) -> None:
+        """Choose an option in a native select (whose open list headless Chrome does not draw): point at it, then
+        set the value the way React listens for it."""
+        await self.click(sel=sel, pause_after=0.25)
+        await self.c.js(f"""(() => {{ const s = document.querySelector({json.dumps(sel)});
+          const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+          set.call(s, {json.dumps(value)}); s.dispatchEvent(new Event('change', {{ bubbles: true }})); }})()""")
+        await asyncio.sleep(0.4)
+
+    async def select_all(self, sel: str) -> None:
+        """Select a field's current value, so what is typed next replaces it."""
+        await self.c.js(f"(() => {{ const i = document.querySelector({json.dumps(sel)}); i.focus(); i.select && i.select(); }})()")
 
     async def type(self, text: str, per_char: float = 0.045) -> None:
         for ch in text:

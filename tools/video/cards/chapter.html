@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atrium · chapter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --green-100: #e0ede4; --green-200: #c3dccb; --green-500: #3f8160; --green-700: #255740; --green-900: #143224;
+          --sand-200: #ebeae4; --ink-900: #1c1b17; --ink-700: #3e3c35; --ink-500: #6f6c62; --ease: cubic-bezier(.22,1,.36,1); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #fff; color: var(--ink-900); font-family: 'Schibsted Grotesk', system-ui, sans-serif;
+               -webkit-font-smoothing: antialiased; overflow: hidden; }
+  .stage { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 160px; gap: 26px; }
+  .track { display: flex; gap: 10px; opacity: 0; animation: in .5s var(--ease) .1s forwards; }
+  .track span { width: 64px; height: 6px; border-radius: 3px; background: var(--sand-200); }
+  .track span.done { background: var(--green-500); }
+  .track span.now { background: var(--green-500); animation: fill .9s var(--ease) .35s both; transform-origin: left; }
+  .num { font-family: 'Geist Mono', monospace; font-size: 18px; color: var(--ink-500); letter-spacing: .06em; opacity: 0; animation: in .5s var(--ease) .2s forwards; }
+  h1 { margin: 0; font-size: 96px; line-height: 100px; font-weight: 600; letter-spacing: -.035em; opacity: 0; animation: in .7s var(--ease) .3s forwards; }
+  .line { max-width: 980px; font-size: 28px; line-height: 38px; color: var(--ink-700); opacity: 0; animation: in .6s var(--ease) .55s forwards; }
+  .who { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; }
+  .person { display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 20px 0 8px; border: 1px solid var(--sand-200); border-radius: 999px;
+            opacity: 0; animation: in .5s var(--ease) forwards; }
+  .avatar { width: 44px; height: 44px; border-radius: 999px; background: var(--green-200); color: var(--green-900); display: flex;
+            align-items: center; justify-content: center; font-weight: 600; font-size: 16px; }
+  .person b { font-size: 18px; font-weight: 600; display: block; }
+  .person small { font-size: 14px; color: var(--ink-500); }
+  @keyframes in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="track" id="track"></div>
+    <div class="num" id="num"></div>
+    <h1 id="title"></h1>
+    <div class="line" id="line"></div>
+    <div class="who" id="who"></div>
+  </div>
+<script>
+  // #n=1&of=5&title=Acquire&line=...&who=Daniel Okafor|Advisor;Sam Ortiz|Operations
+  const q = new URLSearchParams(location.hash.slice(1));
+  const n = Number(q.get('n') || 1), of = Number(q.get('of') || 5);
+  document.getElementById('track').innerHTML = Array.from({ length: of }, (_, i) =>
+    `<span class="${i + 1 < n ? 'done' : i + 1 === n ? 'now' : ''}"></span>`).join('');
+  document.getElementById('num').textContent = `0${n} · ${q.get('kicker') || 'STAGE'}`;
+  document.getElementById('title').textContent = q.get('title') || '';
+  document.getElementById('line').textContent = q.get('line') || '';
+  const initials = (s) => s.split(' ').map((w) => w[0]).slice(0, 2).join('');
+  document.getElementById('who').innerHTML = (q.get('who') || '').split(';').filter(Boolean).map((p, i) => {
+    const [name, role] = p.split('|');
+    return `<div class="person" style="animation-delay:${0.8 + i * 0.12}s"><span class="avatar">${initials(name)}</span><span><b>${name}</b><small>${role}</small></span></div>`;
+  }).join('');
+</script>
+</body>
+</html>

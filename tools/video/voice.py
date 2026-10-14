@@ -15,9 +15,9 @@ from make_demo_calls import Refused, access_token, duration_s, request_body, syn
 
 CACHE = ROOT / ".superpowers" / "video" / "voice"  # gitignored
 VOICE = "Charon"
-STYLE = ("You are narrating a short product film for a financial technology company. Speak in a calm, confident, warm "
-         "voice at a natural, brisk pace, neither slow nor rushed, with clear diction and short pauses at commas. "
-         "Sound like a seasoned documentary narrator, not an advertisement.")
+STYLE = ("You are narrating a product film for a financial technology company. Speak in a calm, confident, warm "
+         "voice at an unhurried, measured pace, with clear diction and natural pauses at commas. Sound like a "
+         "seasoned documentary narrator, not an advertisement.")
 MODELS: tuple[str | None, ...] = ("gemini-2.5-pro-tts", "gemini-3.1-flash-tts-preview", "gemini-2.5-flash-tts", None)
 
 

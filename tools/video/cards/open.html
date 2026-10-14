@@ -19,22 +19,22 @@
   .row { position: relative; width: 980px; height: 76px; }
   .sys { position: absolute; top: 0; height: 76px; width: 200px; border: 1px solid var(--sand-200); border-radius: 20px; background: #fff;
          display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 600;
-         opacity: 0; animation: in .5s var(--ease) forwards, gather 1.1s var(--ease) 3.4s forwards; }
-  .sys:nth-child(1) { left: 0;   animation-delay: .5s, 3.4s; --to: 390px; }
-  .sys:nth-child(2) { left: 260px; animation-delay: .62s, 3.4s; --to: 390px; }
-  .sys:nth-child(3) { left: 520px; animation-delay: .74s, 3.4s; --to: 390px; }
-  .sys:nth-child(4) { left: 780px; animation-delay: .86s, 3.4s; --to: 390px; }
+         opacity: 0; animation: in .5s var(--ease) forwards, gather 1.2s var(--ease) 9.6s forwards; }
+  .sys:nth-child(1) { left: 0;   animation-delay: .5s, 9.6s; --to: 390px; }
+  .sys:nth-child(2) { left: 260px; animation-delay: .62s, 9.6s; --to: 390px; }
+  .sys:nth-child(3) { left: 520px; animation-delay: .74s, 9.6s; --to: 390px; }
+  .sys:nth-child(4) { left: 780px; animation-delay: .86s, 9.6s; --to: 390px; }
   .gap { position: absolute; top: 30px; width: 16px; height: 16px; border-radius: 999px; background: var(--coral-500);
          opacity: 0; animation: slip 1.6s ease-in-out forwards; }
-  .gap:nth-of-type(5) { left: 222px; animation-delay: 1.4s; }
-  .gap:nth-of-type(6) { left: 482px; animation-delay: 1.75s; }
-  .gap:nth-of-type(7) { left: 742px; animation-delay: 2.1s; }
+  .gap:nth-of-type(5) { left: 222px; animation-delay: 6.4s; }
+  .gap:nth-of-type(6) { left: 482px; animation-delay: 6.9s; }
+  .gap:nth-of-type(7) { left: 742px; animation-delay: 7.4s; }
   .one { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.9); display: flex; align-items: center; gap: 22px;
-         opacity: 0; animation: arrive .8s var(--ease) 4.25s forwards; }
+         opacity: 0; animation: arrive .9s var(--ease) 10.6s forwards; }
   .mark { width: 92px; height: 92px; border-radius: 26px; background: var(--green-100); color: var(--green-700); display: flex;
           align-items: center; justify-content: center; font-family: 'Newsreader', serif; font-weight: 500; font-size: 58px; }
   .word { font-size: 76px; font-weight: 600; letter-spacing: -.03em; }
-  .line { font-size: 24px; color: var(--ink-700); opacity: 0; animation: in .6s var(--ease) 5.0s forwards; }
+  .line { font-size: 24px; color: var(--ink-700); opacity: 0; animation: in .6s var(--ease) 11.4s forwards; }
   .caption { height: 40px; }
   @keyframes in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
   @keyframes gather { to { left: var(--to); opacity: 0; transform: scale(.92); } }
