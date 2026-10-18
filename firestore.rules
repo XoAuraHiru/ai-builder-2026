@@ -1,0 +1,18 @@
+rules_version = '2';
+
+// The live inbox. The API writes every item with the Admin SDK (which these rules do not govern); a browser, signed in
+// with the custom token from GET /me/realtime, may read its own person's inbox and mark items read. Nothing else.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /people/{pid}/inbox/{item} {
+      allow read: if request.auth != null && request.auth.token.pid == pid;
+      allow update: if request.auth != null && request.auth.token.pid == pid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+                    && request.resource.data.read is bool;
+    }
+  }
+}

@@ -34,9 +34,12 @@ web_origins() {
   printf '%s' "$urls"
 }
 
+# Firebase Hosting serves the web app too (firebase.json rewrites every path to atrium-web), from these origins.
+HOSTING_ORIGINS="https://${PROJECT_ID}.web.app,https://${PROJECT_ID}.firebaseapp.com"
+
 # --set-env-vars replaces the whole map, so carry the live web origins into CORS on every API redeploy.
 PREV_WEB_ORIGINS="$(web_origins)"
-CORS="http://localhost:3000"
+CORS="${HOSTING_ORIGINS},http://localhost:3000"
 if [ -n "$PREV_WEB_ORIGINS" ]; then CORS="${PREV_WEB_ORIGINS},${CORS}"; fi
 
 # "^@^" makes @ the separator, because CORS_ORIGINS itself contains a comma.
@@ -52,11 +55,15 @@ API_ENV="${API_ENV}@EVALS_JOB=projects/${PROJECT_ID}/locations/${REGION}/jobs/at
 # Report-only monitoring for the judging window: visitors' exploratory accepts and rejects must not switch a model
 # off. MONITORING_TRIPS=true bash infra/deploy.sh restores trips. The live checks still trip breakers either way.
 API_ENV="${API_ENV}@MONITORING_TRIPS=${MONITORING_TRIPS:-false}"
+# The live inbox: the API, the day-end and the live checks write notices to Firestore.
+API_ENV="${API_ENV}@FIRESTORE_ENABLED=true"
 
+# The API signs the inbox's custom tokens as its own account. The address has an @, the separator of the list above,
+# so it goes in a second --set-env-vars, which gcloud merges into the first.
 gcloud run deploy atrium-api --source services/api --region "$REGION" --allow-unauthenticated --quiet \
   --service-account "$SA" --add-cloudsql-instances "$CONN" \
   --set-secrets "DATABASE_URL=atrium-database-url:latest,DOCAI_PROOFING_PROCESSOR=atrium-docai-proofing-processor:latest,DOCAI_STATEMENT_PROCESSOR=atrium-docai-statement-processor:latest,BLIND_INDEX_KEY=atrium-blind-index-key:latest" \
-  --set-env-vars "$API_ENV" \
+  --set-env-vars "$API_ENV" --set-env-vars "FIREBASE_SERVICE_ACCOUNT=${SA}" \
   --min-instances "$API_MIN_INSTANCES" --max-instances 3 --memory 1Gi --cpu 1 --cpu-boost --timeout 300
 API_URL="$(gcloud run services describe atrium-api --region "$REGION" --format='value(status.url)')"
 
@@ -102,7 +109,7 @@ WEB_ORIGINS="$(web_origins)"
 if [ "$WEB_ORIGINS" != "$PREV_WEB_ORIGINS" ]; then
   # First release, or the web URLs changed: the API learns the web origins now.
   gcloud run services update atrium-api --region "$REGION" --quiet \
-    --update-env-vars "^@^CORS_ORIGINS=${WEB_ORIGINS},http://localhost:3000" >/dev/null
+    --update-env-vars "^@^CORS_ORIGINS=${WEB_ORIGINS},${HOSTING_ORIGINS},http://localhost:3000" >/dev/null
 fi
 echo "API: $API_URL"
 echo "WEB: $WEB_URL"
@@ -110,3 +117,15 @@ echo "WEB: $WEB_URL"
 # Start the live checks against what was just deployed, without waiting: about ten minutes and $0.15 of Gemini.
 gcloud run jobs execute atrium-evals --region "$REGION" --async --quiet >/dev/null
 echo "Live checks started (atrium-evals); results appear on /compliance/models in about ten minutes."
+
+# The inbox's Firestore security rules, and Firebase Hosting in front of the web service. Last, and never fatal: the
+# services above are already live, and the step can be rerun by hand.
+if command -v firebase >/dev/null 2>&1; then
+  if firebase deploy --only firestore:rules,hosting --project "$PROJECT_ID" --non-interactive; then
+    echo "Firebase: Firestore rules and Hosting deployed (https://${PROJECT_ID}.web.app)"
+  else
+    echo "Firebase deploy failed: run firebase login, then: firebase deploy --only firestore:rules,hosting --project ${PROJECT_ID}"
+  fi
+else
+  echo "Firebase CLI not found: skipped the Firestore rules and Hosting (npm install -g firebase-tools, then rerun)"
+fi
