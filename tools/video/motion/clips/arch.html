@@ -1,0 +1,92 @@
+<title>Under the hood</title>
+<style>/*BRAND*/
+#stage{font-family:'Schibsted Grotesk',system-ui,sans-serif;color:#1C1B17;font-feature-settings:normal}
+.kick{font-family:'Geist Mono',monospace;font-size:19px;letter-spacing:.16em;color:#6F6C62;white-space:nowrap}
+.ttl{font-size:50px;font-weight:700;letter-spacing:-.035em;white-space:nowrap}
+.grp{position:absolute;border-radius:28px;border:1.5px solid #EBEAE4;background:#FAFAF7;box-sizing:border-box}
+.gh{position:absolute;left:22px;top:18px;display:flex;align-items:center;gap:12px;font-size:27px;font-weight:700;letter-spacing:-.015em;white-space:nowrap}
+.gh .gi{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center}
+.gs{position:absolute;left:24px;font-family:'Geist Mono',monospace;font-size:15px;letter-spacing:.1em;color:#9A968A;white-space:nowrap}
+.chip{position:absolute;display:flex;align-items:center;gap:12px;height:62px;padding:0 20px;border-radius:18px;background:#fff;border:1.5px solid #EBEAE4;box-shadow:0 1px 2px rgba(28,27,23,.05),0 8px 20px -10px rgba(28,27,23,.16);font-size:23px;font-weight:600;white-space:nowrap;box-sizing:border-box}
+.chip .m{font-weight:500;color:#6F6C62}
+svg.wires{position:absolute;left:-830px;top:-390px;overflow:visible}
+</style>
+<div data-slot="shape">
+  <div class="L" id="Lpill"><div class="row" style="transform:translate(-50%,-50%);gap:14px;color:#fff;font-size:38px;font-weight:700" id="pill"></div></div>
+  <div class="L" id="Lcard">
+    <div class="a kick" style="left:-770px;top:-306px">UNDER THE HOOD</div>
+    <div class="a ttl" style="left:-773px;top:-278px">Google Cloud, end to end</div>
+    <svg class="wires" width="1660" height="780" viewBox="0 0 1660 780" id="wires"></svg>
+    <div id="groups"></div>
+  </div>
+</div><!--/shape-->
+<script>
+/*ATRIUM*/
+const [b0, b1] = [D.beats[0], D.beats[1] || D.beats[0]];
+$('pill').innerHTML = `${M.icon('server', 34, '#fff', 2.4)}Under the hood`;
+const tRun = at('Cloud', b0.start, b0.start + 0.8);
+const tCard = tRun - 0.3;
+const t = {
+  app: at('app', tRun, tRun + 1.2), api: at('API', tRun, tRun + 1.8), jobs: at('jobs', tRun, tRun + 2.6),
+  gem: at('Gemini', tRun, tRun + 3.6), adk: at('ADK', tRun, tRun + 5),
+  fb: at('Firebase', b1.start - 0.1, b1.start), host: at('Hosting', b1.start - 0.1, b1.start + 0.6), auth: at('Auth', b1.start - 0.1, b1.start + 1.2),
+  fs: at('Firestore', b1.start, b1.start + 2.6), live: at('live', b1.start, b1.start + 3.4),
+};
+// groups: [id, x, y, w, h, title, sub, icon, icon colours, appears]
+const DY = 30;  // everything below the title
+const G = [
+  ['gPeople', -780, -205, 230, 270, 'People', 'IN THE BROWSER', 'person', [C.ink2, C.sand1], t.fb - 0.05],
+  ['gFb', -500, -205, 300, 270, 'Firebase', 'FRONT DOOR', 'bolt', ['#7A5A0E', C.amber0], t.fb],
+  ['gRun', -150, -205, 420, 350, 'Cloud Run', 'APP · API · JOBS', 'server', [C.green8, C.green1], tRun],
+  ['gAi', 330, -205, 450, 270, 'Vertex AI', 'GEMINI · AGENTS', 'sparkle', [C.ai7, C.ai0], t.gem],
+];
+// chips: [id, group, y, icon, label, muted, colour, appears]
+const CH = [
+  ['cBrowser', 'gPeople', 92, 'globe', 'Atrium', '', C.ink2, t.fb + 0.1],
+  ['cWho', 'gPeople', 172, 'users', '8 people', '', C.ink2, t.fb + 0.2],
+  ['cHost', 'gFb', 92, 'globe', 'Hosting', '', '#7A5A0E', t.host],
+  ['cAuth', 'gFb', 172, 'key', 'Auth', '', '#7A5A0E', t.auth],
+  ['cApp', 'gRun', 92, 'globe', 'Web app', '· Next.js', C.green8, t.app],
+  ['cApi', 'gRun', 172, 'server', 'API', '· FastAPI', C.green8, t.api],
+  ['cJobs', 'gRun', 252, 'clock', 'Jobs', '· day-end, evals', C.green8, t.jobs],
+  ['cGem', 'gAi', 92, 'sparkle', 'Gemini 3.1 Pro', '· 3.8 Flash', C.ai7, t.gem + 0.12],
+  ['cAdk', 'gAi', 172, 'chip', 'ADK agents', '', C.ai7, t.adk],
+];
+const FS = ['gFs', -150, 205, 420, 88];  // Firestore, under Cloud Run
+$('groups').innerHTML = G.map(([id, x, y, w, h, ti, sub, ic, [fg, bg]]) => `<div class="grp" id="${id}" style="left:${x}px;top:${y + DY}px;width:${w}px;height:${h}px">
+    <div class="gh"><span class="gi" style="background:${bg}">${M.icon(ic, 24, fg, 2.2)}</span>${ti}</div><div class="gs" style="top:66px">${sub}</div></div>`).join('')
+  + `<div class="chip" id="gFs" style="left:${FS[1]}px;top:${FS[2] + DY}px;width:${FS[3]}px;height:${FS[4]}px;border-radius:24px;background:${C.amber0};border-color:#F4D27C">${M.icon('database', 30, '#7A5A0E', 2.2)}Firestore<span class="m">· live inbox</span></div>`
+  + CH.map(([id, g, y, ic, l, m, fg]) => { const [, gx, gy, gw] = G.find((q) => q[0] === g);
+    return `<div class="chip" id="${id}" style="left:${gx + 18}px;top:${gy + y + DY}px;width:${gw - 36}px">${M.icon(ic, 24, fg, 2.2)}${l}${m ? `<span class="m">${m}</span>` : ''}</div>`; }).join('');
+// wires, in card coordinates shifted by (830, 390): [id, path, appears]
+const P = (x, y) => `${x + 830} ${y + 390 + DY}`;
+const W = [
+  ['wHost', `M${P(-550, -82)} L${P(-500, -82)}`, t.host + 0.15],
+  ['wApp', `M${P(-200, -82)} L${P(-150, -82)}`, t.host + 0.35],
+  ['wGem', `M${P(270, -2)} C${P(300, -2)} ${P(300, -82)} ${P(330, -82)}`, t.gem + 0.3],
+  ['wFs', `M${P(60, 145)} L${P(60, 205)}`, t.fs + 0.1],
+  ['wLive', `M${P(-150, 249)} C${P(-560, 249)} ${P(-665, 200)} ${P(-665, 65)}`, t.live],
+];
+$('wires').innerHTML = W.map(([id, d]) => `<path id="${id}" d="${d}" fill="none" stroke="${id === 'wLive' ? '#E2B23E' : C.sand3}" stroke-width="${id === 'wLive' ? 4 : 3.5}" stroke-linecap="round"/>`).join('')
+  + `<circle id="pulse" r="9" fill="#E2B23E"/>`;
+const LEN = Object.fromEntries(W.map(([id]) => [id, $(id).getTotalLength()]));
+const cap = captions();
+M.scene({
+  W: 1920, H: 1080, bg: C.sand1, T: D.T, intro: 0.08,
+  SH: { pill: { w: 400, h: 100, r: 50, bg: C.ink, cam: 1.45 }, card: { w: 1660, h: 700, r: 48, bg: '#FFFFFF', cam: 0.99 } },
+  start: 'pill', SEQ: [[tCard, 'card']],
+  layers: [
+    { el: 'Lpill', tin: 0.08, tout: tCard, o: { lout: 0.1 } },
+    { el: 'Lcard', tin: tCard, tout: null, o: { din: 0.02, lin: 0.2 }, update: (tt) => {
+      for (const [id, , , , , , , , , tin] of G) { const v = M.vis(tt, tin, null, { din: 0, lin: 0.3 }); M.apply($(id), v, ` translateY(${(1 - v.a) * 16}px)`); }
+      for (const [id, , , , , , , tin] of CH) { const v = M.vis(tt, tin, null, { din: 0, lin: 0.26 }); M.apply($(id), v, ` translateX(${(1 - v.a) * -12}px)`); }
+      const fv = M.vis(tt, t.fs, null, { din: 0, lin: 0.3 }); M.apply($('gFs'), fv, ` translateY(${(1 - fv.a) * 16}px)`);
+      for (const [id, , tin] of W) { const k = M.clamp((tt - tin) / 0.55); const p = $(id); p.style.strokeDasharray = LEN[id]; p.style.strokeDashoffset = (LEN[id] * (1 - M.eio(k))).toFixed(2); p.style.opacity = k > 0 ? 1 : 0; }
+      const pk = ((tt - t.live - 0.5) / 1.3) % 1, pv = tt > t.live + 0.5;
+      const pt = $('wLive').getPointAtLength(LEN.wLive * (pv ? pk : 0));
+      Object.assign($('pulse').style, { opacity: pv ? 1 : 0 }); $('pulse').setAttribute('cx', pt.x); $('pulse').setAttribute('cy', pt.y);
+    } },
+  ],
+  extra: (tt) => cap(tt),
+});
+</script>

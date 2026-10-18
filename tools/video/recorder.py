@@ -83,6 +83,19 @@ OVERLAY = r"""
       const r = e.getBoundingClientRect();
       return { x: r.left + Math.min(r.width / 2, 160), y: r.top + r.height / 2, top: r.top, bottom: r.bottom, h: r.height, vh: innerHeight, sy: scrollY };
     },
+    camera(x, y, z, ms) {  // a push-in on the page's content, around (x, y): the shell, cursor and captions stay put
+      const main = document.querySelector('main'); if (!main) return false;
+      main.style.overflow = z === 1 ? '' : 'clip';
+      const k = z === 1 ? 0 : 0.3;  // drift a third of the way toward the centre while zooming
+      const dx = (innerWidth / 2 - x) * k, dy = (innerHeight / 2 - y) * k;
+      for (const el of main.children) {
+        const r = el.getBoundingClientRect();
+        el.style.transformOrigin = `${x - r.left}px ${y - r.top}px`;
+        el.style.transition = `transform ${ms}ms cubic-bezier(.45,0,.2,1)`;
+        el.style.transform = z === 1 ? '' : `translate(${dx}px, ${dy}px) scale(${z})`;
+      }
+      return true;
+    },
     scrollTo(y, ms) {
       const y0 = scrollY, t0 = performance.now();
       return new Promise((res) => {
@@ -110,6 +123,10 @@ class Recorder:
         self.caption_text = ""
         self.label_args: tuple[str, str, str] | None = None
         self.cursor = (1100.0, 520.0)
+        self.cues: list[tuple[str, float]] = []  # moments the sound design marks: clicks, the inbox chime
+
+    def cue(self, name: str) -> None:
+        self.cues.append((name, round(self.clock, 3)))
 
     @property
     def clock(self) -> float:
@@ -298,11 +315,29 @@ class Recorder:
         await asyncio.sleep(ms / 1000 + 0.05)
         return hit
 
+    async def camera(self, text: str | None = None, sel: str | None = None, zoom: float = 1.15, ms: int = 1000,
+                     nth: int = 0, exact: bool = False) -> None:
+        """Push in on what the narration is about; the page re-renders at the new size, so text stays sharp."""
+        hit = await self.find(text=text, sel=sel, nth=nth, exact=exact)
+        if not hit:
+            return
+        if hit["top"] < 70 or hit["bottom"] > hit["vh"] - 120:
+            await self.scroll_to(text=text, sel=sel, at=0.42)
+            hit = await self.find(text=text, sel=sel, nth=nth, exact=exact)
+        await self.c.js(f"__atr.camera({hit['x']}, {hit['y']}, {zoom}, {ms})")
+        await asyncio.sleep(ms / 1000 + 0.05)
+
+    async def camera_out(self, ms: int = 900) -> None:
+        await self.c.js(f"__atr.camera(0, 0, 1, {ms})")
+        await asyncio.sleep(ms / 1000 + 0.05)
+
     async def click(self, text: str | None = None, sel: str | None = None, nth: int = 0, exact: bool = False,
                     pause_after: float = 0.35) -> None:
         await self.move_to(text=text, sel=sel, nth=nth, exact=exact)
         await asyncio.sleep(0.18)
         x, y = self.cursor
+        if not self.paused:
+            self.cue("click")
         await self.c.js("__atr.ripple()")
         await self.c.send("Input.dispatchMouseEvent", type="mousePressed", x=x, y=y, button="left", clickCount=1)
         await asyncio.sleep(0.07)

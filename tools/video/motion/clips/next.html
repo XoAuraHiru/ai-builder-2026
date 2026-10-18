@@ -1,0 +1,62 @@
+<title>Next</title>
+<style>/*BRAND*/
+#stage{font-family:'Schibsted Grotesk',system-ui,sans-serif;color:#1C1B17;font-feature-settings:normal}
+.kick{font-family:'Geist Mono',monospace;font-size:19px;letter-spacing:.16em;color:#6F6C62;white-space:nowrap}
+.ttl{font-size:56px;font-weight:700;letter-spacing:-.035em;white-space:nowrap}
+.ms{position:absolute;width:340px}
+.ms .ib{width:68px;height:68px;border-radius:20px;display:flex;align-items:center;justify-content:center}
+.ms .n{font-family:'Geist Mono',monospace;font-size:17px;letter-spacing:.14em;color:#9A968A;margin-top:26px}
+.ms .t{font-size:31px;font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-top:8px}
+.ms .s{font-size:21px;font-weight:500;color:#6F6C62;line-height:1.35;margin-top:10px}
+.node{position:absolute;width:26px;height:26px;border-radius:50%;box-sizing:border-box}
+</style>
+<div data-slot="shape">
+  <div class="L" id="Lpill"><div class="row" style="transform:translate(-50%,-50%);gap:14px;color:#fff;font-size:40px;font-weight:700" id="pill"></div></div>
+  <div class="L" id="Lcard">
+    <div class="a kick" style="left:-725px;top:-262px">WHAT'S NEXT</div>
+    <div class="a ttl" style="left:-728px;top:-232px">Beyond the prototype</div>
+    <div class="a" id="track" style="left:-691px;top:-114px;width:1416px;height:4px;border-radius:2px;background:#EBEAE4"></div>
+    <div class="a" id="fill" style="left:-691px;top:-114px;height:4px;border-radius:2px;background:#3F8160"></div>
+    <div id="nodes"></div>
+    <div id="ms"></div>
+  </div>
+</div><!--/shape-->
+<script>
+/*ATRIUM*/
+const b0 = D.beats[0];
+$('pill').innerHTML = `${M.icon('arrow', 36, '#fff', 2.6)}What's next`;
+const tCard = at('Gemini', b0.start, b0.start + 0.5) - 0.25;
+const MS = [
+  ['mic', 'Gemini Live voice advisor', 'Clients talk to Atrium, inside the same guardrails', C.ai7, C.ai0, at('Gemini', b0.start, b0.start + 0.5)],
+  ['bell', 'Push alerts', 'The live inbox on every phone, through Firebase Cloud Messaging', C.green8, C.green1, at('push', b0.start, b0.start + 3)],
+  ['share', 'Fraud signals across firms', 'Shared in BigQuery clean rooms, never the client data', C.coral7, C.coral0, at('fraud', b0.start, b0.start + 5.5)],
+  ['filecheck', 'KYC kept current', 'Agents that re-check every client file before it expires', C.green8, C.green1, at('agents', b0.start, b0.start + 8)],
+];
+const LEFT = [-725, -355, 15, 385];  // four columns inside the card
+const XS = LEFT.map((x) => x + 34);   // each node sits over its column's icon
+$('nodes').innerHTML = XS.map((x, i) => `<div class="node" id="nd${i}" style="left:${x - 13}px;top:-125px"></div>`).join('');
+$('ms').innerHTML = MS.map(([ic, t, s, fg, bg], i) => `<div class="ms" id="m${i}" style="left:${LEFT[i]}px;top:-66px">
+  <div class="ib" style="background:${bg}">${M.icon(ic, 34, fg, 2.2)}</div><div class="n">0${i + 1}</div><div class="t">${t}</div><div class="s">${s}</div></div>`).join('');
+const fill = M.track(0, MS.map((m, i) => [m[5], i === 3 ? 1 : (XS[i] + 691) / 1416 + 0.001, M.SLOW]));
+const cap = captions();
+M.scene({
+  W: 1920, H: 1080, bg: C.sand1, T: D.T, intro: 0.08,
+  SH: { pill: { w: 330, h: 100, r: 50, bg: C.ink, cam: 1.5 }, card: { w: 1600, h: 640, r: 48, bg: '#FFFFFF', cam: 0.98 } },
+  start: 'pill', SEQ: [[tCard, 'card']],
+  layers: [
+    { el: 'Lpill', tin: 0.08, tout: tCard, o: { lout: 0.1 } },
+    { el: 'Lcard', tin: tCard, tout: null, o: { din: 0.02, lin: 0.2 }, update: (t) => {
+      $('fill').style.width = (1416 * M.clamp(fill(t))).toFixed(1) + 'px';
+      MS.forEach((m, i) => {
+        const v = M.vis(t, m[5] - 0.05, null, { din: 0, lin: 0.32 });
+        M.apply($('m' + i), v, ` translateY(${(1 - v.a) * 18}px)`);
+        const on = M.clamp(M.S(t - m[5], 16, 0.75));
+        const nd = $('nd' + i).style;
+        nd.background = on > 0.5 ? C.green : '#fff'; nd.border = `3px solid ${on > 0.5 ? C.green : C.sand3}`;
+        nd.transform = `scale(${0.8 + 0.2 * on + 0.25 * Math.sin(Math.PI * M.clamp((t - m[5]) / 0.35))})`;
+      });
+    } },
+  ],
+  extra: (t) => cap(t),
+});
+</script>

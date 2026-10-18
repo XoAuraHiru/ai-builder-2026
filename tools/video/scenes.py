@@ -45,6 +45,8 @@ class Scene:
     tail: float = 0.6
     cursor: bool = True
     extra: dict = field(default_factory=dict)
+    clip: str | None = None                  # a motion clip (tools/video/motion) instead of a recording
+    lower: tuple[str, str] | None = None     # the feature, and the Google technology behind it, as a motion label
 
 
 def chapter(n: int, title: str, line: str, who: list[tuple[str, str]], kicker: str = "STAGE", of: int = 4) -> str:
@@ -395,7 +397,7 @@ SCENES: list[Scene] = [
                      "one for the books.", hold(0.5)),
                    B("Fraud slips through the gaps between them, and the AI bolted on top is a black box.", hold(0.5),
                      after=1.4)],
-          start=(CARDS / "open.html").as_uri(), ready="Atrium", settle=0.0, cursor=False),
+          clip="hook"),
     Scene("front", [B("Atrium is one AI-native platform for the whole client life, from the first enquiry to a "
                       "reconciled ledger.", hold(1.0)),
                     B("Four stages, eight people, and Gemini at every step, always checked against the numbers it "
@@ -410,8 +412,7 @@ SCENES: list[Scene] = [
 
     Scene("ch-acquire", [B("First, acquire. Daniel is an advisor, and Atrium checks every lead before he calls.",
                            hold(0.5), after=1.0)],
-          start=chapter(1, "Acquire", "Every lead scored for fit and for fraud before an advisor calls.",
-                        [("Daniel Okafor", "Advisor")]), ready="Acquire", settle=0.0, cursor=False),
+          clip="chapter1"),
     Scene("leads", [B("Every lead is scored twice: for fit, with BigQuery ML, and for trust, from fraud signals in the "
                       "form itself.", leads_scores),
                     B("The riskiest come first. Four leads arrived from one device within a day, each with a "
@@ -444,9 +445,7 @@ SCENES: list[Scene] = [
           label=("01", "Acquire", "Proposal")),
 
     Scene("ch-invest", [B("Next, invest. Priya and Lucas are investors.", hold(0.5), after=1.0)],
-          start=chapter(2, "Invest", "Portfolios tested against 10,000 futures drawn from real markets since 2007.",
-                        [("Priya Raman", "Investor"), ("Lucas Moreau", "Investor")]),
-          ready="Invest", settle=0.0, cursor=False),
+          clip="chapter2"),
     Scene("home", [B("Priya's home shows her portfolio, and the one thing that needs her attention.", home_value),
                    B("Her mix now behaves like risk band four, above the band three she chose with Gemini.", home_drift, after=1.2)],
           persona="priya@atrium.demo", start="/investor", ready="Your portfolio", settle=0.2,
@@ -477,9 +476,7 @@ SCENES: list[Scene] = [
           label=("02", "Invest", "Investor Copilot")),
 
     Scene("ch-trade", [B("Then, trade.", hold(0.5), after=1.0)],
-          start=chapter(3, "Trade", "Every order checked before it reaches the market, and held when it looks wrong.",
-                        [("Priya Raman", "Investor"), ("Tom Becker", "Investor"), ("Daniel Okafor", "Advisor")]),
-          ready="Trade", settle=0.0, cursor=False),
+          clip="chapter3"),
     Scene("nvda", [B("Atrium trades real US stocks and ETFs at live prices, with paper money.", nvda_market),
                    B("Before any order reaches the market, the Pre-trade Guardian checks it.", nvda_check),
                    B("Sixty NVIDIA shares would take Priya two bands past her profile, so it holds the order for an "
@@ -493,16 +490,13 @@ SCENES: list[Scene] = [
           persona="tom@atrium.demo", start="/investor/markets/TSLA", ready="Check order",
           label=("03", "Trade", "Account takeover"),
           extra={"device": f"video-tom-{time.time():.0f}"}),  # a browser Tom's account has never seen, every take
-    Scene("held", [B("Held orders wait for an advisor.", hold(0.8)),
-                   B("Gemini Pro writes a review note from what the Guardian checked, and Daniel releases or rejects "
-                     "the order, with a reason.", held_note, after=1.2)],
-          persona="daniel@atrium.demo", start="/advisor/held", ready="Held orders",
-          label=("03", "Trade", "Held orders")),
+    Scene("inbox", [B("And Daniel's inbox lights up at once, live through Firestore.", None, after=0.4),
+                    B("Gemini Pro drafts the review note; Daniel makes the call.", None, after=0.9)],
+          persona="daniel@atrium.demo", start="/advisor", ready="Look at these first",
+          lower=("Live inbox", "Cloud Firestore · real time")),  # recorded by film_short.py (the same beats), copied here
 
     Scene("ch-operate", [B("Then, operate: the back office.", hold(0.5), after=1.0)],
-          start=chapter(4, "Operate", "Statements reconciled, alerts reviewed, and two people for every change to "
-                        "the books.", [("Mei Tanaka", "Operations"), ("Sam Ortiz", "Operations")]),
-          ready="Operate", settle=0.0, cursor=False),
+          clip="chapter4"),
     Scene("today", [B("Each evening the day-end job drafts fund prices, runs monthly plans and AML monitoring, and "
                       "Gemini writes a morning brief.", today_run),
                     B("Publishing the prices needs a second person.", today_brief, after=1.0)],
@@ -519,10 +513,7 @@ SCENES: list[Scene] = [
 
     Scene("ch-govern", [B("Across all four stages, compliance watches for financial crime, and every model is "
                           "governed.", hold(0.5), after=1.0)],
-          start=chapter(5, "Protect and govern", "Financial crime caught with its evidence, and every model "
-                        "validated, attacked and watched.", [("Omar Haddad", "Compliance")],
-                        kicker="ACROSS ALL FOUR STAGES"),
-          ready="Protect and govern", settle=0.0, cursor=False),
+          clip="chapter5"),
     Scene("alert", [B("Seven AML scenarios and a BigQuery ML anomaly model raise alerts with the exact rows behind "
                       "them.", alerts_list),
                     B("Here, three subscriptions in five days, each just under the ten-thousand-dollar reporting "
@@ -549,7 +540,13 @@ SCENES: list[Scene] = [
           persona="omar@atrium.demo", start="/compliance/log", ready="AI decisions",
           label=("05", "Govern", "Decision log")),
 
-    Scene("close", [B("Atrium runs on Gemini, ADK, Document AI, Vertex AI Search and BigQuery, on Cloud Run.", hold(0.5)),
-                    B("People decide. The AI shows its working.", hold(0.5), after=2.0)],
-          start=(CARDS / "close.html").as_uri(), ready="People decide.", settle=0.0, cursor=False),
+    Scene("arch", [B("Under the hood, Cloud Run serves the app, the API and the nightly jobs. Gemini runs on Vertex AI, "
+                     "with ADK agents.", after=0.4),
+                   B("Firebase Hosting and Auth are the front door, and Firestore streams the live inbox.", after=0.9)],
+          clip="arch"),
+    Scene("next", [B("Next: a Gemini Live voice advisor, push alerts through Firebase Cloud Messaging, fraud signals "
+                     "shared across firms in BigQuery clean rooms, and agents that keep every KYC file current.",
+                     after=1.0)],
+          clip="next"),
+    Scene("close", [B("People decide. The AI shows its working.", after=2.2)], clip="close"),
 ]

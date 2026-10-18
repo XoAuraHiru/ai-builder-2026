@@ -1,0 +1,5 @@
+Schibsted Grotesk (SchibstedGrotesk-normal.woff2) and Newsreader (Newsreader-normal.woff2, Newsreader-italic.woff2)
+are from Google Fonts and are licensed under the SIL Open Font License, Version 1.1: https://openfontlicense.org
+
+Schibsted Grotesk: Copyright 2022 The Schibsted Grotesk Project Authors.
+Newsreader: Copyright 2020 The Newsreader Project Authors.

@@ -12,6 +12,7 @@ written to CAST for make_video.py --voice to record the film with.
 """
 import argparse
 import difflib
+import importlib
 import json
 import re
 import statistics
@@ -24,7 +25,6 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import make_video as mv  # noqa: E402
 import voice  # noqa: E402
-from scenes import SCENES  # noqa: E402
 
 CAST = mv.WORK / "voice-cast.json"
 PACE = 150  # words a minute, measured over the whole script's letters so long words take longer
@@ -110,15 +110,21 @@ def cast_sentence(voice_id: str, text: str, previous: str, following: str) -> di
             "rejected": [f"seed {t['seed']}: {'; '.join(t['problems'])}" for t in takes if t["seed"] != best["seed"]]}
 
 
-def main(voice_id: str) -> None:
+def main(voice_id: str, film: str, recast: bool) -> None:
     global LETTERS_PER_SECOND
+    cast = json.loads(CAST.read_text(encoding="utf-8")) if CAST.exists() else {}
     sentences = []
-    for scene in SCENES:
+    for scene in importlib.import_module(film).SCENES:
         texts = [b.text for b in scene.beats]
         for i, text in enumerate(texts):
             sentences.append((scene.key, text, " ".join(texts[:i])[-600:], " ".join(texts[i + 1:])[:600]))
     all_text = " ".join(s[1] for s in sentences)
     LETTERS_PER_SECOND = letters(all_text) / (len(words(all_text)) / (PACE / 60))
+    if not recast:  # a sentence already cast keeps its take, including one chosen by hand
+        sentences = [s for s in sentences if s[1] not in cast]
+    if not sentences:
+        print("every sentence is already cast")
+        return
     with ThreadPoolExecutor(4) as pool:
         picks = list(pool.map(lambda s: cast_sentence(voice_id, *s[1:]), sentences))
     for (key, *_), pick in zip(sentences, picks):
@@ -131,12 +137,15 @@ def main(voice_id: str) -> None:
           f"median {statistics.median(paces):.2f}; {sum(p['length'] for p in picks):.0f} s of speech")
     for pick in picks:
         pick["wav"] = str(levelled(Path(pick["wav"])))
-    CAST.write_text(json.dumps({p["text"]: {"wav": p["wav"], "length": p["length"]} for p in picks}, indent=1),
-                    encoding="utf-8")
+    cast.update({p["text"]: {"wav": p["wav"], "length": p["length"]} for p in picks})
+    CAST.write_text(json.dumps(cast, indent=1), encoding="utf-8")
     (mv.WORK / "voice-cast-report.json").write_text(json.dumps(picks, indent=1), encoding="utf-8")
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("voice_id")
-    main(ap.parse_args().voice_id)
+    ap.add_argument("--film", default="scenes", help="the module holding the film's SCENES (scenes, film_short)")
+    ap.add_argument("--recast", action="store_true", help="cast again sentences that already have a take")
+    a = ap.parse_args()
+    main(a.voice_id, a.film, a.recast)

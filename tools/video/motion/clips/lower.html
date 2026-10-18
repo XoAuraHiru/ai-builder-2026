@@ -1,0 +1,38 @@
+<title>Label</title>
+<style>/*BRAND*/
+#stage{font-family:'Schibsted Grotesk',system-ui,sans-serif;color:#1C1B17;font-feature-settings:normal}
+.t{font-size:25px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
+.s{font-size:21px;font-weight:500;color:#6F6C62;white-space:nowrap}
+.ic{width:46px;height:46px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.sep{width:1.5px;height:26px;background:#DCDAD1;flex:none}
+</style>
+<div data-slot="shape">
+  <div class="L" id="Ldot"><div class="a" id="dot" style="left:-6px;top:-6px;width:12px;height:12px;border-radius:50%"></div></div>
+  <div class="L" id="Lfull"><div class="row" id="rowc" style="left:9px;top:0;transform:translateY(-50%);gap:15px"><span class="ic" id="ic"></span><span class="t" id="tt"></span><span class="sep" id="sp"></span><span class="s" id="ss"></span></div></div>
+</div><!--/shape-->
+<script>
+/*ATRIUM*/
+const ai = /gemini|vertex|agent/i.test(D.title + ' ' + D.sub);
+$('tt').textContent = D.title;
+$('ss').textContent = D.sub;
+$('ic').style.background = ai ? C.ai0 : C.green1;
+$('ic').innerHTML = ai ? M.icon('sparkle', 24, C.ai7, 2.2) : M.icon('check', 22, C.green8, 2.6);
+$('dot').style.background = ai ? C.ai : C.green;
+const OUT = D.T - 0.95;
+Promise.all([document.fonts.load("600 25px 'Schibsted Grotesk'"), document.fonts.load("500 21px 'Schibsted Grotesk'")]).then(() => {
+  const FW = Math.ceil($('rowc').getBoundingClientRect().width) + 9 + 26;  // measured in the real font
+  M.scene({
+    W: 1200, H: 200, bg: null, center: [165, 100], T: D.T, intro: 0.06,
+    SH: { dot: { w: 64, h: 64, r: 32, bg: '#FFFFFF', cam: 1 }, full: { w: FW, h: 64, r: 32, bg: '#FFFFFF', cam: 1 } },
+    start: 'dot', SEQ: [[0.3, 'full'], [OUT, 'dot']],
+    layers: [
+      { el: 'Ldot', tin: 0.06, tout: 0.3, o: { din: 0, lin: 0.12 } },
+      { el: 'Lfull', tin: 0.3, tout: OUT - 0.08, anchor: 'l', o: { din: 0.04, lin: 0.2 }, update: (t) => {
+        [['ic', 0.34], ['tt', 0.4], ['sp', 0.52], ['ss', 0.56]].forEach(([id, tin]) => { const v = M.vis(t, tin, null, { din: 0, lin: 0.26 }); M.apply($(id), v, ` translateX(${(1 - v.a) * -10}px)`); });
+      } },
+    ],
+    geom: (t, g) => { g.cx = g.w / 2; g.op *= 1 - M.clamp((t - OUT - 0.25) / 0.3); return g; },
+    extra: () => { const s = $('shape').style; s.boxShadow = '0 1px 2px rgba(28,27,23,.08), 0 12px 32px rgba(28,27,23,.16)'; s.border = '1.5px solid #EBEAE4'; s.boxSizing = 'border-box'; },
+  });
+});
+</script>

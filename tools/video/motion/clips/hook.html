@@ -1,0 +1,137 @@
+<title>Hook</title>
+<style>/*BRAND*/
+#stage{font-family:'Schibsted Grotesk',system-ui,sans-serif;color:#1C1B17;font-feature-settings:normal}
+.fill{position:absolute;left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.ar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.tile{position:absolute;background:#fff;border:1.5px solid #EBEAE4;border-radius:26px;box-shadow:0 1px 2px rgba(28,27,23,.06),0 12px 30px -10px rgba(28,27,23,.18);box-sizing:border-box;overflow:hidden}
+.tile .ib{position:absolute;left:26px;top:26px;width:60px;height:60px;border-radius:18px;display:flex;align-items:center;justify-content:center}
+.ov.fill{position:absolute}
+.tile .lb{position:absolute;left:28px;top:104px;font-size:36px;font-weight:700;letter-spacing:-.025em;white-space:nowrap}
+.tile .sb{position:absolute;left:29px;top:152px;font-family:'Geist Mono',monospace;font-size:16px;letter-spacing:.12em;color:#6F6C62;white-space:nowrap}
+.badge{position:absolute;right:18px;top:18px;width:40px;height:40px;border-radius:50%;background:#F2F1FC;display:flex;align-items:center;justify-content:center}
+.ov{position:absolute}
+</style>
+<div data-slot="shape">
+  <div class="L" id="Lbank"><div class="a" id="bankic" style="left:-30px;top:-30px"></div></div>
+  <div class="L" id="Ltiles"></div>
+</div><!--/shape-->
+<div data-slot="over">
+  <div class="ov" id="fraud" style="width:0;height:0"><div class="ov" id="halo" style="left:-22px;top:-22px;width:44px;height:44px;border-radius:50%;border:2.5px solid #E8705F"></div><div class="ov" style="left:-14px;top:-14px;width:28px;height:28px;border-radius:50%;background:#E8705F"></div><div class="ov" style="left:26px;top:-17px;font-size:24px;font-weight:700;color:#B23F2E;white-space:nowrap">fraud</div></div>
+  <div class="ov" id="bolts"></div>
+  <div class="ov" id="box"><div class="fill" id="boxAI" style="gap:16px;color:#fff;font-size:44px;font-weight:700"></div><div class="fill" id="boxQ" style="color:#fff;font-size:76px;font-weight:700">?</div><div class="fill" id="boxA" style="color:#fff;font-size:40px;font-weight:800;letter-spacing:-.02em">A</div></div>
+  <div class="ov" id="word" style="font-size:52px;font-weight:700;letter-spacing:-.03em;white-space:nowrap">Atrium</div>
+  <div class="ov" id="kick" style="font-family:'Geist Mono',monospace;font-size:18px;letter-spacing:.14em;color:#6F6C62;white-space:nowrap">ONE PLATFORM · THE WHOLE CLIENT LIFE</div>
+  <div class="ov" id="arrows"></div>
+  <div class="ov" id="life" style="height:6px;border-radius:3px;background:#3F8160"></div>
+  <div class="ov" id="gem"></div>
+  <div class="ov" id="who"></div>
+</div><!--/over-->
+<script>
+/*ATRIUM*/
+const [b0, b1, b2] = [D.beats[0], D.beats[1], D.beats[2]];
+const NEVER = 1e9;
+const tRow = at('four', 0, b0.start + 1.2) - 0.05;
+const tSys = [at('leads', tRow, tRow + 0.7), at('portfolio', tRow, tRow + 1.3), at('trading', tRow, tRow + 1.9), at('book', tRow, tRow + 2.5)];
+const tFraud = b1 ? at('fraud', b1.start - 0.1, b1.start) : NEVER;
+const tSlips = b1 ? at('slips', tFraud, tFraud + 0.4) : NEVER;
+const tAI = b1 ? at('AI', tFraud + 0.5, tFraud + 2.2) : NEVER;
+const tBlack = b1 ? at('black', tAI, tAI + 1.4) : NEVER;
+const tAtrium = b2 ? at('Atrium', b2.start - 0.1, b2.start) : NEVER;
+const tLife = b2 ? at('life', tAtrium, tAtrium + 2.4) : NEVER;
+const tGemini = b2 ? at('Gemini', tAtrium, tAtrium + 3.4) : NEVER;
+const tPerson = b2 ? at('person', tGemini, tGemini + 1.8) : NEVER;
+
+$('bankic').innerHTML = M.icon('landmark', 60, C.ink, 2.2);
+const SYS = [['users', 'Leads', 'CRM'], ['pie', 'Portfolios', 'PORTFOLIO SYSTEM'], ['swap', 'Trading', 'ORDER SYSTEM'], ['book', 'The books', 'LEDGER']];
+const STG = [['users', 'Acquire', 'LEADS · KYC'], ['trend', 'Invest', 'PORTFOLIOS'], ['swap', 'Trade', 'ORDERS'], ['book', 'Operate', 'THE BOOKS']];
+$('Ltiles').innerHTML = SYS.map(([ic, lb, sb], i) => `<div class="tile" id="t${i}">
+  <div class="ib" id="ibA${i}" style="background:${C.sand1}">${M.icon(ic, 30, C.ink2, 2.2)}</div>
+  <div class="ib" id="ibB${i}" style="background:${C.green1}">${M.icon(STG[i][0], 30, C.green8, 2.2)}</div>
+  <div class="lb" id="lA${i}">${lb}</div><div class="sb" id="sA${i}">${sb}</div>
+  <div class="lb" id="lB${i}">${STG[i][1]}</div><div class="sb" id="sB${i}">${STG[i][2]}</div>
+  <div class="badge" id="bd${i}">${M.icon('sparkle', 22, C.ai7, 2.2)}</div></div>`).join('');
+$('boxAI').innerHTML = `AI ${M.icon('sparkle', 38, '#fff', 2.4)}`;
+$('arrows').innerHTML = [0, 1, 2].map((i) => `<div class="ov ar" id="ar${i}" style="background:${C.green0};border:1.5px solid ${C.green1}">${M.icon('arrow', 20, C.green, 2.6)}</div>`).join('');
+$('gem').innerHTML = chipHTML('sparkle', 'Gemini at every step', C.ai7, C.ai0, 26);
+$('who').innerHTML = chipHTML('check', 'A person makes every decision', C.green8, C.green1, 26);
+$('bolts').innerHTML = [0, 1, 2, 3].map((i) => `<div class="ov" id="bo${i}" style="width:0;border-left:3px dashed ${C.sand3};"></div>`).join('');
+
+// where each tile sits: together in a row, pulled apart by the gaps, then joined as Atrium's four stages
+const gap = (s0) => [0, 1, 2, 3].map((i) => (i - 1.5) * s0);
+const X = [0, 1, 2, 3].map((i) => M.track(gap(370)[i], [[tFraud, gap(445)[i], M.SOFT], [tAtrium, gap(360)[i]]]));
+const Y = M.track(0, [[tAtrium, -18]]);
+const TW = M.track(330, [[tAtrium, 318]]), TH = M.track(220, [[tAtrium, 206]]);
+// the fraud dot falls through the gap between the middle systems
+const fy = M.track(-300, [[tSlips, 300, [5.2, 0.95]]]);
+// the black box drops on top, then becomes Atrium's mark in the corner of the card
+const bx = M.track(0, [[tAtrium, -706]]), by = M.track(-520, [[tAI, -255, [11, 0.82]], [tAtrium, -236]]);
+const bw = M.track(600, [[tAtrium, 72]]), bh = M.track(124, [[tAtrium, 72]]), br = M.track(30, [[tAtrium, 20]]);
+const bbg = M.ctrack(C.ink, [[tAtrium, C.green]]);
+const life = M.track(0, [[tLife, 1, [4.2, 1]]]);
+const shadow = M.track(1, [[tRow, 0], [tAtrium, 1]]);
+const cap = captions();
+
+M.scene({
+  W: 1920, H: 1080, bg: C.sand1, T: D.T, intro: 0.2,
+  SH: { bank: { w: 132, h: 132, r: 66, bg: '#FFFFFF', cam: 1.5 }, row: { w: 1680, h: 340, r: 48, bg: C.sand1, cam: 1.0 },
+        card: { w: 1600, h: 640, r: 48, bg: '#FFFFFF', cam: 0.98 } },
+  start: 'bank', SEQ: [[tRow, 'row'], ...(b2 ? [[tAtrium, 'card']] : [])],
+  layers: [
+    { el: 'Lbank', tin: 0.2, tout: tRow, o: { lout: 0.1 } },
+    { el: 'Ltiles', tin: tRow, tout: null, o: { din: 0, lin: 0.01 }, update: (t) => {
+      for (let i = 0; i < 4; i++) {
+        const el = $('t' + i), v = M.vis(t, tRow + 0.05 + i * 0.07, null, { din: 0, lin: 0.3 });
+        const w = TW(t), h = TH(t);
+        M.apply(el, v, '');
+        Object.assign(el.style, { left: (X[i](t) - w / 2).toFixed(2) + 'px', top: (Y(t) - h / 2).toFixed(2) + 'px', width: w.toFixed(2) + 'px', height: h.toFixed(2) + 'px' });
+        M.apply($('ibA' + i), M.vis(t, null, tAtrium, { lout: 0.15 }));
+        M.apply($('ibB' + i), M.vis(t, tAtrium + 0.12 + i * 0.05, null, { din: 0, lin: 0.25 }));
+        M.apply($('lA' + i), M.vis(t, tSys[i], tAtrium, { din: 0, lin: 0.24, lout: 0.14 }), ` translateY(${(1 - M.vis(t, tSys[i], null, { din: 0, lin: 0.24 }).a) * 10}px)`);
+        M.apply($('sA' + i), M.vis(t, tSys[i] + 0.1, tAtrium, { din: 0, lin: 0.24, lout: 0.14 }));
+        M.apply($('lB' + i), M.vis(t, tAtrium + 0.14 + i * 0.05, null, { din: 0, lin: 0.26 }), ` translateY(${(1 - M.vis(t, tAtrium + 0.14 + i * 0.05, null, { din: 0, lin: 0.26 }).a) * 10}px)`);
+        M.apply($('sB' + i), M.vis(t, tAtrium + 0.22 + i * 0.05, null, { din: 0, lin: 0.26 }));
+        const bv = M.vis(t, tGemini + 0.25 + i * 0.16, null, { din: 0, lin: 0.22 });
+        M.apply($('bd' + i), bv, ` scale(${0.6 + 0.4 * M.S(t - tGemini - 0.25 - i * 0.16, 16, 0.7)})`);
+      }
+    } },
+  ],
+  extra: (t, g) => {
+    const k = M.clamp(shadow(t));
+    $('shape').style.boxShadow = k < 0.01 ? 'none' : `0 1px 2px rgba(20,18,14,${0.06 * k}),0 10px 30px -8px rgba(20,18,14,${0.16 * k})`;
+    // fraud, slipping through
+    const fv = M.vis(t, tFraud, tSlips + 1.15, { din: 0, lin: 0.2, lout: 0.3 });
+    if (M.apply($('fraud'), fv, '')) { $('fraud').style.left = '0px'; $('fraud').style.top = fy(t).toFixed(2) + 'px';
+      const ph = ((t - tFraud) * 1.4) % 1; $('halo').style.transform = `scale(${1 + 0.9 * ph})`; $('halo').style.opacity = (1 - ph).toFixed(3); }
+    // the box: AI bolted on top, a black box, then Atrium
+    const bv = M.vis(t, tAI - 0.05, null, { din: 0, lin: 0.12 });
+    if (M.apply($('box'), bv, '')) {
+      const w = bw(t), h = bh(t);
+      Object.assign($('box').style, { left: (bx(t) - w / 2).toFixed(2) + 'px', top: (by(t) - h / 2).toFixed(2) + 'px', width: w.toFixed(2) + 'px', height: h.toFixed(2) + 'px', borderRadius: br(t).toFixed(2) + 'px', background: bbg(t), boxShadow: '0 16px 40px -12px rgba(20,18,14,.45)' });
+      M.apply($('boxAI'), M.vis(t, tAI, tBlack, { din: 0.05, lin: 0.2, lout: 0.12 }));
+      M.apply($('boxQ'), M.vis(t, tBlack, tAtrium, { din: 0.02, lin: 0.22, lout: 0.12 }));
+      M.apply($('boxA'), M.vis(t, tAtrium + 0.35, null, { din: 0, lin: 0.25 }));
+    }
+    for (let i = 0; i < 4; i++) {  // the bolts from the box to each system
+      const v = M.vis(t, tAI + 0.32 + i * 0.05, tAtrium, { din: 0, lin: 0.2, lout: 0.12 });
+      if (M.apply($('bo' + i), v, '')) Object.assign($('bo' + i).style, { left: (X[i](t) - 1.5).toFixed(1) + 'px', top: '-192px', height: '78px' });
+    }
+    // Atrium's card: the wordmark, the stages joined, the client life, Gemini and the person
+    const wv = M.vis(t, tAtrium + 0.5, null, { din: 0, lin: 0.3 });
+    if (M.apply($('word'), wv, ` translateX(${(1 - wv.a) * -12}px)`)) Object.assign($('word').style, { left: '-650px', top: '-270px' });
+    const kv = M.vis(t, tAtrium + 0.7, null, { din: 0, lin: 0.3 });
+    if (M.apply($('kick'), kv, '')) Object.assign($('kick').style, { left: '250px', top: '-248px' });
+    for (let i = 0; i < 3; i++) {
+      const v = M.vis(t, tAtrium + 0.45 + i * 0.08, null, { din: 0, lin: 0.22 });
+      if (M.apply($('ar' + i), v, '')) Object.assign($('ar' + i).style, { left: ((X[i](t) + X[i + 1](t)) / 2 - 20).toFixed(2) + 'px', top: (Y(t) - 20).toFixed(2) + 'px' });
+    }
+    const lk = M.clamp(life(t));
+    const lv = M.vis(t, tLife, null, { din: 0, lin: 0.1 });
+    if (M.apply($('life'), lv, '')) Object.assign($('life').style, { left: '-700px', top: '112px', width: (1400 * lk).toFixed(1) + 'px', transform: 'none' });
+    const gv = M.vis(t, tGemini, null, { din: 0, lin: 0.28 });
+    if (M.apply($('gem'), gv, ` translateY(${(1 - gv.a) * 14}px)`)) Object.assign($('gem').style, { left: '-700px', top: '160px' });
+    const pv = M.vis(t, tPerson, null, { din: 0, lin: 0.28 });
+    if (M.apply($('who'), pv, ` translateY(${(1 - pv.a) * 14}px)`)) Object.assign($('who').style, { left: '-262px', top: '160px' });
+    cap(t);
+  },
+});
+</script>

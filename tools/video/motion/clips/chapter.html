@@ -1,0 +1,56 @@
+<title>Chapter</title>
+<style>/*BRAND*/
+#stage{font-family:'Schibsted Grotesk',system-ui,sans-serif;color:#1C1B17;font-feature-settings:normal}
+.kick{font-family:'Geist Mono',monospace;font-size:21px;letter-spacing:.16em;color:#6F6C62;white-space:nowrap}
+.ttl{font-size:138px;font-weight:700;letter-spacing:-.048em;line-height:1;white-space:nowrap}
+.line{font-size:31px;color:#6F6C62;font-weight:500;width:1000px;line-height:1.32}
+.pp{display:inline-flex;align-items:center;gap:12px;padding:8px 22px 8px 8px;border-radius:999px;background:#FAFAF7;border:1.5px solid #EBEAE4;font-size:24px;font-weight:600;white-space:nowrap}
+.av{width:46px;height:46px;border-radius:50%;background:#E0EDE4;color:#1D4532;display:inline-flex;align-items:center;justify-content:center;font-size:18px;font-weight:700}
+.role{color:#6F6C62;font-weight:500}
+.seg{position:absolute;top:0;height:8px;width:64px;border-radius:4px}
+</style>
+<div data-slot="shape">
+  <div class="L" id="Lnum"><div class="row" style="transform:translate(-50%,-50%);color:#fff;font-size:46px;font-weight:700" id="num"></div></div>
+  <div class="L" id="Lcard">
+    <div class="a" style="left:-545px;top:-188px" id="segs"></div>
+    <div class="a kick" style="left:-545px;top:-160px" id="kick"></div>
+    <div class="a ttl" style="left:-552px;top:-118px" id="ttl"></div>
+    <div class="a line" style="left:-545px;top:42px" id="line"></div>
+    <div class="row" style="left:-545px;top:150px;gap:16px" id="who"></div>
+  </div>
+</div><!--/shape-->
+<script>
+/*ATRIUM*/
+const nn = String(D.n).padStart(2, '0');
+$('num').textContent = nn;
+$('kick').textContent = D.n === D.of ? `${nn} · ACROSS ALL FOUR STAGES` : `STAGE ${nn} OF 0${D.of - 1}`;
+$('ttl').textContent = D.title;
+$('ttl').style.fontSize = Math.min(138, 1060 / (0.56 * D.title.length)).toFixed(1) + 'px';  // a long title still fits its card
+$('line').textContent = D.line;
+$('who').innerHTML = D.who.map(([name, role]) => `<span class="pp"><span class="av">${name.split(' ').map((p) => p[0]).join('')}</span>${name}<span class="role">· ${role}</span></span>`).join('');
+$('segs').innerHTML = Array.from({ length: D.of }, (_, i) => `<span class="seg" id="sg${i}" style="left:${i * 74}px;background:${C.sand2}"></span>`).join('');
+const cap = D.beats.length ? captions() : () => {};
+const T0 = 0.18;
+const fill = M.track(0, [[T0 + 0.2, 1, M.SLOW]]);
+const parts = [['kick', T0 + 0.08], ['ttl', T0 + 0.14], ['line', T0 + 0.3]];
+M.scene({
+  W: 1920, H: 1080, bg: C.sand1, T: D.T, intro: 0.04,
+  SH: { num: { w: 156, h: 100, r: 50, bg: C.ink, cam: 1.55 }, card: { w: 1190, h: 470, r: 40, bg: '#FFFFFF', cam: 1.0 } },
+  start: 'num', SEQ: [[T0, 'card']],
+  layers: [
+    { el: 'Lnum', tin: null, tout: T0, o: { lout: 0.1 } },
+    { el: 'Lcard', tin: T0, tout: null, o: { din: 0.02, lin: 0.18 }, update: (t) => {
+      for (const [id, tin] of parts) { const v = M.vis(t, tin, null, { din: 0, lin: 0.32 }); M.apply($(id), v, ` translateY(${(1 - v.a) * 14}px)`); }
+      [...$('who').children].forEach((el, i) => { const v = M.vis(t, T0 + 0.46 + i * 0.08, null, { din: 0, lin: 0.3 }); M.apply(el, v, ` translateY(${(1 - v.a) * 10}px)`); });
+      for (let i = 0; i < D.of; i++) {
+        const s = $('sg' + i).style, on = i < D.n;
+        const k = i === D.n - 1 ? M.clamp(fill(t)) : on ? 1 : 0;
+        s.background = k > 0.5 ? (i === D.n - 1 ? C.green : '#95C0A5') : C.sand2;
+        s.transform = i === D.n - 1 ? `scaleX(${0.4 + 0.6 * M.clamp(fill(t))})` : '';
+        s.transformOrigin = '0 50%';
+      }
+    } },
+  ],
+  extra: (t) => cap(t),
+});
+</script>

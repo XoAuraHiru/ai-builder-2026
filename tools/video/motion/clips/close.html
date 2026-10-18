@@ -1,0 +1,54 @@
+<title>Close</title>
+<style>/*BRAND*/
+#stage{font-family:'Schibsted Grotesk',system-ui,sans-serif;color:#1C1B17;font-feature-settings:normal}
+.fill{position:absolute;left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.word{font-size:64px;font-weight:700;letter-spacing:-.035em;white-space:nowrap}
+.tag{font-family:'Newsreader',serif;font-size:86px;line-height:1.08;letter-spacing:-.02em;white-space:nowrap}
+.url{font-family:'Geist Mono',monospace;font-size:24px;color:#2F6B4F;white-space:nowrap}
+.team{font-size:22px;font-weight:500;color:#6F6C62;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border-radius:999px;background:#FAFAF7;border:1.5px solid #EBEAE4;font-size:22px;font-weight:600;white-space:nowrap}
+</style>
+<div data-slot="shape">
+  <div class="L" id="Lcard">
+    <div class="a word" style="left:-360px;top:-214px" id="wm">Atrium</div>
+    <div class="a tag" style="left:-466px;top:-104px" id="t1">People decide.</div>
+    <div class="a tag" style="left:-466px;top:-12px;font-style:italic;color:#4B44A6" id="t2">The AI shows its working.</div>
+    <div class="row" style="left:-460px;top:132px;gap:14px" id="stack"></div>
+    <div class="a url" style="left:-460px;top:196px" id="url">atrium-cup-2026.web.app</div>
+    <div class="a team" style="left:-460px;top:234px" id="team">Team Ctrl+Alt+Hiru · Google Cloud AI Builder Cup 2026</div>
+  </div>
+</div><!--/shape-->
+<div data-slot="over"><div class="a" id="mark" style="border-radius:26px"><div class="fill" id="markA" style="color:#fff;font-size:58px;font-weight:800;letter-spacing:-.02em">A</div></div></div><!--/over-->
+<script>
+/*ATRIUM*/
+const last = D.beats[D.beats.length - 1];
+const tWord = at('Atrium', 0, 0.75);
+const tPeople = at('People', last.start - 0.1, last.start + 0.3);
+const tAI = at('AI', tPeople, tPeople + 0.9);
+const STACK = ['Gemini', 'ADK', 'Document AI', 'Vertex AI Search', 'BigQuery', 'Cloud Run'];  // said only in the full film
+const tStack = STACK.map((n) => at(n.split(' ')[0], 0, null)).map((t) => (t !== null && t < tPeople ? t : null));
+$('stack').innerHTML = STACK.map((n, i) => tStack[i] === null ? '' : `<span class="chip" id="st${i}">${n}</span>`).join('');
+const hasStack = tStack.some((t) => t !== null);
+// the mark: large in the middle, then it settles at the card's top left beside the wordmark
+const mx = M.track(0, [[tWord, -414]]), my = M.track(0, [[tWord, -176]]), ms = M.track(150, [[tWord, 92]]);
+const cap = captions();
+M.scene({
+  W: 1920, H: 1080, bg: C.sand1, T: D.T, intro: null,
+  SH: { card: { w: 1120, h: 620, r: 48, bg: '#FFFFFF', cam: 1.05 } },
+  start: 'card', SEQ: [],
+  layers: [
+    { el: 'Lcard', tin: null, tout: null, update: (t) => {
+      [['wm', tWord + 0.15], ['t1', tPeople], ['t2', tAI - 0.05], ['url', tAI + 0.5], ['team', tAI + 0.62]].forEach(([id, tin]) => {
+        const v = M.vis(t, tin, null, { din: 0, lin: 0.36 }); M.apply($(id), v, ` translateY(${(1 - v.a) * 16}px)`); });
+      STACK.forEach((n, i) => { if (tStack[i] === null) return; const v = M.vis(t, tStack[i], tPeople - 0.1, { din: 0, lin: 0.24, lout: 0.2 }); M.apply($('st' + i), v, ''); });
+    } },
+  ],
+  geom: (t, g) => { g.op = M.clamp((t - 0.05) / 0.35); g.sc *= 0.96 + 0.04 * M.clamp(M.S(t - 0.05, 9, 0.9)); return g; },
+  extra: (t) => {
+    const s = ms(t), x = mx(t), y = my(t);
+    Object.assign($('mark').style, { left: (x - s / 2).toFixed(2) + 'px', top: (y - s / 2).toFixed(2) + 'px', width: s.toFixed(2) + 'px', height: s.toFixed(2) + 'px', background: C.green, borderRadius: (s * 0.24).toFixed(2) + 'px', opacity: M.clamp((t - 0.1) / 0.3), boxShadow: '0 14px 34px -12px rgba(29,69,50,.45)' });
+    $('markA').style.fontSize = (s * 0.42).toFixed(2) + 'px';
+    cap(t);
+  },
+});
+</script>
