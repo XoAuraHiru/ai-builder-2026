@@ -183,6 +183,8 @@ async def record(scene: Scene, clips: list[tuple[Path, float]], port: int) -> No
             if scene.persona:
                 await r.sign_in(scene.persona, device=scene.extra.get("device"))
             await r.goto(scene.start, ready=scene.ready, settle=scene.settle)
+            if scene.extra.get("prescroll"):  # open the scene already scrolled to what it is about
+                await r.scroll_to(text=scene.extra["prescroll"], at=0.1, ms=1)
             if not scene.cursor:
                 await c.js("document.querySelector('#__atr .cur').style.display = 'none'")
             if scene.label:
@@ -526,8 +528,9 @@ if __name__ == "__main__":
     ap.add_argument("--reuse", default="", help="scenes to keep from film-scenes rather than record again")
     ap.add_argument("--film", default="scenes", help="the module holding the film's SCENES (scenes, film_short)")
     ap.add_argument("--trim", action="store_true", help="end every recorded scene half a second after its last action")
+    ap.add_argument("--ramp", type=float, default=RAMP, help="how much faster silent action plays when trimmed")
     a = ap.parse_args()
-    TRIM = a.trim
+    TRIM, RAMP = a.trim, a.ramp
     SCENES = importlib.import_module(a.film).SCENES
     FILM = a.film
     if a.voice:

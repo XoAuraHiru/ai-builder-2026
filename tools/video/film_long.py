@@ -54,11 +54,13 @@ async def draft_prices(r):
 
 
 async def blotter(r):
+    await r.wait_for(text="Reference", timeout=60)  # the blotter's rows take a few seconds
     await r.hold(0.4)
     await r.move_to(text="Instruction", sel="th, span, div")
     await r.hold(0.4)
+    await r.move_to(text="Approvals", sel="th, span, div")
+    await r.hold(0.4)
     await r.scroll_by(420, 1100)
-    await r.move_to(text="Ask for a reversal")
     await r.hold(0.6)
 
 

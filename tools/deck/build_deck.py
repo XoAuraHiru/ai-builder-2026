@@ -1128,8 +1128,8 @@ def s_links(slide):
     avail = box_w - 0.2 - 0.5  # the box insets and the bullet indent
     link_lines = {
         2: [("", LINKS["github"])],
-        3: [("Demo video (3:54): ", LINKS["video_short"]),
-            ("Extended walkthrough (9:02): ", LINKS["video_long"])],
+        3: [("Demo video (3:53): ", LINKS["video_short"]),
+            ("Extended walkthrough (7:49): ", LINKS["video_long"])],
         4: [("", LINKS["product"]), ("also ", LINKS["product_alt"])],
     }
     used = 0.27 + 0.12 + 0.2  # the heading, the gap paragraph and the box insets, in inches

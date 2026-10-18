@@ -6,8 +6,8 @@ Team **Ctrl+Alt+Hiru** · Google Cloud AI Builder Cup 2026 · *BFSI: Intelligent
 | | |
 |---|---|
 | **Live app** | https://atrium-cup-2026.web.app (Firebase Hosting) · also https://atrium-web-tvflgkcdoa-uc.a.run.app |
-| **Demo video (3:54)** | https://drive.google.com/file/d/1TMCX9mcsYh2S9Ca4jIuyHXmKU__NnDYG/view?usp=sharing |
-| **Extended walkthrough (9:02)** | https://drive.google.com/file/d/1oD3D53ct0aEXTA_hwY-hcXpCRqnd_Fpz/view?usp=sharing |
+| **Demo video (3:53)** | https://drive.google.com/file/d/1TMCX9mcsYh2S9Ca4jIuyHXmKU__NnDYG/view?usp=sharing |
+| **Extended walkthrough (7:49)** | https://drive.google.com/file/d/1oD3D53ct0aEXTA_hwY-hcXpCRqnd_Fpz/view?usp=sharing |
 | **Pitch deck** | [docs/pitch/Atrium-Pitch-Deck.pdf](docs/pitch/Atrium-Pitch-Deck.pdf) |
 
 ![Atrium's front door](docs/images/public-front-door.jpg)
