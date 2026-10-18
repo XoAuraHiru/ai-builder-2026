@@ -6,8 +6,9 @@ import pytest
 from sqlalchemy import select
 
 from app.models import STEP_STATES, Fund, Instruction, InstructionStep, Price, ReconMatch, RecurringPlan
+from app.realtime.inbox import set_courier
 from app.seed.funds import seed_funds
-from app.services.allocation import allocate, create_due_recurring, dealing_day
+from app.services.allocation import allocate, create_due_recurring, dealing_day, settle
 from app.services.ledger import apply_posting, balance
 from app.services.pricing import publish_prices
 
@@ -87,6 +88,63 @@ def test_nothing_is_dealt_while_a_fund_is_unpriced(db, account, priced):
     sub = instruction(db, account, "subscribe", amount="1000")
     report = allocate(db, AS_OF, EVENING)
     assert report.blocked == ["ATR-TEC"] and report.allocated == [] and sub.state == "accepted"
+
+
+def test_dealing_tells_the_holder_once_per_instruction_with_the_units_and_the_price(db, account, priced, inbox):
+    apply_posting(db, account_id=account.id, instrument="ATR-BAL", instrument_type="fund", posting_type="subscription",
+                  units=Decimal("20"), cash=Decimal("-2000"), price=Decimal("100"), value_date=date(2026, 10, 1),
+                  reference="SEED")
+    sub = instruction(db, account, "subscribe", amount="1000")
+    red = instruction(db, account, "redeem", units="5")
+    swi = instruction(db, account, "switch", units="2", to="ATR-INC")
+    allocate(db, AS_OF, EVENING)
+    assert inbox.sent == []  # nothing leaves before the commit
+    db.commit()
+    told = {t.id: t for t in inbox.to(account.person_id)}
+    assert set(told) == {f"fund_order_dealt-{i.id}" for i in (sub, red, swi)}
+    dealt = told[f"fund_order_dealt-{sub.id}"]
+    assert (dealt.kind, dealt.stage, dealt.severity, dealt.href, dealt.actor) == (
+        "fund_order_dealt", "invest", "info", "/investor/orders", "Day-end")
+    assert dealt.title == "Dealt: 10.0000 units of Atrium Balanced at $100.00"
+    assert dealt.body == "Units are in your account. Your order history has every step."
+    assert told[f"fund_order_dealt-{red.id}"].title == "Dealt: $500.00 out of Atrium Balanced at $100.00"
+    assert told[f"fund_order_dealt-{red.id}"].body == "Settled: $500.00 paid to the bank account ending ????."
+    assert told[f"fund_order_dealt-{swi.id}"].title == ("Dealt: 2.0000 units of Atrium Core Income at $100.00, from "
+                                                        "2.0000 units of Atrium Balanced")
+    assert told[f"fund_order_dealt-{swi.id}"].body == "Settled: the switch is complete."
+    allocate(db, AS_OF, EVENING)  # nothing is dealt twice, so no one is told twice
+    db.commit()
+    assert len(inbox.sent) == 3
+    settle(db, sub, EVENING, "Settled: the payment was matched on the bank statement (exact reference).")
+    db.commit()  # the payment arriving later rewrites the one notice with the settle note
+    again = inbox.sent[-1].item
+    assert again.id == dealt.id and again.title == dealt.title
+    assert again.body == "Settled: the payment was matched on the bank statement (exact reference)."
+
+
+def test_a_rejected_instruction_and_an_inbox_that_is_off_tell_no_one(db, account, priced, inbox):
+    instruction(db, account, "redeem", units="5")  # nothing is held, so the day-end job rejects it
+    allocate(db, AS_OF, EVENING)
+    db.commit()
+    assert inbox.sent == []
+    set_courier(None)
+    instruction(db, account, "subscribe", amount="1000")
+    allocate(db, AS_OF, EVENING)
+    db.commit()
+    assert inbox.sent == []
+
+
+def test_a_monthly_plan_contribution_tells_the_holder_it_is_accepted(db, account, priced, inbox):
+    db.add(RecurringPlan(account_id=account.id, fund_code="ATR-GRW", amount=Decimal("250"), day_of_month=5,
+                         status="active", created_at=utc("2026-09-20T12:00:00")))
+    db.flush()
+    [made] = create_due_recurring(db, AS_OF, EVENING)
+    db.commit()
+    [told] = inbox.to(account.person_id)
+    assert (told.id, told.title) == (f"fund_order_accepted-{made.id}",
+                                     "Accepted: $250.00 into Atrium Growth, your monthly plan")
+    assert told.body == ("It will be dealt at the next published price. Monthly plans are exempt from the fund's "
+                         "lump-sum minimum.")
 
 
 def test_monthly_plans_become_subscriptions_once_a_month(db, account, priced):

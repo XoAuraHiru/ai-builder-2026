@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.events import emit
 from app.markets.quotes import NEW_YORK, is_trading_day
 from app.models import Account, Fund, Instruction, InstructionStep, ReconMatch, RecurringPlan
+from app.realtime import notices
 from app.services.devices import aware
 from app.services.ledger import InsufficientUnits, apply_posting, q_cash, q_units
 from app.services.pricing import latest_price, pricing_guard
@@ -61,6 +62,7 @@ def _step(db: Session, instruction: Instruction, state: str, note: str) -> None:
 def settle(db: Session, instruction: Instruction, now: datetime, note: str) -> None:
     instruction.state, instruction.settled_at = "settled", now
     _step(db, instruction, "settled", note)
+    notices.fund_order_dealt(db, instruction, note)
 
 
 def _nav(db: Session, code: str, as_of: date) -> Decimal:
@@ -86,6 +88,7 @@ def _deal(db: Session, i: Instruction, as_of: date, now: datetime, names: dict[s
             settle(db, i, now, "Settled: the payment was already matched on the bank statement.")
         else:
             i.state = "allocated"
+            notices.fund_order_dealt(db, i)  # settling, once the payment is matched, rewrites this notice
         return f"{units} units of {names[i.fund_code]} for {_money(i.amount)}"
     cash = q_cash(i.units * nav)
     apply_posting(db, account_id=i.account_id, instrument=i.fund_code, instrument_type="fund",
@@ -155,6 +158,8 @@ def create_due_recurring(db: Session, as_of: date, now: datetime) -> list[Instru
         emit("InstructionReceived", {"instruction_id": row.id, "account_id": row.account_id, "type": "subscribe",
                                      "fund_code": row.fund_code, "to_fund_code": None, "acknowledged_risk":
                                      row.acknowledged_risk, "recurring_plan_id": plan.id})
+        notices.fund_order_accepted(db, row, "Monthly plans are exempt from the fund's lump-sum minimum.",
+                                    monthly=True)
         made.append(row)
     db.flush()
     return made

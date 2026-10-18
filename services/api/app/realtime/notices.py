@@ -16,7 +16,8 @@ from sqlalchemy import event, inspect, select
 from sqlalchemy.orm import Session
 
 from app.governance.inventory import MODELS
-from app.models import Account, AmlAlert, Approval, Lead, ModelBreaker, OpsRun, Person, TradeOrder
+from app.models import (Account, AmlAlert, Approval, Fund, Instruction, Lead, ModelBreaker, OpsRun, Person, Posting,
+                        TradeOrder)
 from app.realtime.inbox import Item, courier, notify, people
 
 if TYPE_CHECKING:  # the services import this module, so their types are named, not imported
@@ -65,8 +66,58 @@ def usd(x) -> str:
     return f"${Decimal(x):,.2f}"
 
 
-def _holder(db: Session, order: TradeOrder) -> str:
-    return db.get(Account, order.account_id).person_id
+def units(x) -> str:
+    return f"{Decimal(x):,.4f}"
+
+
+def _holder(db: Session, owned: TradeOrder | Instruction) -> str:
+    return db.get(Account, owned.account_id).person_id
+
+
+def _fund(db: Session, code: str) -> str:
+    return db.get(Fund, code).name
+
+
+# Invest
+
+DEALT = "Units are in your account. Your order history has every step."
+
+
+@notice
+def fund_order_accepted(db: Session, instruction: Instruction, note: str = "", *, monthly: bool = False) -> None:
+    """An instruction passed its checks: the account holder, with one line from the checks."""
+    fund = _fund(db, instruction.fund_code)
+    if instruction.type == "subscribe":
+        what = f"{usd(instruction.amount)} into {fund}" + (", your monthly plan" if monthly else "")
+    elif instruction.type == "redeem":
+        what = f"{units(instruction.units)} units out of {fund}"
+    else:
+        what = f"{units(instruction.units)} units of {fund} into {_fund(db, instruction.to_fund_code)}"
+    notify(db, [_holder(db, instruction)], Item(
+        kind="fund_order_accepted", source_id=instruction.id, stage="invest", title=f"Accepted: {what}",
+        body=clip(f"It will be dealt at the next published price. {note}", 160), href="/investor/orders",
+        severity="info", actor="Atrium"))
+
+
+@notice
+def fund_order_dealt(db: Session, instruction: Instruction, note: str | None = None) -> None:
+    """An instruction was dealt at a published price: the account holder, with the units and the price from its
+    postings. Settling later (a subscription's payment matched after allocation) rewrites the one notice."""
+    legs = {p.instrument: p for p in db.scalars(select(Posting).where(Posting.reference == instruction.id)).all()}
+    fund = _fund(db, instruction.fund_code)
+    if instruction.type == "subscribe":
+        leg = legs[instruction.fund_code]
+        what = f"{units(leg.units)} units of {fund} at {usd(leg.price)}"
+    elif instruction.type == "redeem":
+        leg = legs[instruction.fund_code]
+        what = f"{usd(leg.cash)} out of {fund} at {usd(leg.price)}"
+    else:
+        leg = legs[instruction.to_fund_code]
+        what = (f"{units(leg.units)} units of {_fund(db, instruction.to_fund_code)} at {usd(leg.price)}, from "
+                f"{units(instruction.units)} units of {fund}")
+    notify(db, [_holder(db, instruction)], Item(
+        kind="fund_order_dealt", source_id=instruction.id, stage="invest", title=f"Dealt: {what}",
+        body=clip(note or DEALT, 160), href="/investor/orders", severity="info", actor="Day-end"))
 
 
 # Trade
