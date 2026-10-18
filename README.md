@@ -1,36 +1,105 @@
-# Atrium — AI Builder Cup 2026 (BFSI track)
+# Atrium
 
-Team **Ctrl+Alt+Hiru**. Theme: *BFSI: Intelligent Risk, Fraud & Financial Experiences*.
+**One AI-native platform for the whole client life of a wealth firm.**
+Team **Ctrl+Alt+Hiru** · Google Cloud AI Builder Cup 2026 · *BFSI: Intelligent Risk, Fraud & Financial Experiences*
 
-Atrium is an AI-native wealth operating system for US and global markets:
-**Acquire → Invest → Trade → Operate**, with Gemini, ADK agents, BigQuery and Document AI
-doing the scoring, explaining, guarding and reconciling at every step.
-
-## Live demo
-
-https://atrium-web-1070337126396.us-central1.run.app opens on Atrium's front door: what it is, the four stages, and eight people to choose from. Each person has a short guided story beside every page. Every person and number is synthetic.
-
-## What you can try
-
-| Persona | What to open |
+| | |
 |---|---|
-| Anyone, no sign-in | The front door's analyzer: pick an Atrium fund (unit trust) or one of 46 shares and ETFs, a one-time amount (plus a monthly amount for a fund) and a duration, and see 10,000 simulated futures over real history since 2007, the S&P 500 beside a share, and a fund's unit price since 2007. "Talk to an advisor about this plan" opens the application with the analysis attached; an investor gets "Invest in…" or "Buy N shares" instead |
-| Priya Raman (investor) | Overview, What-if Studio (10,000 simulated futures over real history since 2007), Portfolio X-ray, Risk (the mix has drifted above the risk profile), fund pages with a cited reading, the risk-profile conversation, Fund orders, the Copilot agent, Markets: checking 60 NVIDIA shares shows the Pre-trade Guardian holding the order for an advisor, and Scenarios: replay 2008, 2020 and 2022 on what you hold, or describe a scenario in plain English and adjust every shock Gemini proposes |
-| Lucas Moreau (investor) | The X-ray (about a tenth of the portfolio is one company, through six ETFs), then buying more NVIDIA: the Guardian counts the shares held through funds |
-| Tom Becker (investor) | Selling all 120 Tesla shares from your browser: Atrium has never seen it, so the Guardian holds the sale as a possible account takeover |
+| **Live app** | https://atrium-cup-2026.web.app (Firebase Hosting) · also https://atrium-web-tvflgkcdoa-uc.a.run.app |
+| **Demo video (3:45)** | VIDEO_SHORT_URL |
+| **Extended walkthrough (about 9 min)** | VIDEO_LONG_URL |
+| **Pitch deck** | [docs/pitch/Atrium-Pitch-Deck.pdf](docs/pitch/Atrium-Pitch-Deck.pdf) |
+
+![Atrium's front door](docs/images/public-front-door.jpg)
+
+Wealth firms run each client on separate systems: one for leads, one for portfolios, one for trading and one for the books. Fraud slips through the gaps between them, and the AI bolted on top is a black box. Atrium joins the four stages, **Acquire → Invest → Trade → Operate**, with compliance across all of them, so one identity graph, one ledger and one decision log see everything. Gemini works at every step, and a person makes every decision.
+
+## How Atrium uses Firebase, Firestore, Cloud Run and Gemini
+
+![Atrium on Google Cloud](docs/diagrams/atrium-architecture.png)
+
+- **Gemini 3.1 Pro and 3.8 Flash on Vertex AI.** They explain risk, What-if simulations and orders, every figure checked against Atrium's engines. Pro writes proposals, held-order review notes and AML case reviews that cite only the evidence. Gemini listens to recorded client calls and flags conduct problems with the second they were said. It turns a plain-English market scenario into shocks, grounded with Google Search. And it runs the ADK agents: the Investor Copilot, the reconciliation agent and the advisor concierge.
+- **Cloud Run.** It hosts the Next.js web app (`atrium-web`) and the FastAPI API (`atrium-api`) as services. It also runs two jobs: `atrium-day-end`, which Cloud Scheduler starts at 5:15 pm New York time on weekdays (prices, monthly plans, AML monitoring, Gemini's morning brief), and `atrium-evals` (live model checks).
+- **Firebase.** Hosting is the public front door, rewriting to Cloud Run. Firebase Authentication signs each person into their live inbox with a custom token that the API mints, carrying their person id as a claim.
+- **Cloud Firestore.** It holds the live inbox. The API writes an item to `people/{id}/inbox` when something happens that someone must act on:
+  - the Pre-trade Guardian holds an order
+  - an advisor releases or rejects it
+  - an approval is requested or decided
+  - an AML alert is raised
+  - a lead is blocked
+  - a circuit breaker trips
+  - the day-end finishes
+
+  The browser listens with `onSnapshot`, so Daniel's bell lights up the moment Tom's suspicious sale is held. Security rules let each person read only their own inbox, and change nothing but its read flag.
+- **Also in production:**
+  - BigQuery ML: the Lead Score, and a k-means AML anomaly model
+  - Document AI: identity proofing and bank statements
+  - Vertex AI Search: fund documents, with citations
+  - Cloud SQL for PostgreSQL: the ledger and every record
+  - Pub/Sub to BigQuery: every event
+  - Secret Manager, Cloud Storage, Cloud Build and Artifact Registry
+
+## Try it
+
+Open the live app and choose a person. There is no password, and every person, account and trade is synthetic.
+
+| Person | What to try |
+|---|---|
+| Anyone, no sign-in | The front door's analyzer: an Atrium fund or one of 46 shares and ETFs, 10,000 simulated futures over real history since 2007 |
+| Priya Raman (investor) | Her home: her mix has drifted above the risk she chose. What-if Studio, with Gemini's explanation checked against the engine. Scenario Studio: describe a scenario in plain English, and Gemini proposes shocks grounded with Google Search. The Copilot agent. Checking 60 NVIDIA shares, which the Pre-trade Guardian holds for an advisor |
+| Lucas Moreau (investor) | X-ray: about a tenth of his money is NVIDIA, held through six ETFs |
+| Tom Becker (investor) | Selling all 120 Tesla shares from your browser, which his account has never seen: held as a possible account takeover, and Daniel's inbox lights up live |
 | Hana Sato (investor) | Buying back PepsiCo, sold at a loss less than three weeks ago: the wash-sale warning |
-| Daniel Okafor (advisor) | The lead pipeline with three fraud stories, identity checks, AI replies, proposals by Gemini Pro, the pressure call on Ruth Alvarez's page (Gemini listens to the recording and flags a guarantee and a nephew directing a 74-year-old client, each with the second it was said), and Held orders: a Gemini Pro review note, then release or reject |
-| Mei Tanaka (operations) | Reconciliation: read the sample bank statement (CSV by default; upload the sample PDF to have Document AI read it), let the agent find matches for the typo, the missing reference and the split payment, and accept them; then the day-end, and ask for the draft prices to be published |
-| Sam Ortiz (operations) | Approvals: Mei's requests, approved with the six-digit code from the demo authenticator; you cannot approve your own |
-| Omar Haddad (compliance) | Alerts: structuring just under $10,000, money in and straight out, a payment from a stranger, and two accounts sharing one bank account; each with its evidence rows, a linked-entity graph and a Gemini Pro case review. Fraud rings: one graph across leads and clients finds the device ring that also signs in to Sofia Rossi's account. Models: all 18 models with their golden cases, red-team attacks, fair-lending checks, monitoring and circuit breakers |
+| Daniel Okafor (advisor) | Leads scored twice, with four from one device at the top. James Patel blocked by Document AI's identity proofing. Ruth Alvarez's recorded call, with Gemini's timestamped conduct flags. Gemini Pro proposals. Held orders with a review note |
+| Mei Tanaka (operations) | Reconciliation: Document AI reads the bank statement, the ADK agent proposes the matches rules can't make, and you decide each one. The day-end and its morning brief |
+| Sam Ortiz (operations) | Approvals: Mei's requests, approved with the six-digit code from the demo authenticator. You can't approve your own |
+| Omar Haddad (compliance) | AML alerts with their evidence and a Gemini Pro case review. The fraud ring radar across leads and clients. The Model Risk Office. The AI decision log |
 
-## The Model Risk Office
+## The AI shows its working
 
-Atrium governs its AI the way US banks govern models under the Federal Reserve's SR 11-7 guidance. Every model, from the Lead Score to the case reviewer, is in one inventory with its owner, risk tier, human gate, fallback, known limits and a version taken from the hash of its prompt and code. Before every deploy, `infra/deploy.sh` runs the free tier of the evaluation suites (`python -m app.governance.evals --tier free`) and stops on any failure. After every deploy, the Cloud Run job `atrium-evals` runs the live tier: golden cases against Gemini and the ADK agent, a red-team agent that writes fresh prompt injections against Atrium's own models, a fair-lending check that swaps names and countries, and a Flash-against-Pro challenger on case reviews. Monitoring compares each model with people's decisions. A high-risk model that misses its bar trips a circuit breaker: its feature falls back to the deterministic engine until a compliance officer resets it with a reason and a one-time code.
+![How Atrium keeps the AI honest](docs/diagrams/atrium-ai-trust.png)
 
-Every AI paragraph is set in a serif face beside a gold rule and says which model wrote it. Every dollar and percentage figure it writes is checked against the engine that produced it, and claims about funds cite the fact-sheet section they come from.
+Every AI paragraph is set in a serif face beside a violet mark and says which model wrote it. Every dollar and percentage figure it writes is checked against the engine that produced it. Claims about funds cite the fact-sheet section they come from, and case reviews may cite only evidence rows. A deterministic tripwire means text in a payment that tries to steer the review can never close an alert. The Pre-trade Guardian's verdict always comes from fixed rules: Gemini explains it and never changes it.
 
-Trading uses paper money at real prices. By default, Atrium's own paper broker fills orders. Setting `ALPACA_API_KEY` and `ALPACA_SECRET_KEY` (an Alpaca paper-trading account) sends them to Alpaca's paper API instead. The Pre-trade Guardian's verdict always comes from fixed rules; Gemini explains it and never changes it.
+**The Model Risk Office.** Atrium governs its AI the way US banks govern models under the Federal Reserve's SR 11-7 guidance.
+
+- **One inventory.** All 18 models, from the Lead Score to the case reviewer, are listed with their owner, risk tier, human gate, fallback and known limits. Each has a version taken from the hash of its prompt and code.
+- **Before every deploy.** `infra/deploy.sh` runs the free tier of the evaluation suites and stops on any failure.
+- **After every deploy.** The Cloud Run job `atrium-evals` runs the live tier:
+  - golden cases against Gemini and the ADK agent
+  - a red team that writes fresh prompt injections against Atrium's own models
+  - a fair-lending check that swaps names and countries
+  - a Flash-against-Pro challenger on case reviews
+- **Circuit breakers.** Monitoring compares each model with people's decisions. A high-risk model that misses its bar trips a breaker: its feature falls back to the deterministic engine until a compliance officer resets it with a reason and a one-time code.
+
+## Measured on the live deployment
+
+| What | Result |
+|---|---|
+| Live model checks on real Gemini | 37 of 37 suites passing |
+| Red team | 29 of 29 fresh live attacks resisted; 12 of 12 fixed attack cases; the AML scenarios caught 4 of 4 mutations |
+| Fair lending | 18 of 18 name pairs read the same; names are hidden from Gemini |
+| Lead Score (BigQuery ML) | AUC 0.76 on 5,000 held-out leads, against a gate of 0.75 |
+| Reconciliation agent | 100% precision and recall, against 62% recall for the scorer alone |
+| What-if engine | 10,000 paths over 15 years in 0.55 s |
+| Median AI latency | 3.2–4.1 s for explanations, 8.7 s for the Copilot, 15 s for an AML case review (Gemini Pro) |
+| Tests | 699 API tests and 209 web unit tests, all green before every deploy |
+
+| | |
+|---|---|
+| ![Call intelligence](docs/images/daniel-ruth-call-flags.jpg) | ![Pre-trade Guardian](docs/images/priya-nvda-guardian-top.jpg) |
+| ![AML case review](docs/images/omar-alert-structuring-case-review.jpg) | ![Fraud ring radar](docs/images/omar-rings-graph.jpg) |
+
+## What's next
+
+- **A Gemini Live voice advisor:** clients talk to Atrium, inside the same guardrails.
+- **Push alerts through Firebase Cloud Messaging:** the live inbox on every phone.
+- **Fraud signals shared across firms in BigQuery data clean rooms:** the signals travel, never the client data.
+- **Agents that keep every KYC file current.**
+- **Later:**
+  - real brokerage execution and more markets
+  - agent-to-agent links to custodians
+  - continuous model monitoring on Vertex AI
 
 ## Documents
 
@@ -38,7 +107,10 @@ Trading uses paper money at real prices. By default, Atrium's own paper broker f
 |---|---|
 | `docs/Atrium-Product-Blueprint.md` | The design blueprint (what we build, features, AI design, architecture, 7-day plan, submission checklist) |
 | `docs/Atrium-Product-Blueprint.pdf` | The same, as a printable PDF with bookmarks |
-| `docs/diagrams/*.svg` | Pre-rendered diagrams used by the PDF and reusable in the deck |
+| `docs/diagrams/atrium-*.drawio` | The architecture, lifecycle, AI-trust and live-inbox diagrams (draw.io, with PNG and SVG exports) |
+| `docs/pitch/` | The pitch deck (PowerPoint and PDF), built by `tools/deck/build_deck.py` |
+| `tools/video/` | The demo films, recorded from the live app: scenes, narration, motion clips and sound design (`make_video.py`) |
+| `docs/diagrams/diagram-*.svg` | Pre-rendered blueprint diagrams used by the PDF |
 
 ## Rebuilding the PDF
 
@@ -135,5 +207,5 @@ API_MIN_INSTANCES=1 WEB_MIN_INSTANCES=1 bash infra/deploy.sh
 
 ## Key dates (2026)
 
-- 18 Oct — prototype submission deadline (deployed link, video < 3 min, public repo, PDF deck)
-- 19 Oct – 6 Nov — evaluation; 7 Nov — finalists; 4 Dec — Grand Finale, Singapore
+- 18 Oct: prototype submission deadline (deployed link, 3–4 minute video, public repo, deck)
+- 19 Oct – 6 Nov: evaluation; 7 Nov: finalists; 4 Dec: Grand Finale, Singapore
