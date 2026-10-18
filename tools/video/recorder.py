@@ -220,11 +220,11 @@ class Recorder:
         await self.overlay_restore()
         self.paused = was
 
-    async def sign_in(self, email: str) -> None:
+    async def sign_in(self, email: str, device: str | None = None) -> None:
         self.paused = True
         await self.c.send("Page.navigate", url=f"{self.base}/login")
         await asyncio.sleep(2.5)
-        device = f"video-{email.split('@')[0]}"
+        device = device or f"video-{email.split('@')[0]}"
         await self.c.js(f"localStorage.setItem('atrium.devUser', {json.dumps(email)});"
                         f"localStorage.setItem('atrium-device.' + {json.dumps(email.lower())}, {json.dumps(device)})")
 

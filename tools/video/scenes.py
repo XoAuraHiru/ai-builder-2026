@@ -8,6 +8,7 @@ Everything Gemini writes on screen comes from the live deployment. The one actio
 (approving a reversal with a one-time code) runs on a local copy of the app; on the live app the cursor rests on
 decisions without making them.
 """
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Awaitable, Callable
@@ -490,7 +491,8 @@ SCENES: list[Scene] = [
                        B("A new device and a sale that large look like an account takeover, so the Guardian holds "
                          "this one too.", tom_hold, after=1.2)],
           persona="tom@atrium.demo", start="/investor/markets/TSLA", ready="Check order",
-          label=("03", "Trade", "Account takeover")),
+          label=("03", "Trade", "Account takeover"),
+          extra={"device": f"video-tom-{time.time():.0f}"}),  # a browser Tom's account has never seen, every take
     Scene("held", [B("Held orders wait for an advisor.", hold(0.8)),
                    B("Gemini Pro writes a review note from what the Guardian checked, and Daniel releases or rejects "
                      "the order, with a reason.", held_note, after=1.2)],

@@ -17,6 +17,7 @@ import asyncio
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -60,8 +61,17 @@ def trimmed(wav: Path) -> tuple[Path, float]:
     return out, duration(out)
 
 
-def voices(scene: Scene) -> list[tuple[Path, float]]:
+CAST: dict | None = None  # sentence -> the presenter's chosen take (tools/video/revoice.py), instead of Gemini-TTS
+
+
+def narrator(scene: Scene) -> list[tuple[Path, float]]:
     return [trimmed(voice.render(beat.text)[0]) for beat in scene.beats]
+
+
+def voices(scene: Scene) -> list[tuple[Path, float]]:
+    if CAST is not None:
+        return [(Path(CAST[b.text]["wav"]), CAST[b.text]["length"]) for b in scene.beats]
+    return narrator(scene)
 
 
 def chunks(text: str, start: float, end: float, limit: int = 96) -> list[tuple[float, float, str]]:
@@ -161,7 +171,7 @@ async def record(scene: Scene, clips: list[tuple[Path, float]], port: int) -> No
         await r.start()
         try:
             if scene.persona:
-                await r.sign_in(scene.persona)
+                await r.sign_in(scene.persona, device=scene.extra.get("device"))
             await r.goto(scene.start, ready=scene.ready, settle=scene.settle)
             if not scene.cursor:
                 await c.js("document.querySelector('#__atr .cur').style.display = 'none'")
@@ -190,18 +200,57 @@ async def record(scene: Scene, clips: list[tuple[Path, float]], port: int) -> No
 
 # -- assembly --------------------------------------------------------------------------------------------------
 
-def scene_audio(scene: Scene, clips: list[tuple[Path, float]]) -> Path:
+def starts_of(scene: Scene) -> list[float]:
+    return json.loads((SCENE_DIR / f"{scene.key}.json").read_text(encoding="utf-8"))["starts"]
+
+
+def placed(scene: Scene, clips: list[tuple[Path, float]]) -> list[tuple[Path, float]]:
+    """Each sentence at the second the recording started it."""
+    return [(clip, start) for (clip, _), start in zip(clips, starts_of(scene))]
+
+
+def kept(scene: Scene, clips: list[tuple[Path, float]], source: Path) -> list[tuple[Path, float]]:
+    """A scene that cannot be done again on the live app keeps footage recorded with another voice, and the captions
+    burned into it. The new voice is laid under those captions: a sentence shown in pieces is cut between the words
+    where its caption changes, and each piece starts as its caption appears."""
+    for ext in (".mp4", ".json"):
+        shutil.copyfile(source / f"{scene.key}{ext}", SCENE_DIR / f"{scene.key}{ext}")
+    pieces = []
+    for i, (beat, (clip, _), start, (_, before)) in enumerate(zip(scene.beats, clips, starts_of(scene),
+                                                                  narrator(scene))):
+        shown = chunks(beat.text, start, start + before)
+        if len(shown) == 1:
+            pieces.append((clip, start))
+            continue
+        said = [w for w in voice.transcribe(clip)["words"] if w["type"] == "word"]
+        heard = [len(voice.spoken_words(w["text"])) for w in said]
+        cuts, count, j = [0.0], 0, 0
+        for _, _, piece in shown[:-1]:
+            count += len(voice.spoken_words(piece))
+            while j < len(said) and sum(heard[:j + 1]) < count:
+                j += 1
+            cuts.append((said[j]["end"] + said[j + 1]["start"]) / 2)
+            j += 1
+        cuts.append(duration(clip))
+        for k, ((at, _, _), a, b) in enumerate(zip(shown, cuts, cuts[1:])):
+            out = SCENE_DIR / f"{scene.key}-{i}-{k}.wav"
+            run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(clip), "-af", f"atrim={a:.3f}:{b:.3f}",
+                 "-ar", "48000", "-ac", "1", str(out)])
+            pieces.append((out, at))
+    return pieces
+
+
+def scene_audio(scene: Scene, pieces: list[tuple[Path, float]]) -> Path:
     video = SCENE_DIR / f"{scene.key}.mp4"
-    starts = json.loads((SCENE_DIR / f"{scene.key}.json").read_text(encoding="utf-8"))["starts"]
     length = duration(video)
     out = SCENE_DIR / f"{scene.key}.wav"
     inputs, parts = [], []
-    for i, ((clip, _), start) in enumerate(zip(clips, starts)):
+    for i, (clip, start) in enumerate(pieces):
         inputs += ["-i", str(clip)]
         ms = int(start * 1000)
         parts.append(f"[{i}:a]adelay={ms}|{ms}[a{i}]")
-    mix = "".join(f"[a{i}]" for i in range(len(starts)))
-    graph = ";".join(parts) + f";{mix}amix=inputs={len(starts)}:normalize=0,apad,atrim=0:{length:.3f}[out]"
+    mix = "".join(f"[a{i}]" for i in range(len(pieces)))
+    graph = ";".join(parts) + f";{mix}amix=inputs={len(pieces)}:normalize=0,apad,atrim=0:{length:.3f}[out]"
     run(["ffmpeg", "-loglevel", "error", "-y", *inputs, "-filter_complex", graph, "-map", "[out]", "-ar", "48000",
          "-ac", "2", str(out)])
     return out
@@ -236,9 +285,10 @@ def compose(keys: list[str], name: str = "atrium-film.mp4") -> Path:
     return out
 
 
-async def main(only: list[str] | None, compose_only: bool) -> None:
+async def main(only: list[str] | None, compose_only: bool, reuse: list[str], name: str) -> None:
     WORK.mkdir(parents=True, exist_ok=True)
-    chosen = [s for s in SCENES if not only or s.key in only]
+    SCENE_DIR.mkdir(parents=True, exist_ok=True)
+    chosen = [s for s in SCENES if (not only or s.key in only) and s.key not in reuse]
     clips = {s.key: voices(s) for s in SCENES}
     speech = sum(length for cs in clips.values() for _, length in cs)
     print(f"narration: {sum(len(s.beats) for s in SCENES)} sentences, {speech:.1f} s of speech, {len(SCENES)} scenes")
@@ -257,12 +307,13 @@ async def main(only: list[str] | None, compose_only: bool) -> None:
                 except Exception:
                     failed.append(scene.key)
                     print(f"  {scene.key}: FAILED\n{traceback.format_exc(limit=3)}")
+        kept_pieces = {s.key: kept(s, clips[s.key], WORK / "film-scenes") for s in SCENES if s.key in reuse}
         keys = [s.key for s in SCENES if (SCENE_DIR / f"{s.key}.json").exists() and s.key not in failed]
         for scene in SCENES:
             if scene.key in keys:
-                scene_audio(scene, clips[scene.key])
+                scene_audio(scene, kept_pieces.get(scene.key) or placed(scene, clips[scene.key]))
         if keys:
-            compose(keys)
+            compose(keys, name)
         if failed:
             print("failed scenes:", ",".join(failed))
     finally:
@@ -274,5 +325,13 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", default="")
     ap.add_argument("--compose-only", action="store_true")
+    ap.add_argument("--voice", help="a cast of the presenter's takes, from tools/video/revoice.py")
+    ap.add_argument("--scenes", default="film-scenes", help="the folder under .superpowers/video for scene footage")
+    ap.add_argument("--name", default="atrium-film.mp4")
+    ap.add_argument("--reuse", default="", help="scenes to keep from film-scenes rather than record again")
     a = ap.parse_args()
-    asyncio.run(main([k for k in a.only.split(",") if k], a.compose_only))
+    if a.voice:
+        CAST = json.loads(Path(a.voice).read_text(encoding="utf-8"))
+    SCENE_DIR = WORK / a.scenes
+    asyncio.run(main([k for k in a.only.split(",") if k], a.compose_only, [k for k in a.reuse.split(",") if k],
+                     a.name))
