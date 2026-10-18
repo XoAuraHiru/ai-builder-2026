@@ -30,3 +30,5 @@ Thumbs.db
 dist/
 build/
 .claude/worktrees/
+
+firebase-debug.log

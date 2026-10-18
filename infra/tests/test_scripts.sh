@@ -147,7 +147,7 @@ line_of() { grep -n -m1 -- "$1" "$FAKE_LOG" | cut -d: -f1; }
 check "runs the free evaluation gate before deploying anything" '[ -n "$(line_of "app.governance.evals --tier free")" ] && [ "$(line_of "app.governance.evals --tier free")" -lt "$(line_of "run deploy atrium-api")" ]'
 check "API knows the evals job" 'echo "$API_DEPLOY" | grep -q "EVALS_JOB=projects/atrium-cup-2026/locations/us-central1/jobs/atrium-evals"'
 check "deploys the evals job from the API image" 'grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q -- "--image" && grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q "app.governance.evals,--tier,live,--store,--trigger,deploy"'
-check "the evals job never retries and stops after 45 minutes" 'grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q -- "--max-retries 0" && grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q -- "--task-timeout 2700"'
+check "the evals job never retries and stops after 75 minutes" 'grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q -- "--max-retries 0" && grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q -- "--task-timeout 4500"'
 check "monitoring is report-only unless asked" 'grep "run deploy atrium-api" "$FAKE_LOG" | grep -q "MONITORING_TRIPS=false"'
 check "the evals job records the commit it checked" 'grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q "GIT_SHA="'
 check "lets the API start the evals job" 'grep "run jobs add-iam-policy-binding atrium-evals" "$FAKE_LOG" | grep -q "serviceAccount:atrium-api@atrium-cup-2026.iam.gserviceaccount.com" && grep "run jobs add-iam-policy-binding atrium-evals" "$FAKE_LOG" | grep -q "roles/run.invoker"'

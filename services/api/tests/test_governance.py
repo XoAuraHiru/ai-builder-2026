@@ -258,5 +258,5 @@ def test_the_runner_waits_exactly_as_long_as_the_job_may_run():
     deploy = (P(__file__).resolve().parents[3] / "infra" / "deploy.sh").read_text(encoding="utf-8")
     job = deploy[deploy.index("run jobs deploy atrium-evals"):]
     seconds = int(re.search(r"--task-timeout (\d+)", job).group(1))
-    assert RUN_TIMEOUT.total_seconds() == seconds == 45 * 60
+    assert RUN_TIMEOUT.total_seconds() == seconds == 75 * 60
 

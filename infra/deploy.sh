@@ -94,7 +94,7 @@ gcloud run jobs deploy atrium-evals --image "$IMAGE" --region "$REGION" --quiet 
   --service-account "$SA" --set-cloudsql-instances "$CONN" --set-secrets "$EVALS_SECRETS" \
   --set-env-vars "${API_ENV}@GIT_SHA=${GIT_SHA}" \
   --command python --args=-m,app.governance.evals,--tier,live,--store,--trigger,deploy \
-  --max-retries 0 --task-timeout 2700 --memory 1Gi --cpu 1 >/dev/null
+  --max-retries 0 --task-timeout 4500 --memory 1Gi --cpu 1 >/dev/null
 # The API runs as $SA; the button starts the job through the Cloud Run Admin API, which needs roles/run.invoker.
 gcloud run jobs add-iam-policy-binding atrium-evals --region "$REGION" \
   --member "serviceAccount:${SA}" --role roles/run.invoker --quiet >/dev/null
