@@ -81,6 +81,9 @@ def main(argv: list[str] | None = None) -> int:
             finish_failed(db, run, e)
             db.commit()
             raise
+    from app.realtime.inbox import drain
+
+    drain()  # a breaker this run tripped reaches the inbox before the job's container stops
     print_report(report)
     return 0
 

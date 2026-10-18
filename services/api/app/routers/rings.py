@@ -8,6 +8,7 @@ from app.ai.llm import LLM, LLMError, get_llm
 from app.auth import CurrentUser, require_roles
 from app.db import get_db
 from app.governance.breakers import BreakerOpen
+from app.realtime import notices
 from app.routers.operations import me
 from app.services.devices import aware
 from app.services.rings import (STRONG, Graph, Ring, RingError, build_graph, case_for, detect_rings, flag_leads,
@@ -103,7 +104,9 @@ def narrate(ring_id: str, body: RingActionIn | None = None, db: Session = Depend
 def case(ring_id: str, body: RingActionIn | None = None, db: Session = Depends(get_db),
          user: CurrentUser = Depends(mlro)):
     ring, graph = resolve(db, ring_id, body.members if body else None)
-    alert = _acted(lambda: open_case(db, ring, me(db, user), graph))
+    person = me(db, user)
+    alert = _acted(lambda: open_case(db, ring, person, graph))
+    notices.alerts_raised(db, [alert], actor=person.full_name, besides=person.id)
     db.commit()
     return {"alert_id": alert.id, "title": alert.title, "ring": ring_out(db, ring, graph)}
 

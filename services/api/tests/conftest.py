@@ -8,6 +8,7 @@ os.environ.setdefault("AUTH_MODE", "dev")
 os.environ.setdefault("MARKET_DATA_PROVIDER", "fake")
 os.environ.setdefault("PUBSUB_ENABLED", "false")
 os.environ["AUTO_SEED"] = "false"  # never seed test databases, even if a local .env says otherwise
+os.environ["FIRESTORE_ENABLED"] = "false"  # never write to Firestore from tests; the `inbox` fixture records instead
 
 
 @pytest.fixture(autouse=True)
@@ -18,6 +19,43 @@ def _fresh_event_bus():
     set_event_bus(InProcessEventBus())
     yield
     set_event_bus(InProcessEventBus())
+
+
+@pytest.fixture(autouse=True)
+def _inbox_off():
+    """The live inbox is off unless a test asks for the `inbox` recorder, and one test's never leaks into the next."""
+    from app.realtime.inbox import set_courier
+
+    set_courier(None)
+    yield
+    set_courier(None)
+
+
+class InboxRecorder:
+    """What the live inbox delivered, written synchronously as each transaction commits."""
+
+    def __init__(self):
+        self.sent = []
+
+    def write(self, deliveries):
+        self.sent.extend(deliveries)
+
+    def to(self, person) -> list:
+        """The items one person received (a Person or an id), in order."""
+        person_id = getattr(person, "id", person)
+        return [d.item for d in self.sent if d.person_id == person_id]
+
+    def kinds(self) -> list[str]:
+        return [d.item.kind for d in self.sent]
+
+
+@pytest.fixture()
+def inbox():
+    from app.realtime.inbox import Courier, set_courier
+
+    recorder = InboxRecorder()
+    set_courier(Courier(recorder, background=False))
+    return recorder
 
 
 @pytest.fixture()

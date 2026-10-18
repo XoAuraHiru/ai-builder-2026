@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.events import emit
 from app.models import Approval, Person
 from app.models.base import utcnow
+from app.realtime import notices
 
 APPROVERS = {"publish_prices": ("ops", "admin"), "manual_match": ("ops", "admin"), "reverse_posting": ("ops", "admin")}
 
@@ -67,6 +68,7 @@ def request_approval(db: Session, *, action: str, payload: dict, summary: str, r
     db.add(row)
     db.flush()
     emit("ApprovalRequested", {"approval_id": row.id, "action": action, "requested_by": requested_by.id})
+    notices.approval_requested(db, row, requested_by, APPROVERS[action])
     return row
 
 
@@ -116,4 +118,5 @@ def decide(db: Session, approval: Approval, approver: Person, *, approve: bool, 
     db.flush()
     emit("ApprovalDecided", {"approval_id": approval.id, "action": approval.action, "state": approval.state,
                              "requested_by": approval.requested_by, "decided_by": approver.id})
+    notices.approval_decided(db, approval, approver)
     return approval

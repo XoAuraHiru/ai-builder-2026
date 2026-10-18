@@ -15,6 +15,7 @@ from app.governance.breakers import BreakerOpen, breaker_message
 from app.models import Account, AIDecision, AmlAlert, Approval, Person
 from app.models.base import utcnow
 from app.ops.locks import serialise_operations
+from app.realtime import notices
 from app.routers.operations import approval_out, found, guarded, me, name_of
 from app.services.aml import run_monitoring
 from app.services.compliance_ai import decide_alert, linked_entities, review_alert
@@ -85,6 +86,7 @@ def decide(alert_id: str, body: AlertDecisionIn, db: Session = Depends(get_db), 
 def monitoring(db: Session = Depends(get_db), user: CurrentUser = Depends(mlro)):
     serialise_operations(db)  # the day-end also runs monitoring; alerts are unique by fingerprint
     raised = run_monitoring(db)
+    notices.alerts_raised(db, raised, actor="Transaction monitoring", besides=user.person_id)
     db.commit()
     return {"raised": len(raised), "alerts": [alert_out(db, a) for a in raised]}
 

@@ -105,3 +105,44 @@ def test_a_staff_preview_does_not_record_the_advisors_browser_on_the_client(api,
                      json={"symbol": "KO", "side": "buy", "quantity": 1})
         assert r.status_code == 200, r.text
     assert db.scalar(select(func.count()).select_from(AccountDevice)) == 0
+
+
+def test_a_held_order_tells_every_advisor_and_the_release_tells_the_holder(api, db, account, people, inbox):
+    db.get(Person, account.person_id).risk_band = 2
+    db.commit()
+    held = api.post(orders(account), headers=HOLDER, json={"symbol": "TSLA", "side": "buy", "quantity": 3}).json()
+    [notice] = inbox.to(people["advisor"])
+    assert (notice.id, notice.stage, notice.severity, notice.href, notice.actor) == (
+        f"order_held-{held['id']}", "trade", "attention", "/advisor/held", "Pre-trade Guardian")
+    assert notice.title == "Priya Raman's purchase of 3 TSLA is held"
+    assert notice.body == "Held for an advisor's review: suitability."
+    assert inbox.to(account.person_id) == []
+    released = api.post(f"/orders/{held['id']}/release", headers=ADVISOR, json={"note": "Called the client."}).json()
+    [told] = inbox.to(account.person_id)
+    assert (told.id, told.title, told.href, told.severity, told.actor) == (
+        f"order_released-{held['id']}", "Daniel released your order", "/investor/trades", "info", "Daniel Okafor")
+    price = f"${Decimal(released['fill_price']):,.2f}"
+    assert told.body == f"Buy 3 TSLA at market. Filled at {price} a share. Daniel's note: Called the client."
+
+
+def test_a_rejected_order_tells_the_holder_why(api, db, account, inbox):
+    db.get(Person, account.person_id).risk_band = 2
+    db.commit()
+    held = api.post(orders(account), headers=HOLDER, json={"symbol": "TSLA", "side": "buy", "quantity": 3}).json()
+    api.post(f"/orders/{held['id']}/reject", headers=ADVISOR, json={"note": "Too far outside your risk profile."})
+    [told] = inbox.to(account.person_id)
+    assert (told.id, told.severity) == (f"order_rejected-{held['id']}", "attention")
+    assert told.title == "Daniel rejected your order: Too far outside your risk profile."
+    assert told.body == "Buy 3 TSLA at market. Nothing was sent to the market."
+
+
+def test_a_possible_takeover_is_urgent_for_the_advisors(api, db, account, people, paper, inbox):
+    paper.trade(account, "buy", "TSLA", 20, 400)
+    db.commit()
+    held = api.post(orders(account), headers={**HOLDER, "X-Device-Id": "a-browser-never-seen"},
+                    json={"symbol": "TSLA", "side": "sell", "quantity": 20}).json()
+    assert (held["state"], held["guardian"]["takeover"]) == ("held", True)
+    [notice] = inbox.to(people["advisor"])
+    assert notice.severity == "urgent" and notice.title == "Priya Raman's sale of 20 TSLA is held"
+    assert notice.body == ("Possible account takeover: a large sale from a device first seen within a day. "
+                           f"Trust score {held['trust_score']} of 100.")

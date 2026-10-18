@@ -211,3 +211,30 @@ def test_t09_names_who_flagged_the_lead(db, make_lead, staff):
     flagged = db.scalars(select(RingFlag)).first().created_at
     assert signal.evidence == f"Flagged by Omar Haddad on {flagged:%B} {flagged.day}, {flagged.year}"
     assert report.score == 100 - 25 and report.band == "review"
+
+
+def test_a_case_tells_the_rest_of_compliance(api, db, inbox):
+    lena = Person(kind="compliance", full_name="Lena Fischer", email="lena@atrium.demo")
+    db.add(lena)
+    db.commit()
+    ring = api.get("/compliance/rings", headers=OMAR).json()["strongest"]
+    opened = api.post(f"/compliance/rings/{ring['id']}/case", headers=OMAR,
+                      json={"members": [m["id"] for m in ring["members"]]}).json()
+    [told] = inbox.to(lena)
+    assert (told.id, told.href, told.severity, told.actor) == (
+        f"alert_raised-{opened['alert_id']}", f"/compliance/alerts/{opened['alert_id']}", "urgent", "Omar Haddad")
+    assert told.title == "Possible fraud ring of 5 identities: Sofia Rossi"
+    omar = db.scalar(select(Person).where(Person.email == "omar@atrium.demo"))
+    assert inbox.to(omar) == []  # he opened it
+
+
+def test_flagged_ring_leads_that_turn_high_risk_reach_the_advisors(api, db, inbox):
+    ring = api.get("/compliance/rings", headers=OMAR).json()["strongest"]
+    api.post(f"/compliance/rings/{ring['id']}/flag-leads", headers=OMAR,
+             json={"members": [m["id"] for m in ring["members"]]})
+    daniel = db.scalar(select(Person).where(Person.email == "daniel@atrium.demo"))
+    held = {lead.id: lead for lead in db.scalars(select(Lead).where(Lead.full_name.in_(RING_LEADS))).all()
+            if lead.trust_band in ("high_risk", "blocked")}
+    assert held, "the ring's leads should cross into high risk once flagged"
+    assert sorted(i.source_id for i in inbox.to(daniel)) == sorted(held)
+    assert all(i.href == f"/advisor/leads/{i.source_id}" and i.actor == "Trust Score" for i in inbox.to(daniel))
