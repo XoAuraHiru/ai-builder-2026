@@ -43,8 +43,8 @@ from pptx.util import Emu, Inches, Pt
 # --- links: fill the two video links, then rebuild -------------------------------------------------------
 LINKS = {
     "github": "https://github.com/XoAuraHiru/ai-builder-2026",
-    "video_short": "VIDEO_SHORT",  # the demo video, 3:45
-    "video_long": "VIDEO_LONG",  # the extended walkthrough, about 9 minutes
+    "video_short": "https://drive.google.com/file/d/1TMCX9mcsYh2S9Ca4jIuyHXmKU__NnDYG/view?usp=sharing",  # the demo video, 3:54
+    "video_long": "https://drive.google.com/file/d/1oD3D53ct0aEXTA_hwY-hcXpCRqnd_Fpz/view?usp=sharing",  # the extended walkthrough, 9:02
     "product": "https://atrium-cup-2026.web.app",
     "product_alt": "https://atrium-web-tvflgkcdoa-uc.a.run.app",
 }
@@ -1128,8 +1128,8 @@ def s_links(slide):
     avail = box_w - 0.2 - 0.5  # the box insets and the bullet indent
     link_lines = {
         2: [("", LINKS["github"])],
-        3: [("Demo video (3:45): ", LINKS["video_short"]),
-            ("Extended walkthrough (about 9 min): ", LINKS["video_long"])],
+        3: [("Demo video (3:54): ", LINKS["video_short"]),
+            ("Extended walkthrough (9:02): ", LINKS["video_long"])],
         4: [("", LINKS["product"]), ("also ", LINKS["product_alt"])],
     }
     used = 0.27 + 0.12 + 0.2  # the heading, the gap paragraph and the box insets, in inches
