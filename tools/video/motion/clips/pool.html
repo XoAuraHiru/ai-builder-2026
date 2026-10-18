@@ -1,0 +1,117 @@
+<title>Pool</title>
+<style>/*BRAND*/
+#stage{font-family:'Schibsted Grotesk',system-ui,sans-serif;color:#1C1B17;font-feature-settings:normal}
+.kick{font-family:'Geist Mono',monospace;font-size:16px;letter-spacing:.14em;color:#6F6C62;white-space:nowrap}
+.ttl{font-size:44px;font-weight:700;letter-spacing:-.03em;line-height:1.1;white-space:nowrap}
+.ov{position:absolute}
+.av{position:absolute;width:64px;height:64px;border-radius:50%;background:#fff;border:1.5px solid #DCDAD1;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:700;color:#3E3C35}
+.mc{position:absolute;width:60px;height:40px;border-radius:999px;background:#E0EDE4;color:#1D4532;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
+.uc{position:absolute;width:214px;height:44px;border-radius:999px;background:#E0EDE4;color:#1D4532;display:flex;align-items:center;justify-content:center;gap:8px;font-size:21px;font-weight:600;white-space:nowrap}
+.ib{position:absolute;width:64px;height:64px;border-radius:18px;display:flex;align-items:center;justify-content:center}
+.etf{position:absolute;width:396px;height:180px;border-radius:24px;background:#F2F1EC;box-sizing:border-box}
+.etf .tk{position:absolute;left:24px;top:20px;font-size:38px;font-weight:700;letter-spacing:-.02em}
+.etf .pc{position:absolute;right:24px;top:20px;font-size:38px;font-weight:700;letter-spacing:-.02em}
+.etf .sb{position:absolute;left:24px;top:76px;font-family:'Geist Mono',monospace;font-size:15px;letter-spacing:.12em;color:#6F6C62;white-space:nowrap}
+.etf .tr{position:absolute;left:24px;top:130px;width:348px;height:8px;border-radius:4px;background:#DCDAD1}
+.etf .fl{position:absolute;left:24px;top:130px;height:8px;border-radius:4px;background:#3F8160}
+.pill{position:absolute;display:flex;align-items:center;gap:14px;height:72px;padding:0 30px;border-radius:36px;background:#1C1B17;color:#fff;font-size:28px;font-weight:600;white-space:nowrap;box-shadow:0 12px 30px -10px rgba(28,27,23,.35)}
+.pill .n{font-weight:700;min-width:112px}
+.pill .d{color:#9A968A}
+.pooled{position:absolute;display:flex;align-items:center;gap:10px;font-size:22px;font-weight:600;color:#6F6C62;white-space:nowrap}
+</style>
+<div data-slot="shape">
+  <div class="L" id="Lcard">
+    <div class="ib" id="ib"></div>
+    <div class="a ttl" id="ttl" style="left:-326px;top:-218px">One portfolio</div>
+    <div class="a kick" id="ck" style="left:-324px;top:-158px">UNIT TRUST · LOW-COST ETFs</div>
+    <div id="etfs"></div>
+    <div class="pooled" id="pooled" style="left:-406px;top:184px"></div>
+  </div>
+</div><!--/shape-->
+<div data-slot="over">
+  <div class="ov kick" id="hk">HOLDERS</div>
+  <div id="holders"></div>
+  <div id="money"></div>
+  <div class="pill" id="pill"></div>
+  <div id="units"></div>
+</div><!--/over-->
+<script>
+/*ATRIUM*/
+const b0 = D.beats[0], b1 = D.beats[1] || b0;
+const tPool = at('pools', b0.start, b0.start + 1.0);
+const tOne = at('one', tPool, tPool + 2.0);
+const tETF = at('ETF', tOne, tOne + 1.6);
+const tEve = at('evening', b1.start, b1.start + 0.6);
+const tPrice = at('price', tEve, tEve + 0.8);
+const tUnits = at('units', b1.start, b1.start + 2.5);
+
+// the card sits right of centre; the holders are a column on the left
+const CX = 150, HX = -610, HY = [-250, -150, -50, 50, 150, 250], MX = -525, UX = -450;
+const HOLDERS = ['PR', 'LM', 'TB', 'AK', 'JS', 'NW'];
+const UNITS = ['12.2746', '8.1831', '24.5479', '4.0920', '16.3676', '6.5471'];
+const ETFS = [['VTI', 60, 'US STOCKS · ETF'], ['BND', 40, 'US BONDS · ETF']];
+
+$('ib').innerHTML = M.icon('pie', 32, C.ink2, 2.2);
+$('etfs').innerHTML = ETFS.map(([tk, pc, sb], i) => `<div class="etf" id="e${i}" style="left:${i ? 10 : -406}px;top:-46px">
+  <div class="tk">${tk}</div><div class="pc">${pc}%</div><div class="sb">${sb}</div><div class="tr"></div><div class="fl" id="f${i}"></div></div>`).join('');
+$('pooled').innerHTML = `${M.icon('users', 24, C.muted, 2.2)}6 holders · one pool`;
+$('holders').innerHTML = HOLDERS.map((h, i) => `<div class="ov av" id="h${i}" style="left:${HX - 32}px;top:${HY[i] - 32}px">${h}</div>`).join('');
+$('money').innerHTML = HOLDERS.map((h, i) => `<div class="ov mc" id="m${i}">$</div>`).join('');
+$('units').innerHTML = UNITS.map((u, i) => `<div class="ov uc" id="u${i}">${M.icon('pie', 20, C.green8, 2.4)}${u} units</div>`).join('');
+$('pill').innerHTML = `${M.icon('clock', 28, '#fff', 2.3)}Unit price<span class="d">·</span><span class="n" id="px">$122.19</span>`;
+
+// the seed's icon becomes the card's icon box in the corner
+const ibx = M.track(-32, [[tPool, -406]]), iby = M.track(-32, [[tPool, -212]]);
+const ibg = M.ctrack('#FFFFFF', [[tPool, C.sand1]]);
+// money in: each holder's chip glides to the card's centre, and is absorbed there
+const mx = HY.map((y, i) => M.track(MX, [[tPool + i * 0.06, CX, [12.5, 0.9]]]));
+const my = HY.map((y, i) => M.track(y, [[tPool + i * 0.06, 0, [12.5, 0.9]]]));
+// units out: from the card's left edge back to each holder
+const ux = HY.map((y, i) => M.track(CX - 480, [[tUnits + i * 0.07, UX, [11, 0.9]]]));
+const uy = HY.map((y, i) => M.track(0, [[tUnits + i * 0.07, y, [11, 0.9]]]));
+const price = M.track(121.52, [[tPrice, 122.19, [11, 0.7]]]);
+const fill = M.track(0, [[tETF + 0.2, 1, M.SLOW]]);
+const cap = captions();
+
+M.scene({
+  W: 1920, H: 1080, bg: C.sand1, T: D.T, intro: 0.1,
+  SH: { seed: { w: 150, h: 150, r: 40, bg: '#FFFFFF', cam: 1.06 }, card: { w: 900, h: 540, r: 44, bg: '#FFFFFF', cam: 1.0 } },
+  start: 'seed', SEQ: [[tPool, 'card']],
+  geom: (t, g) => { g.cx = CX; return g; },
+  layers: [
+    { el: 'Lcard', tin: 0.1, tout: null, o: { din: 0, lin: 0.2 }, update: (t) => {
+      Object.assign($('ib').style, { left: ibx(t).toFixed(2) + 'px', top: iby(t).toFixed(2) + 'px', background: ibg(t) });
+      const tv = M.vis(t, tOne, null, { din: 0, lin: 0.28 });
+      M.apply($('ttl'), tv, ` translateY(${(1 - tv.a) * 12}px)`);
+      M.apply($('ck'), M.vis(t, tOne + 0.12, null, { din: 0, lin: 0.28 }));
+      ETFS.forEach(([, pc], i) => {
+        const v = M.vis(t, tETF + i * 0.1, null, { din: 0, lin: 0.3 });
+        M.apply($('e' + i), v, ` translateY(${(1 - v.a) * 16}px)`);
+        $('f' + i).style.width = (348 * pc / 100 * M.clamp(fill(t))).toFixed(1) + 'px';
+      });
+      const pv = M.vis(t, tPool + 0.7, null, { din: 0, lin: 0.3 });
+      M.apply($('pooled'), pv, ` translateY(${(1 - pv.a) * 10}px)`);
+    } },
+  ],
+  extra: (t) => {
+    if (M.apply($('hk'), M.vis(t, 0.2, null, { din: 0, lin: 0.25 }), '')) Object.assign($('hk').style, { left: (HX - 32) + 'px', top: '-336px' });
+    for (let i = 0; i < 6; i++) {
+      const hv = M.vis(t, 0.25 + i * 0.07, null, { din: 0, lin: 0.26 });
+      M.apply($('h' + i), hv, ` translateX(${(1 - hv.a) * -16}px)`);
+      const mv = M.vis(t, 0.4 + i * 0.07, tPool + 0.42 + i * 0.06, { din: 0, lin: 0.22, lout: 0.2 });
+      if (M.apply($('m' + i), mv, ` scale(${(1 - 0.35 * M.S(t - tPool - i * 0.06, 12.5, 0.9)).toFixed(4)})`))
+        Object.assign($('m' + i).style, { left: (mx[i](t) - 30).toFixed(2) + 'px', top: (my[i](t) - 20).toFixed(2) + 'px' });
+      const uv = M.vis(t, tUnits + i * 0.07, null, { din: 0, lin: 0.22 });
+      if (M.apply($('u' + i), uv, ` scale(${(0.55 + 0.45 * M.S(t - tUnits - i * 0.07, 11, 0.9)).toFixed(4)})`))
+        Object.assign($('u' + i).style, { left: (ux[i](t) - 107).toFixed(2) + 'px', top: (uy[i](t) - 22).toFixed(2) + 'px' });
+    }
+    // every evening: the unit price, ticking up a little on its spring
+    const pv = M.vis(t, tEve, null, { din: 0, lin: 0.26 });
+    if (M.apply($('pill'), pv, ` translate(-50%, calc(-50% + ${((1 - pv.a) * -14).toFixed(2)}px))`)) {
+      Object.assign($('pill').style, { left: CX + 'px', top: '-336px' });
+      M.setText($('px'), '$' + price(t).toFixed(2));
+    }
+    cap(t);
+  },
+});
+</script>

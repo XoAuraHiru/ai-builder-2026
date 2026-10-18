@@ -44,7 +44,7 @@ PRE = 0.6       # seconds of picture before a scene's first sentence
 XFADE = 0.45    # the cross-fade between scenes
 LABEL_Y = 820   # where the motion label's band sits in the frame (above the captions)
 KEEP = 0.5      # seconds a recorded scene runs on after its last action
-RAMP = 1.9      # how much faster silent action plays when trimmed (--trim)
+RAMP = 2.4      # how much faster silent action plays when trimmed (--trim)
 TRIM = False    # trim every recorded scene's ending, not only labelled ones (--trim)
 SCORE_DB = -15  # the score, below the voice before ducking
 FILM = "scenes"
@@ -289,9 +289,9 @@ def motion_data(scene: Scene, clips: list[tuple[Path, float]]) -> tuple[str, dic
     template = scene.clip
     if scene.clip.startswith("chapter"):
         n = int(scene.clip.removeprefix("chapter"))
-        title, line, who = motion_clips.CHAPTERS[n]
+        title, line, who, *rest = motion_clips.CHAPTERS[n]
         data.update(T=max(motion_clips.CHAPTER_SECONDS, data["T"] if beats else 0), n=n, of=len(motion_clips.CHAPTERS),
-                    title=title, line=line, who=who)
+                    title=title, line=line, who=who, kicker=rest[0] if rest else None)
         template = "chapter"
     return template, data, starts
 
@@ -484,10 +484,9 @@ async def main(only: list[str] | None, compose_only: bool, reuse: list[str], nam
         if not compose_only:
             if any(s.base == LOCAL for s in chosen):
                 procs = start_local()
-                pending_reversal()
+                getattr(importlib.import_module(FILM), "prepare_local", pending_reversal)()
             for n, scene in enumerate(chosen):
-                if scene.key == "approve":
-                    scene.extra["code"] = sam_code
+                scene.extra.setdefault("code", sam_code)  # the authenticator code, for any scene that approves
                 try:
                     await record(scene, clips[scene.key], port=9761 + n)
                 except Exception:

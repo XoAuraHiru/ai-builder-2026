@@ -10,8 +10,13 @@ export MSYS2_ARG_CONV_EXCL='^@^;--uri='
 PROJECT_ID="${PROJECT_ID:-atrium-cup-2026}"
 REGION="${REGION:-us-central1}"
 AUTH_MODE="${AUTH_MODE:-dev}"
-API_MIN_INSTANCES="${API_MIN_INSTANCES:-0}"
-WEB_MIN_INSTANCES="${WEB_MIN_INSTANCES:-0}"
+# Warm during the judging window (19 Oct to 6 Nov 2026); set both to 0 afterwards to scale to zero again.
+API_MIN_INSTANCES="${API_MIN_INSTANCES:-1}"
+WEB_MIN_INSTANCES="${WEB_MIN_INSTANCES:-1}"
+# The Firebase web app's config: public by design (it only names the project), so it lives here, not in a secret.
+FIREBASE_API_KEY="${FIREBASE_API_KEY:-AIzaSyCEbadL2OORXtersQi8ox5AxJQIuc_6O7w}"
+FIREBASE_AUTH_DOMAIN="${FIREBASE_AUTH_DOMAIN:-atrium-cup-2026.firebaseapp.com}"
+FIREBASE_APP_ID="${FIREBASE_APP_ID:-1:1070337126396:web:3bac9384bf3b7d5efc8c79}"
 export CLOUDSDK_CORE_PROJECT="$PROJECT_ID"
 cd "$(dirname "$0")/.."
 bash infra/preflight.sh

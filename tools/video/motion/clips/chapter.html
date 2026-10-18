@@ -23,7 +23,7 @@
 /*ATRIUM*/
 const nn = String(D.n).padStart(2, '0');
 $('num').textContent = nn;
-$('kick').textContent = D.n === D.of ? `${nn} · ACROSS ALL FOUR STAGES` : `STAGE ${nn} OF 0${D.of - 1}`;
+$('kick').textContent = D.kicker || (D.n === D.of ? `${nn} · ACROSS ALL FOUR STAGES` : `STAGE ${nn} OF 0${D.of - 1}`);
 $('ttl').textContent = D.title;
 $('ttl').style.fontSize = Math.min(138, 1060 / (0.56 * D.title.length)).toFixed(1) + 'px';  // a long title still fits its card
 $('line').textContent = D.line;

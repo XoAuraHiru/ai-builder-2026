@@ -138,8 +138,8 @@ check "deploys the day-end job from the API image" 'grep "run jobs deploy atrium
 check "the day-end job reaches the database and its secrets" 'grep "run jobs deploy atrium-day-end" "$FAKE_LOG" | grep -q -- "--set-cloudsql-instances" && grep "run jobs deploy atrium-day-end" "$FAKE_LOG" | grep -q "BLIND_INDEX_KEY=atrium-blind-index-key:latest"'
 check "schedules the day-end on weekday evenings in New York" 'grep "scheduler jobs create http atrium-day-end" "$FAKE_LOG" | grep -q "15 17 \* \* 1-5" && grep "scheduler jobs create http atrium-day-end" "$FAKE_LOG" | grep -q "America/New_York"'
 check "Scheduler calls the Cloud Run job API unmangled" 'grep "scheduler jobs create http atrium-day-end" "$FAKE_LOG" | grep -q -- "--uri=https://run.googleapis.com/v2/projects/atrium-cup-2026/locations/us-central1/jobs/atrium-day-end:run"'
-check "API scales to zero by default" 'echo "$API_DEPLOY" | grep -q -- "--min-instances 0"'
-check "web scales to zero by default" 'echo "$WEB_DEPLOY" | grep -q -- "--min-instances 0"'
+check "API keeps one warm instance by default" 'echo "$API_DEPLOY" | grep -q -- "--min-instances 1"'
+check "web keeps one warm instance by default" 'echo "$WEB_DEPLOY" | grep -q -- "--min-instances 1"'
 check "both services use startup CPU boost" 'echo "$API_DEPLOY" | grep -q -- "--cpu-boost" && echo "$WEB_DEPLOY" | grep -q -- "--cpu-boost"'
 
 check "API source upload leaves out the local virtualenv and tests" 'grep -qx ".venv/" services/api/.gcloudignore && grep -qx "tests/" services/api/.gcloudignore'

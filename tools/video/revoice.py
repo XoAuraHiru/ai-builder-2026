@@ -139,7 +139,7 @@ def main(voice_id: str, film: str, recast: bool) -> None:
         pick["wav"] = str(levelled(Path(pick["wav"])))
     cast.update({p["text"]: {"wav": p["wav"], "length": p["length"]} for p in picks})
     CAST.write_text(json.dumps(cast, indent=1), encoding="utf-8")
-    (mv.WORK / "voice-cast-report.json").write_text(json.dumps(picks, indent=1), encoding="utf-8")
+    CAST.with_name(CAST.stem + "-report.json").write_text(json.dumps(picks, indent=1), encoding="utf-8")
 
 
 if __name__ == "__main__":
@@ -147,5 +147,8 @@ if __name__ == "__main__":
     ap.add_argument("voice_id")
     ap.add_argument("--film", default="scenes", help="the module holding the film's SCENES (scenes, film_short)")
     ap.add_argument("--recast", action="store_true", help="cast again sentences that already have a take")
+    ap.add_argument("--cast", help="the cast file to write (default .superpowers/video/voice-cast.json)")
     a = ap.parse_args()
+    if a.cast:
+        CAST = Path(a.cast)
     main(a.voice_id, a.film, a.recast)
