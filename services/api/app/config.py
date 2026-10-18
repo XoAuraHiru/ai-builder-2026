@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     pubsub_enabled: bool = False
     pubsub_topic: str = "atrium-events"
     firestore_enabled: bool = False         # the live inbox: notices written to Cloud Firestore, read by the browser
+    inbox_background: bool = False          # write notices on a thread after the response; off, because Cloud Run
+                                            # stops a request's CPU once it answers, which could hold a write back
     firebase_service_account: str = ""      # signs the inbox's custom tokens; on Cloud Run, the API's own account
 
     auto_seed: bool = False                 # seed synthetic data at startup if the DB is empty

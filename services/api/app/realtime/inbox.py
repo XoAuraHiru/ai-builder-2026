@@ -26,6 +26,7 @@ log = logging.getLogger(__name__)
 STAGES = ("acquire", "invest", "trade", "operate", "govern")
 SEVERITIES = ("info", "attention", "urgent")
 BATCH = 400  # Firestore takes at most 500 writes in one batch
+WRITE_TIMEOUT = 8.0  # seconds; a slow Firestore costs a notice, never a hung request
 _OUTBOX = "atrium.inbox"  # session.info key: [(the transaction that staged it, Delivery), ...]
 
 
@@ -92,7 +93,7 @@ class FirestoreSink:
             for d in chunk:
                 doc = db.collection("people").document(d.person_id).collection("inbox").document(d.item.id)
                 batch.set(doc, {**d.item.fields(), "read": False, "created_at": firestore.SERVER_TIMESTAMP})
-            batch.commit()
+            batch.commit(timeout=WRITE_TIMEOUT)
 
 
 class Courier:
@@ -137,12 +138,16 @@ _config_lock = threading.Lock()
 
 
 def courier() -> Courier | None:
-    """This process's courier: Firestore when FIRESTORE_ENABLED is true; otherwise none, and notices do nothing."""
+    """This process's courier: Firestore when FIRESTORE_ENABLED is true; otherwise none, and notices do nothing.
+    It writes as the transaction commits unless INBOX_BACKGROUND is set: a write is a few tens of milliseconds, and on
+    Cloud Run a thread left running after the response gets no CPU until the next request comes in."""
     global _courier, _configured
     if not _configured:
         with _config_lock:
             if not _configured:
-                _courier = Courier(FirestoreSink()) if get_settings().firestore_enabled else None
+                settings = get_settings()
+                _courier = (Courier(FirestoreSink(), background=settings.inbox_background)
+                            if settings.firestore_enabled else None)
                 _configured = True
     return _courier
 

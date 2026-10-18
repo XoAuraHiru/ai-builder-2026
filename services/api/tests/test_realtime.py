@@ -141,7 +141,7 @@ class FakeFirestore:
         def set(self, ref, data):
             self.writes.append((ref.path, data))
 
-        def commit(self):
+        def commit(self, timeout=None):
             self.commits.append(self.writes)
 
     def __init__(self):
