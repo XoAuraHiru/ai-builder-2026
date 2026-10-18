@@ -226,3 +226,37 @@ def test_on_postgres_decisions_wait_for_a_running_day_end(api, db, staff, monkey
                     json={"approve": True, "code": code(staff["sam"])}).status_code == 200
     assert api.post("/compliance/monitoring", headers=OMAR).status_code == 200
     assert len(locks) == 4 and all("day-end" in lock for lock in locks)
+
+
+def test_the_four_eyes_flow_reaches_each_side_through_the_inbox(api, staff, inbox):
+    asked = api.post("/ops/prices/publish", headers=MEI, json={"as_of": "2026-10-09", "reason": "Checked."}).json()
+    assert [i.id for i in inbox.to(staff["sam"])] == [f"approval_requested-{asked['id']}"]
+    assert inbox.to(staff["mei"]) == [] and inbox.to(staff["omar"]) == []
+    wrong = api.post(f"/ops/approvals/{asked['id']}/decide", headers=SAM,
+                     json={"approve": True, "code": wrong_code(staff["sam"])})
+    assert wrong.status_code == 422 and inbox.to(staff["mei"]) == []
+    api.post(f"/ops/approvals/{asked['id']}/decide", headers=SAM, json={"approve": True, "code": code(staff["sam"])})
+    [told] = inbox.to(staff["mei"])
+    assert (told.title, told.severity) == ("Sam approved your request", "info")
+    assert told.body == "Publish 7 fund prices for October 9."
+
+
+def test_monitoring_run_by_hand_tells_the_rest_of_compliance(api, db, staff, account, inbox):
+    from app.models import Person
+
+    lena = Person(kind="compliance", full_name="Lena Fischer", email="lena@atrium.demo")
+    db.add(lena)
+    now = datetime.now(timezone.utc)
+    for days, amount in ((6, "9400"), (4, "9750"), (2, "9900")):
+        db.add(Instruction(account_id=account.id, fund_code="ATR-CASH", type="subscribe", amount=Decimal(amount),
+                           state="settled", requested_at=now - timedelta(days=days)))
+    db.commit()
+    raised = api.post("/compliance/monitoring", headers=OMAR).json()["alerts"]
+    told = inbox.to(lena)
+    assert [i.id for i in told] == [f"alert_raised-{a['id']}" for a in raised]
+    structuring = next(a for a in raised if a["scenario"] == "structuring")
+    notice = next(i for i in told if i.source_id == structuring["id"])
+    assert (notice.title, notice.severity, notice.stage, notice.actor) == (
+        "Possible structuring: Priya Raman", "urgent", "govern", "Transaction monitoring")
+    assert notice.href == f"/compliance/alerts/{structuring['id']}" and notice.body == structuring["summary"]
+    assert inbox.to(staff["omar"]) == []  # he ran it and is looking at the result

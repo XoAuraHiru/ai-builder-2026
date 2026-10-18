@@ -98,6 +98,21 @@ def test_an_unreadable_breaker_counts_as_open(db, monkeypatch):
     assert "cannot be checked" in breaker_message(db, "case_reviewer")
 
 
+def test_a_tripped_breaker_tells_compliance_and_the_models_owner_once(db, omar, people, inbox):
+    reason = "It missed its bar in the live checks (accuracy 71%; the bar is 80%)."
+    trip(db, "lead_enrichment", reason=reason, by="Live checks", now=NOW)
+    db.commit()
+    for person in (omar, people["advisor"]):  # compliance, and Daniel, who owns the model
+        [told] = inbox.to(person)
+        assert (told.id, told.stage, told.severity, told.actor) == (
+            "model_paused-lead_enrichment-1", "govern", "attention", "Live checks")
+        assert (told.title, told.href) == ("Lead enrichment is paused", "/compliance/models/lead_enrichment")
+        assert told.body == f"{reason} Offline rules read the form instead."
+    trip(db, "lead_enrichment", reason="Again.", by="Live checks", now=NOW)  # already open: nothing new
+    db.commit()
+    assert len(inbox.sent) == 2 and inbox.to(people["investor"]) == []
+
+
 
 
 @pytest.fixture()

@@ -123,7 +123,7 @@ def model_card(key: str, db: Session = Depends(get_db), user: CurrentUser = Depe
 def open_breaker(key: str, body: ReasonIn, db: Session = Depends(get_db), user: CurrentUser = Depends(mro)):
     _known(key)
     try:
-        trip(db, key, reason=body.reason, by=me(db, user).full_name)
+        trip(db, key, reason=body.reason, by=me(db, user).full_name, by_id=user.person_id)
     except BreakerError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     db.commit()

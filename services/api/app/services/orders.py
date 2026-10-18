@@ -17,6 +17,7 @@ from app.markets.quotes import CommittedQuotes, Quote, get_quotes, market_sessio
 from app.markets.universe import CASH, instrument
 from app.models import Account, Person, TradeOrder
 from app.models.base import utcnow
+from app.realtime import notices
 from app.services.account_snapshot import account_snapshot
 from app.services.devices import see_device
 from app.services.guardian import GuardianReport, OrderRequest, assess, report_json, usd
@@ -103,6 +104,7 @@ def place_order(db: Session, account: Account, req: OrderRequest, *, acknowledge
         reasons = "; ".join(c.title.lower() for c in report.checks if c.outcome == "hold")
         _step(order, "held", f"Held for an advisor: {reasons}.", now)
         emit("OrderHeld", {"order_id": order.id, "account_id": account.id, "reasons": reasons})
+        notices.order_held(db, order, report)
         return order
     _execute(db, order, report.quote, report.session.is_open, broker, now)
     return order
@@ -169,6 +171,7 @@ def release_order(db: Session, order: TradeOrder, advisor: Person, note: str = "
     _step(order, "released", f"Released by {advisor.full_name}" + (f": {note}" if note else "."), now)
     emit("OrderReleased", {"order_id": order.id, "account_id": order.account_id, "by": advisor.id})
     _execute(db, order, report.quote, report.session.is_open, broker or get_broker(), now)
+    notices.order_released(db, order, advisor)  # after the broker, so the holder hears where the order stands
     return order
 
 
@@ -184,6 +187,7 @@ def reject_order(db: Session, order: TradeOrder, advisor: Person, note: str = ""
     order.reviewed_by, order.reviewed_at, order.review_note = advisor.id, now, note or None
     _step(order, "rejected", f"Rejected by {advisor.full_name}" + (f": {note}" if note else "."), now)
     emit("OrderRejected", {"order_id": order.id, "account_id": order.account_id, "by": advisor.id})
+    notices.order_rejected(db, order, advisor)
     return order
 
 

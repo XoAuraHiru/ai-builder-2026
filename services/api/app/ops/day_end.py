@@ -27,6 +27,7 @@ from app.ml.aml_model import AmlModel
 from app.models import Approval, OpsRun, Price, StatementLine
 from app.models.base import utcnow
 from app.ops.locks import serialise_operations
+from app.realtime import notices
 from app.services.aml import run_monitoring
 from app.services.allocation import allocate, create_due_recurring
 from app.services.fund_pricing import draft_prices, last_closed_session
@@ -115,6 +116,7 @@ def run_day_end(db: Session, *, now: datetime, triggered_by: str, llm: LLM, clos
         record("Allocation", False, f"Allocation failed: {e}")
     try:
         alerts = run_monitoring(db, today, model)
+        notices.alerts_raised(db, alerts, actor="Day-end")
         record("Monitoring", True, f"{len(alerts)} new alert{'s' if len(alerts) != 1 else ''} for compliance.",
                {"alerts": [{"scenario": a.scenario, "title": a.title} for a in alerts]})
     except Exception as e:
@@ -164,6 +166,7 @@ def run_day_end(db: Session, *, now: datetime, triggered_by: str, llm: LLM, clos
     db.flush()
     emit("DayEndCompleted", {"run_id": run.id, "as_of": as_of.isoformat(), "status": run.status,
                              "triggered_by": triggered_by})
+    notices.day_end_finished(db, run)
     return run
 
 
@@ -171,6 +174,7 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO)
     from app.ai.llm import get_llm
     from app.db import SessionLocal, init_db
+    from app.realtime.inbox import drain
 
     init_db()
     with SessionLocal() as db:
@@ -179,6 +183,7 @@ def main() -> None:
         print(f"day-end {run.as_of}: {run.status}")
         for step in run.steps:
             print(f"  {'ok ' if step['ok'] else 'NO '} {step['step']}: {step['detail']}")
+    drain()  # the run's notices reach the inbox before the job's container stops
 
 
 if __name__ == "__main__":

@@ -35,12 +35,11 @@ def _roles_for(person: Person) -> list[str]:
 
 
 def _verify_firebase_token(token: str) -> dict:
-    import firebase_admin
     from firebase_admin import auth as fb_auth
 
-    if not firebase_admin._apps:
-        firebase_admin.initialize_app()
-    return fb_auth.verify_id_token(token)
+    from app.realtime.firebase import firebase_app
+
+    return fb_auth.verify_id_token(token, app=firebase_app())
 
 
 def _unauthorized(detail: str) -> HTTPException:

@@ -1,0 +1,17 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": "infra/hosting",
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "atrium-web",
+          "region": "us-central1"
+        }
+      }
+    ]
+  }
+}

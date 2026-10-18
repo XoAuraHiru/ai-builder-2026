@@ -75,3 +75,30 @@ def test_on_postgres_runs_wait_for_each_other(db, priced, monkeypatch):
     monkeypatch.setattr(db, "execute", execute)
     run = run_day_end(db, now=NOW, triggered_by="test", llm=offline_llm(), closes=closes(), model=QUIET)
     assert run.status == "ok" and len(locks) == 1 and "day-end" in locks[0]
+
+
+def test_a_run_tells_operations_in_one_line_and_compliance_about_each_new_alert(db, priced, account, staff, inbox):
+    for day, amount in ((5, "9400"), (6, "9750"), (8, "9900")):  # just under the reporting threshold, three times
+        db.add(Instruction(account_id=account.id, fund_code="ATR-CASH", type="subscribe", amount=Decimal(amount),
+                           state="settled", requested_at=datetime(2026, 10, day, 15, tzinfo=timezone.utc)))
+    run = run_day_end(db, now=NOW, triggered_by="test", llm=offline_llm(), closes=closes(), model=QUIET)
+    assert inbox.sent == []  # nothing leaves before the commit
+    db.commit()
+    for ops in (staff["mei"], staff["sam"]):
+        [told] = inbox.to(ops)
+        assert (told.id, told.stage, told.severity, told.href, told.actor) == (
+            f"day_end-{run.id}", "operate", "info", "/operations", "Day-end")
+        assert told.title == "Day-end for October 9 finished"
+        assert told.body == "7 fund prices drafted and 1 new alert for compliance."
+    [alert] = inbox.to(staff["omar"])
+    assert (alert.kind, alert.title, alert.severity, alert.actor) == (
+        "alert_raised", "Possible structuring: Priya Raman", "urgent", "Day-end")
+
+
+def test_a_partial_run_says_what_to_look_at(db, priced, staff, inbox):
+    run = run_day_end(db, now=NOW, triggered_by="test", llm=offline_llm(), closes=closes(present=False), model=QUIET)
+    db.commit()
+    [told] = inbox.to(staff["mei"])
+    assert run.status == "partial" and told.severity == "attention"
+    assert told.title == "Day-end for October 9 finished with steps to look at"
+    assert told.body == "Nothing is waiting for operations. To look at: prices."

@@ -186,3 +186,12 @@ def test_release_rereads_the_order_after_taking_the_lock(db, investor, advisor):
                .execution_options(synchronize_session=False))
     with pytest.raises(OrderError, match="Only an order waiting"):
         release_order(db, order, advisor, now=NOW, quotes=BOOK, broker=PaperBroker())
+
+
+def test_a_held_order_whose_transaction_rolls_back_tells_no_one(db, investor, advisor, inbox):
+    db.get(Person, investor.person_id).risk_band = 2
+    db.commit()
+    assert place(db, investor, buy("TSLA", 3)).state == "held"
+    db.rollback()
+    db.commit()
+    assert inbox.sent == []

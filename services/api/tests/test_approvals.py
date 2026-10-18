@@ -80,3 +80,30 @@ def test_the_demo_authenticator_shows_the_current_code(db, staff):
     newcomer = Person(kind="ops", full_name="New Hire", email="new@atrium.demo")
     assert not verify_code(newcomer, "123456", NOW)
     assert len(ensure_totp_secret(newcomer)) == 32 and newcomer.totp_secret
+
+
+def test_a_request_tells_the_other_approvers_and_its_decision_tells_the_requester(db, staff, inbox):
+    approval = ask(db, staff)
+    db.commit()
+    [asked] = inbox.to(staff["sam"])
+    assert (asked.id, asked.stage, asked.severity, asked.href) == (
+        f"approval_requested-{approval.id}", "operate", "attention", "/operations/approvals")
+    assert (asked.title, asked.actor) == ("Mei asks for your approval", "Mei Tanaka")
+    assert asked.body == "Publish 1 price for October 9. Reason: Checked against the market."
+    assert inbox.to(staff["mei"]) == [] and inbox.to(staff["omar"]) == []  # never the requester; only approvers
+    decide(db, approval, staff["sam"], approve=False, code=code_for(staff["sam"]), note="Wrong date.", now=NOW,
+           executor=recorder([]))
+    db.commit()
+    [told] = inbox.to(staff["mei"])
+    assert (told.id, told.title, told.severity, told.actor) == (
+        f"approval_decided-{approval.id}", "Sam rejected your request", "attention", "Sam Ortiz")
+    assert told.body == "Publish 1 price for October 9. Note: Wrong date."
+
+
+def test_a_decision_that_is_rolled_back_tells_no_one(db, staff, inbox):
+    approval = ask(db, staff)
+    db.commit()
+    decide(db, approval, staff["sam"], approve=True, code=code_for(staff["sam"]), now=NOW, executor=recorder([]))
+    db.rollback()
+    db.commit()
+    assert inbox.kinds() == ["approval_requested"]

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -7,8 +9,10 @@ from app.auth import CurrentUser, get_current_user
 from app.config import get_settings
 from app.db import get_db
 from app.models import Account, Person
+from app.realtime.firebase import custom_token
 from app.services.approvals import current_code
 
+log = logging.getLogger(__name__)
 router = APIRouter(tags=["me"])
 
 
@@ -61,3 +65,26 @@ def authenticator(user: CurrentUser = Depends(get_current_user), db: Session = D
         db.commit()  # the secret current_code just created
     return AuthenticatorOut(code=code, seconds_left=seconds_left,
                             note="Demo authenticator: in production this code comes from the staff member's own app.")
+
+
+class RealtimeOut(BaseModel):
+    enabled: bool
+    token: str | None = None
+    path: str | None = None
+    project_id: str | None = None
+
+
+@router.get("/me/realtime", response_model=RealtimeOut)
+def realtime(user: CurrentUser = Depends(get_current_user)) -> RealtimeOut:
+    """Signs this browser in to Firestore as this person, to listen to their own inbox. When the inbox is off, or a
+    token cannot be made, it says so rather than failing: every page works without the inbox."""
+    settings = get_settings()
+    if not settings.firestore_enabled or not user.person_id:
+        return RealtimeOut(enabled=False)
+    try:
+        token = custom_token(user.person_id, user.roles[0])
+    except Exception:  # IAM, credentials or the network: logged, and the browser simply goes without
+        log.exception("inbox: no custom token for person %s", user.person_id)
+        return RealtimeOut(enabled=False)
+    return RealtimeOut(enabled=True, token=token, path=f"people/{user.person_id}/inbox",
+                       project_id=settings.gcp_project or None)

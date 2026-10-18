@@ -13,6 +13,7 @@ from app.events import emit
 from app.governance.inventory import MODELS
 from app.models import ModelBreaker, Person
 from app.models.base import utcnow
+from app.realtime import notices
 from app.services.approvals import verify_code
 
 
@@ -91,13 +92,16 @@ def _checked(key: str, reason: str) -> str:
 
 
 def trip(db: Session, key: str, *, reason: str, by: str, now: datetime | None = None,
-         run_id: str | None = None) -> ModelBreaker:
-    """Open a breaker. An already open breaker keeps its first reason."""
+         run_id: str | None = None, by_id: str | None = None) -> ModelBreaker:
+    """Open a breaker. An already open breaker keeps its first reason. `by_id` is the person who paused it by hand,
+    whom the inbox does not tell about it."""
     reason = _checked(key, reason)
     row = db.get(ModelBreaker, key)
     if row is not None and row.state == "open":
         return row
-    return _change(db, key, "open", reason, by, now or utcnow(), run_id)
+    row = _change(db, key, "open", reason, by, now or utcnow(), run_id)
+    notices.model_paused(db, row, besides=by_id)
+    return row
 
 
 def reset(db: Session, key: str, *, reason: str, person: Person, code: str,

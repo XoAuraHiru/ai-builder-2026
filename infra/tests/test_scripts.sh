@@ -60,7 +60,7 @@ case "$*" in
      else echo '{}'; fi ;;
 esac
 FAKE
-printf '#!/usr/bin/env bash\nexit 1\n' > "$WORK/bin/firebase"
+printf '#!/usr/bin/env bash\necho "firebase $*" >> "$FAKE_LOG"\nexit 1\n' > "$WORK/bin/firebase"
 # The deploy gate runs the free evaluation suites through uv; FAKE_GATE_FAILS=1 makes it fail.
 cat > "$WORK/bin/uv" <<'FAKE'
 #!/usr/bin/env bash
@@ -152,6 +152,11 @@ check "monitoring is report-only unless asked" 'grep "run deploy atrium-api" "$F
 check "the evals job records the commit it checked" 'grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q "GIT_SHA="'
 check "lets the API start the evals job" 'grep "run jobs add-iam-policy-binding atrium-evals" "$FAKE_LOG" | grep -q "serviceAccount:atrium-api@atrium-cup-2026.iam.gserviceaccount.com" && grep "run jobs add-iam-policy-binding atrium-evals" "$FAKE_LOG" | grep -q "roles/run.invoker"'
 check "starts the live checks after the web deploys, without waiting" '[ "$(line_of "run jobs execute atrium-evals")" -gt "$(line_of "run deploy atrium-web")" ] && grep "run jobs execute atrium-evals" "$FAKE_LOG" | grep -q -- "--async"'
+check "the API, the day-end and the live checks write to the live inbox" 'echo "$API_DEPLOY" | grep -q "@FIRESTORE_ENABLED=true" && grep "run jobs deploy atrium-day-end" "$FAKE_LOG" | grep -q "FIRESTORE_ENABLED=true" && grep "run jobs deploy atrium-evals" "$FAKE_LOG" | grep -q "FIRESTORE_ENABLED=true"'
+check "the API signs inbox tokens as its own account, outside the @-separated list" 'echo "$API_DEPLOY" | grep -q -- "--set-env-vars FIREBASE_SERVICE_ACCOUNT=atrium-api@atrium-cup-2026.iam.gserviceaccount.com"'
+check "API allows the Firebase Hosting origins" 'echo "$API_DEPLOY" | grep -q "https://atrium-cup-2026.web.app,https://atrium-cup-2026.firebaseapp.com,http://localhost:3000"'
+check "deploys the Firestore rules and Hosting last" '[ "$(line_of "firebase deploy --only firestore:rules,hosting --project atrium-cup-2026 --non-interactive")" -gt "$(line_of "run jobs execute atrium-evals")" ]'
+check "a failed Firebase step says what to run and does not fail the release" 'grep -q "Firebase deploy failed: run firebase login" "$WORK/deploy.out"'
 
 echo "deploy.sh when a free evaluation suite fails"
 : > "$FAKE_LOG"; rm -f "$FAKE_LOG.web" "$FAKE_LOG.datastore"
@@ -174,5 +179,6 @@ STATUS=$?
 check "exits 0 (was $STATUS)" '[ "$STATUS" -eq 0 ]'
 check "sets CORS after the web service exists" 'grep "run services update atrium-api" "$FAKE_LOG" | grep -q "CORS_ORIGINS="'
 check "first-release CORS allows both Cloud Run URLs" 'grep "run services update atrium-api" "$FAKE_LOG" | grep -q "https://atrium-web-123.us-central1.run.app"'
+check "first-release CORS allows the Firebase Hosting origins" 'grep "run services update atrium-api" "$FAKE_LOG" | grep -q "https://atrium-cup-2026.web.app,https://atrium-cup-2026.firebaseapp.com"'
 
 [ "$FAILS" -eq 0 ] && echo "all script tests passed" || { echo "$FAILS script test(s) failed"; exit 1; }

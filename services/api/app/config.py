@@ -47,6 +47,8 @@ class Settings(BaseSettings):
 
     pubsub_enabled: bool = False
     pubsub_topic: str = "atrium-events"
+    firestore_enabled: bool = False         # the live inbox: notices written to Cloud Firestore, read by the browser
+    firebase_service_account: str = ""      # signs the inbox's custom tokens; on Cloud Run, the API's own account
 
     auto_seed: bool = False                 # seed synthetic data at startup if the DB is empty
     seed: int = 42

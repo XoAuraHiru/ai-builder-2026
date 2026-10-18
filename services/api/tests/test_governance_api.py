@@ -55,3 +55,11 @@ def test_a_breaker_opens_by_hand_and_resets_with_a_code(gov, staff):
     done = gov.post("/governance/breakers/case_reviewer/reset", headers=OMAR, json={"reason": "Fixed.", "code": code})
     assert done.status_code == 200 and done.json()["state"] == "closed"
     assert gov.post("/governance/breakers/case_reviewer/open", headers=MEI, json={"reason": "x"}).status_code == 403
+
+
+def test_pausing_a_model_by_hand_tells_its_owner_but_not_the_person_who_paused_it(gov, staff, people, inbox):
+    gov.post("/governance/breakers/lead_enrichment/open", headers=OMAR, json={"reason": "Kill switch test."})
+    assert inbox.to(staff["omar"]) == []
+    [told] = inbox.to(people["advisor"])  # Daniel owns Lead enrichment
+    assert (told.title, told.actor, told.href) == ("Lead enrichment is paused", "Omar Haddad",
+                                                   "/compliance/models/lead_enrichment")

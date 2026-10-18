@@ -10,6 +10,7 @@ import { routeKind, sectionFor, tabFor, workspaceFor, type NavSection, type Work
 import { ACTS, actFor, initials } from "@/lib/personas";
 import { useSession } from "@/lib/session-context";
 import { Icon } from "@/components/icons";
+import { Inbox } from "@/components/inbox";
 import { EASE, PageEnter } from "@/components/motion";
 import { PageSkeleton, Skeleton } from "@/components/skeleton";
 import { ButtonLink, Loading, NavSegmented, Notice, PageTabsContext, Sparkle } from "@/components/ui";
@@ -302,6 +303,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                   <Sparkle /><span className="hidden sm:inline">Ask Atrium</span>
                 </Link>
               )}
+              <Inbox personId={me.person_id} />
               <PersonSwitcher me={me} />
             </div>
             <StripNav space={space} active={section} />
