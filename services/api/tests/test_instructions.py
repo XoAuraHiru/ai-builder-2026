@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from app.models import Person
+from app.realtime.inbox import set_courier
 from app.seed.funds import seed_funds
 from app.services.instructions import LotView, preview_redemption
 from app.services.ledger import InsufficientUnits, apply_posting
@@ -112,6 +113,40 @@ def test_monthly_plans_can_be_created_and_cancelled(client, holder):
     assert above.status_code == 409
     assert client.delete(f"/accounts/{holder.id}/recurring/{plan['id']}", headers=HDR).json()["status"] == "cancelled"
     assert [p["status"] for p in client.get(f"/accounts/{holder.id}/recurring", headers=HDR).json()] == ["cancelled"]
+
+
+def test_an_accepted_instruction_tells_the_holder_and_a_rejected_one_tells_no_one(client, holder, inbox):
+    r = post(client, holder, {"type": "subscribe", "fund_code": "ATR-BAL", "amount_usd": "500"})
+    assert r.status_code == 201, r.text
+    [told] = inbox.to(holder.person_id)
+    assert (told.kind, told.id, told.stage, told.severity) == ("fund_order_accepted",
+                                                               f"fund_order_accepted-{r.json()['id']}", "invest", "info")
+    assert (told.title, told.href, told.actor) == ("Accepted: $500.00 into Atrium Balanced", "/investor/orders", "Atrium")
+    assert told.body == ("It will be dealt at the next published price. Atrium Balanced (band 3) is within your risk "
+                         "profile (band 3).")
+    r = post(client, holder, {"type": "subscribe", "fund_code": "ATR-BAL", "amount_usd": "100"})  # below the minimum
+    assert r.status_code == 409 and len(inbox.sent) == 1
+
+
+def test_the_accepted_notice_names_what_moves_where_and_any_risk_acknowledged(client, holder, inbox):
+    for body in ({"type": "redeem", "fund_code": "ATR-BAL", "units": "12.3456"},
+                 {"type": "switch", "fund_code": "ATR-BAL", "to_fund_code": "ATR-GRW", "units": "12.3456",
+                  "acknowledge_risk": True},  # Growth is band 4, above this band-3 profile
+                 {"type": "subscribe", "fund_code": "ATR-TEC", "amount_usd": "2000", "acknowledge_risk": True}):
+        assert post(client, holder, body).status_code == 201
+    told = inbox.to(holder.person_id)
+    assert [t.title for t in told] == ["Accepted: 12.3456 units out of Atrium Balanced",
+                                       "Accepted: 12.3456 units of Atrium Balanced into Atrium Growth",
+                                       "Accepted: $2,000.00 into Atrium Technology"]
+    assert told[2].body == ("It will be dealt at the next published price. You acknowledged the extra risk: Atrium "
+                            "Technology is risk band 5; your profile is band 3.")
+    assert all(len(t.body) <= 160 for t in told)
+
+
+def test_nothing_is_sent_while_the_inbox_is_off(client, holder, inbox):
+    set_courier(None)
+    r = post(client, holder, {"type": "subscribe", "fund_code": "ATR-BAL", "amount_usd": "500"})
+    assert r.status_code == 201 and inbox.sent == []
 
 
 def test_units_already_committed_to_an_accepted_instruction_cannot_be_redeemed_again(client, holder):

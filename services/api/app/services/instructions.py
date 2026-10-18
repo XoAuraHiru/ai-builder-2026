@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.events import emit
 from app.models import Account, Fund, Instruction, InstructionStep, Lot, Person, RecurringPlan
+from app.realtime import notices
 from app.services.ledger import InsufficientUnits, q_cash, q_units
 from app.services.pricing import latest_price
 
@@ -208,6 +209,9 @@ def submit_instruction(db: Session, account: Account, person: Person, kind: str,
     emit("InstructionReceived", {"instruction_id": instruction.id, "account_id": account.id, "type": kind,
                                  "fund_code": fund.code, "to_fund_code": instruction.to_fund_code,
                                  "acknowledged_risk": acknowledged})
+    within = next((c.message for c in plan.checks if c.code == "SUITABILITY"), "")
+    notices.fund_order_accepted(db, instruction, (f"You acknowledged the extra risk: {plan.suitability.split('. ')[0]}."
+                                                  if acknowledged else within))
     return instruction
 
 
